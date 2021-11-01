@@ -161,7 +161,7 @@ using namespace OpenMS;
   @p -mz_extraction_window to your instrument resolution, which can be in Th or
   ppm.
 
-  Furthermore, if you wish to use MS1 information, use the @p -use_ms1_traces flag
+  Furthermore, if you wish to use MS1 information, set the @p -enable_ms1 flag to @p true
   and provide an MS1 map in addition to the SWATH data.
 
   If you encounter issues with peak picking, try to disable peak filtering by
