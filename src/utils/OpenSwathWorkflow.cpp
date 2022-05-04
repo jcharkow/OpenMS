@@ -485,6 +485,8 @@ protected:
     registerDoubleOption_("rt_extraction_window", "<double>", 600.0, "Only extract RT around this value (-1 means extract over the whole range, a value of 600 means to extract around +/- 300 s of the expected elution).", false);
     registerDoubleOption_("extra_rt_extraction_window", "<double>", 0.0, "Output an XIC with a RT-window by this much larger (e.g. to visually inspect a larger area of the chromatogram)", false, true);
     setMinFloat_("extra_rt_extraction_window", 0.0);
+    registerStringOption_("im_axis", "<name>", "false", "Extract the ion traces across RT and IM", false, true);
+    setValidStrings_("im_axis", ListUtils::create<String>("true,false"));
     registerDoubleOption_("ion_mobility_window", "<double>", -1, "Extraction window in ion mobility dimension (in milliseconds). This is the full window size, e.g. a value of 10 milliseconds would extract 5 milliseconds on either side.", false);
     registerDoubleOption_("mz_extraction_window", "<double>", 50, "Extraction window in Thomson or ppm (see mz_extraction_window_unit)", false);
     setMinFloat_("mz_extraction_window", 0.0);
@@ -772,6 +774,7 @@ protected:
     cp.im_extraction_window  = getDoubleOption_("ion_mobility_window");
     cp.extraction_function   = getStringOption_("extraction_function");
     cp.extra_rt_extract      = getDoubleOption_("extra_rt_extraction_window");
+    cp.im_axis               = getStringOption_("im_axis") == "true";
 
     ChromExtractParams cp_irt = cp;
     cp_irt.rt_extraction_window = -1; // extract the whole RT range for iRT measurements

@@ -231,6 +231,38 @@ public:
           extraction_coordinates, mz_extraction_window, ppm, im_extraction_window, filter);
     }
 
+
+    /**
+     * @brief Extract a 2D chromatogram at the m/z across IM and RT defined by the ExtractionCoordinates.
+     *
+     * @param input The input spectra from which to extract chromatograms
+     * @param output The output vector in which to store the chromatograms
+     * (needs to be of the same length as the extraction coordinates, use
+     * prepare_coordinates)
+     * @param extraction_coordinates The extraction coordinates (m/z, RT, ion mobility)
+     * @param mz_extraction_window Extracts a window of this size in m/z
+     * dimension (e.g. a window of 50 ppm means an extraction of 25 ppm on
+     * either side)
+     * @param ppm Whether mz windows in in ppm
+     * @param im_extraction_window Extracts a window of this size in ion mobility
+     * @param filter Which filter to use (bartlett or tophat)
+     *
+     * @note: whenever possible, please use this ChromatogramExtractorAlgorithm implementation
+     *
+    */
+    void extract2DChromatograms(const OpenSwath::SpectrumAccessPtr input,
+                              std::vector<std::array<std::vector<double>, 2>> chrom_list2d,
+                              const std::vector<ExtractionCoordinates>& extraction_coordinates,
+                              double mz_extraction_window,
+                              bool ppm,
+                              double im_extraction_window,
+                              const String& filter) 
+    {
+      ChromatogramExtractorAlgorithm().extract2DChromatograms(input, chrom_list2d, 
+          extraction_coordinates, mz_extraction_window, ppm, im_extraction_window, filter);
+    }
+
+
     /**
      * @brief Prepare the extraction coordinates from a TargetedExperiment
      *

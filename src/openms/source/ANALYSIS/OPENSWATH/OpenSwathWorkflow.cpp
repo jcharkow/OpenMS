@@ -745,8 +745,22 @@ namespace OpenMS
             // Step 2.2: prepare the extraction coordinates and extract chromatograms
             // chrom_list contains one entry for each fragment ion (transition) in transition_exp_used
             prepareExtractionCoordinates_(chrom_list, coordinates, transition_exp_used, trafo_inverse, cp);
-            extractor.extractChromatograms(current_swath_map_inner, chrom_list, coordinates, cp.mz_extraction_window,
+
+
+
+	    if ( ! cp.im_axis ){
+		    std::cout << "Extracting 1D chromatograms" << std::endl;
+		    extractor.extractChromatograms(current_swath_map_inner, chrom_list, coordinates, cp.mz_extraction_window,
+			cp.ppm, cp.im_extraction_window, cp.extraction_function);
+	    } else {
+
+	    std::cout << "Extracting 2D chromatograms" << std::endl;
+
+            std::vector<std::array<std::vector<double>, 2>> chrom_list2d;
+            extractor.extract2DChromatograms(current_swath_map_inner, chrom_list2d, coordinates, cp.mz_extraction_window,
                 cp.ppm, cp.im_extraction_window, cp.extraction_function);
+	    }
+
 
             // Step 2.3: convert chromatograms back to OpenMS::MSChromatogram and write to output
             PeakMap chrom_exp;

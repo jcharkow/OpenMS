@@ -37,6 +37,8 @@
 #include <OpenMS/CONCEPT/ProgressLogger.h>
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/ISpectrumAccess.h>
 
+#include <map>
+
 namespace OpenMS
 {
 
@@ -102,6 +104,31 @@ public:
     */
     void extractChromatograms(const OpenSwath::SpectrumAccessPtr input,
         std::vector< OpenSwath::ChromatogramPtr >& output,
+        const std::vector<ExtractionCoordinates>& extraction_coordinates,
+        double mz_extraction_window,
+        bool ppm,
+        double im_extraction_window,
+        const String& filter);
+
+    /**
+     * @brief Extract chromatograms at the m/z across IM and RT as defined by the ExtractionCoordinates.
+     *
+     * @param input Input spectral map
+     * @param output Output chromatograms (XICs)
+     * @param extraction_coordinates Extracts around these coordinates (from
+     *   rt_start to rt_end in seconds - extracts the whole chromatogram if
+     *   rt_end - rt_start < 0).
+     * @param mz_extraction_window Extracts a window of this size in m/z
+     * dimension in Th or ppm (e.g. a window of 50 ppm means an extraction of
+     * 25 ppm on either side)
+     * @param ppm Whether mz_extraction_window is in ppm or in Th
+     * @param im_extraction_window Full window width (i.e. twice the tolerance) for IM extraction. Must be positive.
+     * @param im_axis whether a 2D chromatogram should be extracted
+     * @param filter Which function to apply in m/z space (currently "tophat" only)
+     *
+    */
+    void extract2DChromatograms(const OpenSwath::SpectrumAccessPtr input,
+        std::vector<std::array<std::vector<double>, 2>>& output,
         const std::vector<ExtractionCoordinates>& extraction_coordinates,
         double mz_extraction_window,
         bool ppm,
@@ -181,12 +208,66 @@ public:
                               const double im_extraction_window,
                               const bool ppm);
 
+    /**
+     * @brief Extraction across IM. integrated_intensities are stored in a map with each key an IM value. 
+     *
+     * This function will sum up all intensities within a
+     * window of mass-to-charge for each IM value. Only signals within a 2D extraction window are recorded. 
+     * mz extraction is defined as mz +/-
+     * mz_extract_window / 2.0. IM extraction is defined as im +/- im_extraction_window / 2.0.
+     *
+     * @param mz_start Start of the spectrum (m/z coordinates)
+     * @param mz_it Current m/z position (will be modified)
+     * @param mz_end End of the spectrum (m/z coordinates)
+     * @param int_it Current intensity position (will be modified)
+     * @param im_it Current ion mobility position (will be modified)
+     * @param mz Target m/z for the current ion
+     * @param im Target ion mobility for the current ion
+     * @param integrated_intensity Resulting intensity (will be overwritten)
+     * @param mz_extraction_window Extracts a window of this size in m/z
+     * dimension (e.g. a window of 50 ppm means an extraction of 25 ppm on
+     * either side)
+     * @param im_extraction_window Extracts a window of this size in ion mobility dimension.
+     * @param ppm Whether the parameter mz_extraction_window is given in ppm or Th
+     *
+     * @note This function will change the position of the iterators mz_it,
+     * int_it and im_it and it can *not* extract any data if the mz-iterator is
+     * already passed the mz value given. It is thus critically important to
+     * provide all mz values to be extracted in ascending order!
+     *
+    */
+    void extract_value_tophat(const std::vector<double>::const_iterator& mz_start,
+                              std::vector<double>::const_iterator& mz_it,
+                              const std::vector<double>::const_iterator& mz_end,
+                              std::vector<double>::const_iterator& int_it,
+                              std::vector<double>::const_iterator& im_it,
+                              const double mz,
+                              const double im,
+                              std::map<double, double> integrated_intensity,
+                              const double mz_extraction_window,
+                              const double im_extraction_window,
+			      const double imThresh,
+                              const bool ppm
+			      );
 private:
+
 
     int getFilterNr_(const String& filter);
 
+protected:
+  /* @breif This is a helper function for extract_value_tophat() signature below for 2D chromatogram
+     @param integrated_intensity 2D chromatogram to add the point to 
+     @param im ion mobility value
+     @param mz m/z value
+     @param intens intensity value
+     @param imThresh points in ion mobility less than this distance away are considered indistiguishable 
+  */
+  void addTo2DChromatogram_(
+                             std::map<double, double> integrated_intensity,
+			     const double im,
+			     const double intens,
+			     const double imThresh
+		  );
+
   };
-
 }
-
-

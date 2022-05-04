@@ -95,6 +95,8 @@ namespace OpenMS
     double rt_extraction_window;
     /// Whether to extract some extra in the retention time (can be useful if one wants to look at the chromatogram outside the window)
     double extra_rt_extract;
+    /// Whether to extract 2D chromatogram across IM and RTY
+    bool im_axis;
   };
 
   class OPENMS_DLLAPI OpenSwathWorkflowBase :
