@@ -922,6 +922,28 @@ protected:
         p.drift_time = im_trafo_inv.apply(p.drift_time);
       }
 
+      // output the modified library, easiest thing to do is to reload the library as a targeted experiment change the IM and output
+      TransitionPQPFile pqp_reader;
+      TargetedExperiment targeted_exp_nonLight;
+      pqp_reader.convertPQPToTargetedExperiment(tr_file.c_str(), targeted_exp_nonLight, true);
+      pqp_reader.validateTargetedExperiment(targeted_exp_nonLight);
+
+
+      std::vector<TargetedExperimentHelper::Compound> compounds = targeted_exp_nonLight.getCompounds();
+
+      for (auto & p : compounds)
+      {
+        p.setDriftTime(-1.0);
+        // p.drift_time = im_trafo_inv.apply(p.drift_time);
+      }
+
+      targeted_exp_nonLight.setCompounds(compounds);
+
+
+      TransitionTSVFile tsv_reader;
+      char out[] = "tmp_lib.tsv";
+      tsv_reader.convertTargetedExperimentToTSV(out, targeted_exp_nonLight);
+
     }
 
     ///////////////////////////////////
