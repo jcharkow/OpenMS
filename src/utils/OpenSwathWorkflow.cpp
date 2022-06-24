@@ -929,16 +929,14 @@ protected:
       pqp_reader.validateTargetedExperiment(targeted_exp_nonLight);
 
 
-      std::vector<TargetedExperimentHelper::Compound> compounds = targeted_exp_nonLight.getCompounds();
+      std::vector<TargetedExperimentHelper::Peptide> peptides = targeted_exp_nonLight.getPeptides();
 
-      for (auto & p : compounds)
+      for (auto & p : peptides)
       {
-        p.setDriftTime(-1.0);
-        // p.drift_time = im_trafo_inv.apply(p.drift_time);
+        p.setDriftTime(im_trafo_inv.apply(p.getDriftTime()));
       }
 
-      targeted_exp_nonLight.setCompounds(compounds);
-
+      targeted_exp_nonLight.setPeptides(peptides);
 
       TransitionTSVFile tsv_reader;
       char out[] = "tmp_lib.tsv";
