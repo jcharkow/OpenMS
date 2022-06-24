@@ -944,6 +944,8 @@ protected:
       char out[] = "tmp_lib.tsv";
       tsv_reader.convertTargetedExperimentToTSV(out, targeted_exp_nonLight);
 
+      exit(0); // For this hack build only want to do the calibration step
+
     }
 
     ///////////////////////////////////
