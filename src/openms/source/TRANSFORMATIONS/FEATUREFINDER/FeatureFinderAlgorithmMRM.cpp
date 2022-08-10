@@ -286,6 +286,26 @@ namespace OpenMS
           // smooth the data
           filter.filter(filter_spec);
 
+          // append and prepend peaks to help with Levenberg-Marquardt algorithm (should ensure that reported RT does not optimize outside of RT range)
+          //TODO replace with more robust algorithm e.g. https://github.com/yixuan/LBFGSpp
+          int origSize = filter_spec.size() / 2;
+          // append peaks
+          for (int i=0; i < origSize; i++){
+            Peak1D new_peak;
+            new_peak.setIntensity(0);
+            new_peak.setMZ(filter_spec.back().getMZ() + dist_average);
+            std::cout << "Adding point" << new_peak.getMZ() << ", " << new_peak.getIntensity();
+            filter_spec.push_back(new_peak);
+          }
+
+          // prepend peaks
+          for (int i=0; i < origSize; i++){
+            Peak1D new_peak;
+            new_peak.setIntensity(0);
+            new_peak.setMZ(filter_spec.front().getMZ() - dist_average);
+            filter_spec.insert(filter_spec.begin(), new_peak);
+          }
+
           // transform the data for fitting and fit RT profile
           std::vector<Peak1D> data_to_fit;
           for (Size j = 0; j != filter_spec.size(); ++j)
