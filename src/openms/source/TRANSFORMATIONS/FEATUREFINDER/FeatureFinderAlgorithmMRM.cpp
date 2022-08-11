@@ -288,22 +288,27 @@ namespace OpenMS
 
           // append and prepend peaks to help with Levenberg-Marquardt algorithm (should ensure that reported RT does not optimize outside of RT range)
           //TODO replace with more robust algorithm e.g. https://github.com/yixuan/LBFGSpp
-          int origSize = filter_spec.size() / 2;
+          size_t zero_padding_size = filter_spec.size() / 2;
           // append peaks
-          for (int i=0; i < origSize; i++){
+          for (size_t i = 0; i < zero_padding_size; i++)
+          {
             Peak1D new_peak;
             new_peak.setIntensity(0);
             new_peak.setMZ(filter_spec.back().getMZ() + dist_average);
-            std::cout << "Adding point" << new_peak.getMZ() << ", " << new_peak.getIntensity();
             filter_spec.push_back(new_peak);
           }
 
           // prepend peaks
-          for (int i=0; i < origSize; i++){
-            Peak1D new_peak;
-            new_peak.setIntensity(0);
-            new_peak.setMZ(filter_spec.front().getMZ() - dist_average);
-            filter_spec.insert(filter_spec.begin(), new_peak);
+          // for performance, so that don't have to insert elements one-by-one add all padding together and then change the retention time
+          // to help with setting retention time values, compute the minimum retention time and increment by dist_average
+          double current_rt = filter_spec.front().getMZ() - (dist_average * zero_padding_size);
+
+          filter_spec.insert(filter_spec.begin(), zero_padding_size, Peak1D());
+          for (size_t i = 0; i < zero_padding_size; i++)
+          {
+            filter_spec[i].setIntensity(0);
+            filter_spec[i].setMZ(current_rt);
+            current_rt += dist_average;
           }
 
           // transform the data for fitting and fit RT profile
