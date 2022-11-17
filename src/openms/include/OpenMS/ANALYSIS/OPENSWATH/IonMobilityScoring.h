@@ -148,7 +148,7 @@ namespace OpenMS
 
 
     /* Alternative added by Josh TODO add documentation */
-    static void driftScoring(const std::vector<OpenSwath::SpectrumPtr>& spectra,
+    MRMTransitionGroupType driftScoringJosh(const std::vector<OpenSwath::SpectrumPtr>& spectra,
                                         const std::vector<TransitionType> & transitions,
                                         OpenSwath_Scores & scores,
                                         const double drift_lower,
@@ -157,8 +157,7 @@ namespace OpenMS
                                         const double dia_extract_window_,
                                         const bool dia_extraction_ppm_,
                                         const bool,  //use_spline
-                                        const double drift_extra,
-                                        MRMTransitionGroupType transitionGroupIm);
+                                        const double drift_extra);
 
 
 

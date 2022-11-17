@@ -187,13 +187,16 @@ namespace OpenMS
     // score drift time dimension
     if ( su_.use_im_scores)
     {
-      MRMTransitionGroupType mobilogramTransitions;
+      std::cout << "--------- START IM SCORING ----------------" << std::endl;
+      IonMobilityScoring imScoring;
 
-      IonMobilityScoring::driftScoring(spectra, transitions, scores,
+
+      MRMTransitionGroupType mobilogramTransitions = imScoring.driftScoringJosh(spectra, transitions, scores,
                                        drift_lower, drift_upper, drift_target,
                                        dia_extract_window_, dia_extraction_ppm_,
-                                       false, im_drift_extra_pcnt_, mobilogramTransitions);
+                                       false, im_drift_extra_pcnt_);
 
+      std::cout << " OSW scoring :: there are " << mobilogramTransitions.getChromatograms().size() << "chromatograms present" << std::endl;
       MRMTransitionGroupPicker trgroup_picker;
       trgroup_picker.pickTransitionGroup(mobilogramTransitions);
 

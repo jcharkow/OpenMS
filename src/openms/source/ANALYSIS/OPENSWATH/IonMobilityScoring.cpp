@@ -242,6 +242,7 @@ namespace OpenMS
     }
 
     res.reserve(res.size() + im_chrom.size());
+    std::cout << "mobilogram is: ";
     for (const auto& k : im_chrom)
     {
       res.emplace_back(k.first / IM_IDX_MULT, k.second );
@@ -249,7 +250,9 @@ namespace OpenMS
       peak.setRT(k.first / IM_IDX_MULT);
       peak.setIntensity(k.second);
       mobilogram.push_back(peak);
+      std::cout << "(" << k.first / IM_IDX_MULT << "," << k.second << ")  ";
     }
+    std::cout << std::endl;
   }
 
   // compute ion mobilogram as well as im weighted average. This is based off of integrateWindows() in DIAHelper.cpp
@@ -557,7 +560,7 @@ namespace OpenMS
     scores.im_ms1_delta = drift_target - im;
   }
 
-  void IonMobilityScoring::driftScoring(const std::vector<OpenSwath::SpectrumPtr>& spectra,
+  MRMTransitionGroupType IonMobilityScoring::driftScoringJosh(const std::vector<OpenSwath::SpectrumPtr>& spectra,
                                         const std::vector<TransitionType> & transitions,
                                         OpenSwath_Scores & scores,
                                         const double drift_lower,
@@ -566,16 +569,16 @@ namespace OpenMS
                                         const double dia_extract_window_,
                                         const bool dia_extraction_ppm_,
                                         const bool,  //use_spline
-                                        const double drift_extra,
-                                        MRMTransitionGroupType transitionGroupIm)
+                                        const double drift_extra)
   {
+    MRMTransitionGroupType transitionGroupIm;
     OPENMS_PRECONDITION(spectra != nullptr, "Spectra cannot be null");
     for (auto s:spectra)
     {
       if (s->getDriftTimeArray() == nullptr)
       {
         OPENMS_LOG_DEBUG << " ERROR: Drift time is missing in ion mobility spectrum!" << std::endl;
-        return;
+        return transitionGroupIm;
       }
     }
 
@@ -615,6 +618,7 @@ namespace OpenMS
       transitionGroupIm.addTransition(transition, transition.getNativeID());
       transitionGroupIm.addChromatogram(psuedoChromatogram, psuedoChromatogram.getNativeID());
 
+
       // TODO what do to about those that have no signal ?
       if (intensity <= 0.0) {continue;} // note: im is -1 then
 
@@ -630,6 +634,7 @@ namespace OpenMS
       // weights += normalized_library_intensity[k];
     }
 
+    std::cout << " drfi scoring :: there are " << transitionGroupIm.getChromatograms().size() << "chromatograms present" << std::endl;
     if (tr_used != 0)
     {
       delta_drift /= tr_used;
@@ -668,7 +673,7 @@ namespace OpenMS
     {
       scores.im_xcorr_coelution_score = 0;
       scores.im_xcorr_shape_score = std::numeric_limits<double>::quiet_NaN();
-      return;
+      return transitionGroupIm;
     }
 
 
@@ -680,6 +685,9 @@ namespace OpenMS
 
     scores.im_xcorr_coelution_score = xcorr_coelution_score;
     scores.im_xcorr_shape_score = xcorr_shape_score;
+
+    return transitionGroupIm;
+    std::cout << " drfi scoring :: there are " << transitionGroupIm.getChromatograms().size() << "chromatograms present" << std::endl;
   }
 
   void IonMobilityScoring::driftScoring(const std::vector<OpenSwath::SpectrumPtr>& spectra,
