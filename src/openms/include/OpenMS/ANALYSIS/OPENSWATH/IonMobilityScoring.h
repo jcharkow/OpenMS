@@ -48,6 +48,48 @@
 
 #include <vector>
 
+
+// Kernel classes
+#include <OpenMS/KERNEL/StandardTypes.h>
+#include <OpenMS/ANALYSIS/MAPMATCHING/TransformationDescription.h>
+#include <OpenMS/KERNEL/FeatureMap.h>
+#include <OpenMS/KERNEL/MRMTransitionGroup.h>
+#include <OpenMS/KERNEL/MRMFeature.h>
+#include <OpenMS/KERNEL/MSSpectrum.h>
+#include <OpenMS/KERNEL/MSChromatogram.h>
+#include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
+
+
+
+// Interfaces
+//#include <OpenMS/INTERFACES/IMSDataConsumer.h>
+
+
+// Kernel and implementations
+//#include <OpenMS/KERNEL/MSExperiment.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/SpectrumAccessOpenMS.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/SpectrumAccessTransforming.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/SpectrumAccessOpenMSInMemory.h>
+
+// Helpers
+//#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathHelper.h>
+// #include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/DataAccessHelper.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/SimpleOpenMSSpectraAccessFactory.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathTSVWriter.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathOSWWriter.h>
+
+// Algorithms
+//#include <OpenMS/ANALYSIS/OPENSWATH/MRMRTNormalizer.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/ChromatogramExtractor.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/MRMFeatureFinderScoring.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/MRMTransitionGroupPicker.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/SwathMapMassCorrection.h>
+//#include <OpenMS/FILTERING/TRANSFORMERS/LinearResamplerAlign.h>
+
+//#include <cassert>
+//#include <limits>
+
+
 namespace OpenMS
 {
 
@@ -66,6 +108,7 @@ namespace OpenMS
   {
     typedef OpenSwath::LightCompound CompoundType;
     typedef OpenSwath::LightTransition TransitionType;
+    typedef MRMTransitionGroup< MSChromatogram, TransitionType> MRMTransitionGroupType;
 
   public:
 
@@ -102,6 +145,22 @@ namespace OpenMS
                              const bool dia_extraction_ppm_,
                              const bool use_spline,
                              const double drift_extra);
+
+
+    /* Alternative added by Josh TODO add documentation */
+    static void driftScoring(const std::vector<OpenSwath::SpectrumPtr>& spectra,
+                                        const std::vector<TransitionType> & transitions,
+                                        OpenSwath_Scores & scores,
+                                        const double drift_lower,
+                                        const double drift_upper,
+                                        const double drift_target,
+                                        const double dia_extract_window_,
+                                        const bool dia_extraction_ppm_,
+                                        const bool,  //use_spline
+                                        const double drift_extra,
+                                        MRMTransitionGroupType transitionGroupIm);
+
+
 
     /**
       @brief Performs scoring of the ion mobility dimension in MS1

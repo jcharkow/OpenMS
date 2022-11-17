@@ -49,6 +49,20 @@
 #include <OpenMS/MATH/STATISTICS/StatisticFunctions.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/SpectrumAddition.h>
 
+
+// Kernel classes
+#include <OpenMS/KERNEL/StandardTypes.h>
+#include <OpenMS/ANALYSIS/MAPMATCHING/TransformationDescription.h>
+#include <OpenMS/KERNEL/FeatureMap.h>
+#include <OpenMS/KERNEL/MRMTransitionGroup.h>
+#include <OpenMS/KERNEL/MRMFeature.h>
+#include <OpenMS/KERNEL/MSSpectrum.h>
+#include <OpenMS/KERNEL/MSChromatogram.h>
+#include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
+
+// Peak Picking
+#include <OpenMS/ANALYSIS/OPENSWATH/MRMTransitionGroupPicker.h>
+
 #include <utility>
 
 namespace OpenMS
@@ -173,12 +187,26 @@ namespace OpenMS
     // score drift time dimension
     if ( su_.use_im_scores)
     {
+      MRMTransitionGroupType mobilogramTransitions;
+
       IonMobilityScoring::driftScoring(spectra, transitions, scores,
                                        drift_lower, drift_upper, drift_target,
                                        dia_extract_window_, dia_extraction_ppm_,
-                                       false, im_drift_extra_pcnt_);
-    }
+                                       false, im_drift_extra_pcnt_, mobilogramTransitions);
 
+      MRMTransitionGroupPicker trgroup_picker;
+      trgroup_picker.pickTransitionGroup(mobilogramTransitions);
+
+
+      std::cout << "Ref    intensity    leftWidth    rightWidth" << std::endl;
+
+      for (auto a:mobilogramTransitions.getFeatures())
+      {
+        //std::cout << "Examining " << i << std::endl;
+        // auto a = mobilogramTransitions.getFeature(i);
+        std::cout << a.getMetaValue("PeptideRef") << "    " << a.getIntensity() << "    " << a.getMetaValue("leftWidth") << "    " << a.getMetaValue("rightWidth") << std::endl;
+      }
+    }
 
     // Mass deviation score
     diascoring.dia_massdiff_score(transitions, spectra, normalized_library_intensity, scores.massdev_score, scores.weighted_massdev_score, masserror_ppm, drift_lower, drift_upper);

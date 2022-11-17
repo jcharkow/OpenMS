@@ -48,6 +48,19 @@
 #include <OpenMS/ANALYSIS/OPENSWATH/SpectrumAddition.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/DIAHelper.h>
 
+
+// Kernel classes
+#include <OpenMS/KERNEL/StandardTypes.h>
+#include <OpenMS/ANALYSIS/MAPMATCHING/TransformationDescription.h>
+#include <OpenMS/KERNEL/FeatureMap.h>
+#include <OpenMS/KERNEL/MRMTransitionGroup.h>
+#include <OpenMS/KERNEL/MRMFeature.h>
+#include <OpenMS/KERNEL/MSSpectrum.h>
+#include <OpenMS/KERNEL/MSChromatogram.h>
+#include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
+
+
+
 // #define DEBUG_IMSCORING
 
 namespace OpenMS
@@ -63,7 +76,9 @@ namespace OpenMS
       intensity(int_)
     {}
   };
+  typedef OpenSwath::LightTransition TransitionType;
   typedef std::vector< MobilityPeak > IonMobilogram;
+  typedef MRMTransitionGroup< MSChromatogram, TransitionType> MRMTransitionGroupType;
 
   std::vector<double> computeGrid(const std::vector< IonMobilogram >& mobilograms, double eps)
   {
@@ -156,6 +171,84 @@ namespace OpenMS
         max_int = pr_it->intensity;
         max_peak_idx = k;
       }
+    }
+  }
+
+  // compute ion mobilogram as well as im weighted average. This is based off of integrateWindows() in DIAHelper.cpp
+  void computeIonMobilogram(std::vector<OpenSwath::SpectrumPtr> spectra,
+                              double mz_start,
+                              double mz_end,
+                              double & im,
+                              double & intensity,
+                              IonMobilogram& res,
+                              double eps,
+                              double drift_start,
+                              double drift_end,
+                              MSChromatogram& mobilogram)
+  {
+
+    // rounding multiplier for the ion mobility value
+    // TODO: how to improve this -- will work up to 42949.67296
+    double IM_IDX_MULT = 1/eps;
+
+    // We need to store all values that map to the same ion mobility in the
+    // same spot in the ion mobilogram (they are not sorted by ion mobility in
+    // the input data), therefore create a map to map to bins.
+    std::map< int, double> im_chrom;
+
+    for (auto spectrum:spectra)
+    {
+      OPENMS_PRECONDITION(spectrum->getDriftTimeArray() != nullptr, "Cannot filter by drift time if no drift time is available.");
+      OPENMS_PRECONDITION(spectrum->getMZArray()->data.size() == spectrum->getIntensityArray()->data.size(), "MZ and Intensity array need to have the same length.");
+      OPENMS_PRECONDITION(spectrum->getMZArray()->data.size() == spectrum->getDriftTimeArray()->data.size(), "MZ and Drift Time array need to have the same length.");
+
+      auto mz_arr_end = spectrum->getMZArray()->data.end();
+      auto int_it = spectrum->getIntensityArray()->data.begin();
+      auto im_it = spectrum->getDriftTimeArray()->data.begin();
+
+      // this assumes that the spectra are sorted!
+      auto mz_it = std::lower_bound(spectrum->getMZArray()->data.begin(), mz_arr_end, mz_start);
+      // auto mz_it_end = std::lower_bound(mz_it, mz_arr_end, mz_end);
+
+      // also advance intensity and ion mobility iterator now
+      auto iterator_pos = std::distance(spectrum->getMZArray()->data.begin(), mz_it);
+      std::advance(int_it, iterator_pos);
+      std::advance(im_it, iterator_pos);
+
+      // Start iteration from mz start, end iteration when mz value is larger than mz_end, only store only storing ion mobility values that are in the range
+      while ( ( *mz_it < mz_end ) && (mz_it < mz_arr_end) )
+      {
+        if ( *im_it >= drift_start && *im_it <= drift_end)
+        {
+          intensity += (*int_it);
+          im += (*int_it) * (*im_it);
+          im_chrom[ int((*im_it)*IM_IDX_MULT) ] += *int_it;
+        }
+        ++mz_it;
+        ++int_it;
+        ++im_it;
+      }
+    }
+
+    // compute the weighted average ion mobility
+    if (intensity > 0.)
+    {
+      im /= intensity;
+    }
+    else
+    {
+      im = -1;
+      intensity = 0;
+    }
+
+    res.reserve(res.size() + im_chrom.size());
+    for (const auto& k : im_chrom)
+    {
+      res.emplace_back(k.first / IM_IDX_MULT, k.second );
+      ChromatogramPeak peak;
+      peak.setRT(k.first / IM_IDX_MULT);
+      peak.setIntensity(k.second);
+      mobilogram.push_back(peak);
     }
   }
 
@@ -462,6 +555,131 @@ namespace OpenMS
     // Calculate the difference of the theoretical ion mobility and the actually measured ion mobility
     scores.im_ms1_delta_score = fabs(drift_target - im);
     scores.im_ms1_delta = drift_target - im;
+  }
+
+  void IonMobilityScoring::driftScoring(const std::vector<OpenSwath::SpectrumPtr>& spectra,
+                                        const std::vector<TransitionType> & transitions,
+                                        OpenSwath_Scores & scores,
+                                        const double drift_lower,
+                                        const double drift_upper,
+                                        const double drift_target,
+                                        const double dia_extract_window_,
+                                        const bool dia_extraction_ppm_,
+                                        const bool,  //use_spline
+                                        const double drift_extra,
+                                        MRMTransitionGroupType transitionGroupIm)
+  {
+    OPENMS_PRECONDITION(spectra != nullptr, "Spectra cannot be null");
+    for (auto s:spectra)
+    {
+      if (s->getDriftTimeArray() == nullptr)
+      {
+        OPENMS_LOG_DEBUG << " ERROR: Drift time is missing in ion mobility spectrum!" << std::endl;
+        return;
+      }
+    }
+
+    double eps = 1e-5; // eps for two grid cells to be considered equal
+
+    double drift_width = fabs(drift_upper - drift_lower);
+    double drift_lower_used = drift_lower - drift_width * drift_extra;
+    double drift_upper_used = drift_upper + drift_width * drift_extra;
+
+    double delta_drift = 0;
+    double delta_drift_abs = 0;
+    // IonMobilogram: a data structure that holds points <im_value, intensity>
+    std::vector< IonMobilogram > mobilograms;
+    double computed_im = 0;
+    double computed_im_weighted = 0;
+    double sum_intensity = 0;
+    int tr_used = 0;
+    std::vector<MSChromatogram> psuedoChromatograms;
+
+    // Step 1: MS2 extraction
+    for (std::size_t k = 0; k < transitions.size(); k++)
+    {
+      const TransitionType transition = transitions[k];
+      IonMobilogram res;
+      double im(0), intensity(0);
+
+      // Calculate the difference of the theoretical ion mobility and the actually measured ion mobility
+      double left(transition.getProductMZ()), right(transition.getProductMZ());
+      DIAHelpers::adjustExtractionWindow(right, left, dia_extract_window_, dia_extraction_ppm_);
+      MSChromatogram psuedoChromatogram;
+      computeIonMobilogram(spectra, left, right, im, intensity, res, eps, drift_lower_used, drift_upper_used, psuedoChromatogram);
+      // computeIonMobilogram(spectra, left, right, im, intensity, res, eps, drift_lower_used, drift_upper_used);
+      mobilograms.push_back(res);
+
+      psuedoChromatogram.setNativeID(transition.getNativeID());
+      psuedoChromatogram.setMetaValue("product_mz", transition.getProductMZ());
+      transitionGroupIm.addTransition(transition, transition.getNativeID());
+      transitionGroupIm.addChromatogram(psuedoChromatogram, psuedoChromatogram.getNativeID());
+
+      // TODO what do to about those that have no signal ?
+      if (intensity <= 0.0) {continue;} // note: im is -1 then
+
+      tr_used++;
+
+      delta_drift_abs += fabs(drift_target - im);
+      delta_drift += drift_target - im;
+      OPENMS_LOG_DEBUG << "  -- have delta drift time " << fabs(drift_target -im ) << " with im " << im << std::endl;
+      computed_im += im;
+      computed_im_weighted += im * intensity;
+      sum_intensity += intensity;
+      // delta_drift_weighted += delta_drift * normalized_library_intensity[k];
+      // weights += normalized_library_intensity[k];
+    }
+
+    if (tr_used != 0)
+    {
+      delta_drift /= tr_used;
+      delta_drift_abs /= tr_used;
+      computed_im /= tr_used;
+      computed_im_weighted /= sum_intensity;
+    }
+    else
+    {
+      delta_drift = -1;
+      delta_drift_abs = -1;
+      computed_im = -1;
+      computed_im_weighted = -1;
+    }
+
+    OPENMS_LOG_DEBUG << " Scoring delta drift time " << delta_drift << std::endl;
+    OPENMS_LOG_DEBUG << " Scoring weighted delta drift time " << computed_im_weighted << " -> get difference " << std::fabs(computed_im_weighted - drift_target)<< std::endl;
+    scores.im_delta_score = delta_drift_abs;
+    scores.im_delta = delta_drift;
+    scores.im_drift = computed_im;
+    scores.im_drift_weighted = computed_im_weighted;
+
+    // Step 2: Align the IonMobilogram vectors to the grid
+    std::vector<double> im_grid = computeGrid(mobilograms, eps);
+    std::vector< std::vector< double > > aligned_mobilograms;
+    for (const auto & mobilogram : mobilograms)
+    {
+      std::vector< double > arr_int, arr_IM;
+      Size max_peak_idx = 0;
+      alignToGrid(mobilogram, im_grid, arr_int, arr_IM, eps, max_peak_idx);
+      if (!arr_int.empty()) aligned_mobilograms.push_back(arr_int);
+    }
+
+    // Step 3: Compute cross-correlation scores based on ion mobilograms
+    if (aligned_mobilograms.size() < 2)
+    {
+      scores.im_xcorr_coelution_score = 0;
+      scores.im_xcorr_shape_score = std::numeric_limits<double>::quiet_NaN();
+      return;
+    }
+
+
+    OpenSwath::MRMScoring mrmscore_;
+    mrmscore_.initializeXCorrMatrix(aligned_mobilograms);
+
+    double xcorr_coelution_score = mrmscore_.calcXcorrCoelutionScore();
+    double xcorr_shape_score = mrmscore_.calcXcorrShapeScore(); // can be nan!
+
+    scores.im_xcorr_coelution_score = xcorr_coelution_score;
+    scores.im_xcorr_shape_score = xcorr_shape_score;
   }
 
   void IonMobilityScoring::driftScoring(const std::vector<OpenSwath::SpectrumPtr>& spectra,

@@ -49,6 +49,19 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
+
+// Kernel classes
+#include <OpenMS/KERNEL/StandardTypes.h>
+#include <OpenMS/ANALYSIS/MAPMATCHING/TransformationDescription.h>
+#include <OpenMS/KERNEL/FeatureMap.h>
+#include <OpenMS/KERNEL/MRMTransitionGroup.h>
+#include <OpenMS/KERNEL/MRMFeature.h>
+#include <OpenMS/KERNEL/MSSpectrum.h>
+#include <OpenMS/KERNEL/MSChromatogram.h>
+#include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
+
+
+
 namespace OpenMS
 {
   /** @brief A class that calls the scoring routines
@@ -60,6 +73,7 @@ namespace OpenMS
   {
     typedef OpenSwath::LightCompound CompoundType;
     typedef OpenSwath::LightTransition TransitionType;
+    typedef MRMTransitionGroup< MSChromatogram, TransitionType> MRMTransitionGroupType;
 
     double rt_normalization_factor_;
     double spacing_for_spectra_resampling_;
