@@ -39,6 +39,7 @@
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/TransitionExperiment.h>
 
 #include <OpenMS/DATASTRUCTURES/DefaultParamHandler.h>
+#include <OpenMS/CHEMISTRY/ISOTOPEDISTRIBUTION/IsotopeDistribution.h>
 
 namespace OpenMS
 {
@@ -77,7 +78,23 @@ public:
 
       Simulate theoretical spectrum from library intensities of transition group
       and compute manhattan distance and dotprod score between spectrum intensities
-      and simulated spectrum.
+      and simulated spectrum. Isotopic Pattern is precomputed.
+    */
+    void score(std::vector<OpenSwath::SpectrumPtr>& spec,
+               std::vector<IsotopeDistribution>& isotope_dist,
+               const std::vector<OpenSwath::LightTransition>& lt,
+               double& dotprod,
+               double& manhattan,
+               double drift_start,
+               double drift_end) const;
+
+
+    /**
+      @brief Score a spectrum given a transition group.
+
+      Simulate theoretical spectrum from library intensities of transition group
+      and compute manhattan distance and dotprod score between spectrum intensities
+      and simulated spectrum. Isotopic pattern is not precomputed
     */
     void score(std::vector<OpenSwath::SpectrumPtr>& spec,
                const std::vector<OpenSwath::LightTransition>& lt,
@@ -93,8 +110,17 @@ public:
     void operator()(const OpenSwath::SpectrumAccessPtr& swath_ptr,
                     OpenSwath::LightTargetedExperiment& transition_exp_used,
                     OpenSwath::IDataFrameWriter* ivw, double drift_start, double drift_end) const;
+
+private:
+
+    void scoreHelper_(std::vector<OpenSwath::SpectrumPtr>& spec,
+                      const std::vector<OpenSwath::LightTransition>& lt,
+                      double& dotprod,
+                      double& manhattan,
+                      double drift_start,
+                      double drift_end,
+                      std::vector<std::pair<double, double> >& spectrumWIso) const;
+
   };
-
-
 }
 

@@ -130,6 +130,13 @@ namespace OpenMS
                                          const int nr_isotopes = 4,
                                          const double mannmass = 1.00048);
 
+    // get averagine distribution given mass, cached isotopic distribution
+    OPENMS_DLLAPI void getAveragineIsotopeDistribution(const double product_mz,
+                                                       IsotopeDistribution isotopeDist,
+                                                       std::vector<std::pair<double, double> >& isotopes_spec,
+                                                       const int charge = 1,
+                                                       const double mannmass = 1.00048);
+
     /// simulate spectrum from AASequence
     OPENMS_DLLAPI void simulateSpectrumFromAASequence(const AASequence& aa,
                                         std::vector<double>& first_isotope_masses, //[out]
@@ -169,6 +176,11 @@ namespace OpenMS
     OPENMS_DLLAPI void addSinglePeakIsotopes2Spec(double mz, double ity,
                                                   std::vector<std::pair<double, double> >& isotope_masses, //[out]
                                                   Size nr_isotopes, int charge);
+
+    /// given a peak of experimental mz and intensity, add averagine isotope pattern to a "spectrum".
+    /// Old + new peaks are pushed to @p isotopeMasses
+    /// Theoretical isotope distribution is cached in isotopeDistribution
+    OPENMS_DLLAPI void addSinglePeakIsotopes2Spec(double mz, int charge, double ity, IsotopeDistribution isotopeDistribution, std::vector<std::pair<double, double> >& isotope_masses);
 
     /// sorts vector of pairs by first
     OPENMS_DLLAPI void sortByFirst(std::vector<std::pair<double, double> >& tmp);

@@ -41,6 +41,7 @@
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/DataStructures.h>
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/ITransition.h>
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/TransitionExperiment.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathScores.h>
 
 namespace OpenMS
 {
@@ -107,13 +108,16 @@ public:
     ///@name DIA Scores
     //@{
     /// Isotope scores, see class description
+    /*
     void dia_isotope_scores(const std::vector<TransitionType>& transitions,
                             std::vector<SpectrumPtrType>& spectrum,
+                            const IsotopeDistribution& isotope_dist,
                             OpenSwath::IMRMFeature* mrmfeature,
                             double& isotope_corr,
                             double& isotope_overlap,
 			    double drift_lower,
 			    double drift_upper) const;
+                            */
 
     /// Massdiff scores, see class description
     void dia_massdiff_score(const std::vector<TransitionType>& transitions,
@@ -147,13 +151,24 @@ public:
     void dia_by_ion_score(const std::vector<SpectrumPtrType>& spectrum, AASequence& sequence,
                           int charge, double& bseries_score, double& yseries_score, double drift_start, double drift_end) const;
 
+    // Dotprouct / Manhattan score with theoretical spectrum as well as isotope scores
+    void ms2_isotope_scoring(const std::vector<TransitionType>& transitions,
+                             std::vector<SpectrumPtrType>& spectrum,
+                             OpenSwath::IMRMFeature* mrmfeature,
+                             OpenSwath_Scores& scores,
+                             double drift_start,
+                             double drift_end) const;
+
+    ///
     /// Dotproduct / Manhattan score with theoretical spectrum
+    /*
     void score_with_isotopes(std::vector<SpectrumPtrType>& spectrum,
                              const std::vector<TransitionType>& transitions,
                              double& dotprod,
                              double& manhattan,
                              double drift_start,
                              double drift_end) const;
+    */
     //@}
 
 private:
@@ -170,6 +185,7 @@ private:
     /// Subfunction of dia_isotope_scores
     void diaIsotopeScoresSub_(const std::vector<TransitionType>& transitions,
                               const std::vector<SpectrumPtrType>& spectrum,
+                              const std::vector<IsotopeDistribution>& isotope_dist,
                               std::map<std::string, double>& intensities,
                               double& isotope_corr,
                               double& isotope_overlap, double drift_start, double drift_end) const;

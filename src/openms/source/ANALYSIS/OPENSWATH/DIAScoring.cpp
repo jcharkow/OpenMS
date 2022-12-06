@@ -47,6 +47,7 @@
 
 #include <OpenMS/CHEMISTRY/TheoreticalSpectrumGenerator.h>
 #include <OpenMS/MATH/MISC/MathFunctions.h> // getPPM
+#include <OpenMS/TRANSFORMATIONS/FEATUREFINDER/FeatureFinderAlgorithmPickedHelperStructs.h> //for TheoreticalIsotopePattern
 
 #include <numeric>
 #include <algorithm>
@@ -125,8 +126,8 @@ namespace OpenMS
 
   ///////////////////////////////////////////////////////////////////////////
   // DIA / SWATH scoring
-
-  void DIAScoring::dia_isotope_scores(const std::vector<TransitionType>& transitions, std::vector<SpectrumPtrType>& spectrum,
+/*
+  void DIAScoring::dia_isotope_scores(const std::vector<TransitionType>& transitions, std::vector<SpectrumPtrType>& spectrum, const IsotopeDistribution& isotope_dist,
                                       OpenSwath::IMRMFeature* mrmfeature, double& isotope_corr, double& isotope_overlap, double drift_start, double drift_end) const
   {
     isotope_corr = 0;
@@ -134,8 +135,9 @@ namespace OpenMS
     // first compute a map of relative intensities from the feature, then compute the score
     std::map<std::string, double> intensities;
     getFirstIsotopeRelativeIntensities_(transitions, mrmfeature, intensities);
-    diaIsotopeScoresSub_(transitions, spectrum, intensities, isotope_corr, isotope_overlap, drift_start, drift_end);
+    diaIsotopeScoresSub_(transitions, spectrum, isotope_dist, intensities, isotope_corr, isotope_overlap, drift_start, drift_end);
   }
+  */
 
   void DIAScoring::dia_massdiff_score(const std::vector<TransitionType>& transitions,
                                       const std::vector<SpectrumPtrType>& spectrum,
@@ -301,12 +303,56 @@ namespace OpenMS
     }
   }
 
+  void DIAScoring::ms2_isotope_scoring(const std::vector<TransitionType>& transitions, std::vector<SpectrumPtrType>& spectrum, OpenSwath::IMRMFeature* mrmfeature, OpenSwath_Scores& scores, double drift_start, double drift_end) const
+  {
+    typedef OpenMS::FeatureFinderAlgorithmPickedHelperStructs::TheoreticalIsotopePattern TheoreticalIsotopePattern;
+    // cycle through all transitions and get their theoretical isotope distribution, store the distribution in a "spectrum" mz, and intensity in a pair
+    std::vector<IsotopeDistribution> isotopesDistAllTransitions;
+    for (size_t i=0; i < transitions.size(); i++)
+    {
+      int charge = std::abs(transitions[i].getProductChargeState());
+      CoarseIsotopePatternGenerator solver(dia_nr_isotopes_ + 1);
+      TheoreticalIsotopePattern isotopes;
+      //Note: this is a rough estimate of the weight, usually the protons should be deducted first, left for backwards compatibility.
+      isotopesDistAllTransitions.push_back(solver.estimateFromPeptideWeight(transitions[i].getProductMZ() * charge));
+    }
+
+    // compute the prescoring scores
+    std::cout << std::endl;
+    std::cout << "JOSH computing..!" << std::endl;
+
+    //TODO why this inconsistency, but we want to take off the last point of every isotope distribution as this score should have dia_nr_isotopes (instead of dia_nr_isotopes + 1)
+    //
+    //seems that getting more numerical inaccuracy??
+    /*
+    for (size_t i; i<isotopesDistAllTransitions.size(); i++)
+    {
+      auto s = isotopesDistAllTransitions[i].getContainer();
+      std::cout << "original size: " << s.size() << std::endl;
+      s.pop_back();
+      std::cout << "new size: " << s.size() << std::endl;
+      isotopesDistAllTransitions[i].set(s);
+    }
+    */
+    std::cout << "new size: " << isotopesDistAllTransitions[0].size();
+    OpenMS::DiaPrescore dp(dia_extract_window_, dia_nr_isotopes_, dia_nr_charges_);
+    dp.score(spectrum, isotopesDistAllTransitions, transitions, scores.dotprod_score_dia, scores.manhatt_score_dia, drift_start, drift_end);
+
+    // first compute a map of relative intensities from the feature, then compute the score
+    std::map<std::string, double> intensities;
+    getFirstIsotopeRelativeIntensities_(transitions, mrmfeature, intensities);
+
+    diaIsotopeScoresSub_(transitions, spectrum, isotopesDistAllTransitions, intensities, scores.isotope_correlation, scores.isotope_overlap, drift_start, drift_end);
+  }
+
+  /*
   void DIAScoring::score_with_isotopes(std::vector<SpectrumPtrType>& spectrum, const std::vector<TransitionType>& transitions,
                                        double& dotprod, double& manhattan, double drift_start, double drift_end) const
   {
     OpenMS::DiaPrescore dp(dia_extract_window_, dia_nr_isotopes_, dia_nr_charges_);
     dp.score(spectrum, transitions, dotprod, manhattan, drift_start, drift_end);
   }
+  */
 
   ///////////////////////////////////////////////////////////////////////////
   // Private methods
@@ -325,6 +371,7 @@ namespace OpenMS
   }
 
   void DIAScoring::diaIsotopeScoresSub_(const std::vector<TransitionType>& transitions, const std::vector<SpectrumPtrType>& spectrum,
+                                        const std::vector<IsotopeDistribution>& isotope_dist,
                                         std::map<std::string, double>& intensities, //relative intensities
                                         double& isotope_corr,
                                         double& isotope_overlap,
@@ -362,7 +409,9 @@ namespace OpenMS
 
       // calculate the scores:
       // isotope correlation (forward) and the isotope overlap (backward) scores
-      double score = scoreIsotopePattern_(isotopes_int, transitions[k].getProductMZ(), putative_fragment_charge);
+      double score = scoreIsotopePattern_(isotopes_int, isotope_dist[k]);
+
+      //double score = scoreIsotopePattern_(isotopes_int, transitions[k].getProductMZ(), putative_fragment_charge);
       isotope_corr += score * rel_intensity;
       largePeaksBeforeFirstIsotope_(spectrum, transitions[k].getProductMZ(), isotopes_int[0], nr_occurences, max_ratio, drift_start, drift_end);
       isotope_overlap += nr_occurences * rel_intensity;

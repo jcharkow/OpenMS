@@ -53,6 +53,7 @@
 #include <OpenMS/ANALYSIS/OPENSWATH/MRMScoring.h>
 #include <OpenMS/OPENSWATHALGO/ALGO/Scoring.h>
 
+#include "OpenMS/ANALYSIS/OPENSWATH/OpenSwathScores.h"
 ///////////////////////////
 
 
@@ -138,6 +139,7 @@ END_SECTION
 // dia_isotope_scores
 // dia_massdiff_score
 // dia_by_ion_score
+
 START_SECTION((virtual void test_dia_scores()))
 {
   OpenSWATH_Test::MRMTransitionGroupType transition_group;
@@ -166,6 +168,7 @@ START_SECTION((virtual void test_dia_scores()))
 
   OpenSwath::MRMScoring mrmscore;
   DIAScoring diascoring;
+
   // diascoring.set_dia_parameters(0.05, false, 30, 50, 4, 4); // here we use 50 ppm and a cutoff of 30 in intensity -- because our peptide does not match with the testdata :-)
   Param p_dia = diascoring.getDefaults();
   p_dia.setValue("dia_extraction_window", 0.05);
@@ -196,12 +199,14 @@ START_SECTION((virtual void test_dia_scores()))
   imrmfeature = new MRMFeatureOpenMS(mrmfeature);
   // We have to reorder the transitions to make the tests work
   std::vector<OpenSWATH_Test::TransitionType> transitions = transition_group.getTransitions();
-  double isotope_corr = 0, isotope_overlap = 0;
 
   std::vector<OpenSwath::SpectrumPtr> sptrArr;
   sptrArr.push_back(sptr);
 
-  diascoring.dia_isotope_scores(transitions, sptrArr, imrmfeature, isotope_corr, isotope_overlap, -1, -1);
+
+  OpenSwath_Scores scores;
+
+  diascoring.ms2_isotope_scoring(transitions, sptrArr, imrmfeature, scores, -1, -1);
 
   delete imrmfeature;
 
@@ -217,9 +222,10 @@ START_SECTION((virtual void test_dia_scores()))
   OpenMS::AASequence aas = AASequence::fromString(sequence);
   diascoring.dia_by_ion_score(sptrArr, aas, by_charge_state, bseries_score, yseries_score, -1, -1);
 
-  TEST_REAL_SIMILAR(isotope_corr, 0.2866618 * transition_group.getTransitions().size() )
-  TEST_REAL_SIMILAR(isotope_corr, 0.85998565339479)
-  TEST_REAL_SIMILAR(isotope_overlap, 0.0599970892071724)
+  TEST_REAL_SIMILAR(scores.isotope_correlation, 0.2866618 * transition_group.getTransitions().size() )
+  TEST_REAL_SIMILAR(scores.isotope_correlation, 0.85998565339479)
+  TEST_REAL_SIMILAR(scores.isotope_overlap, 0.0599970892071724)
+
 
   TEST_REAL_SIMILAR(ppm_score, 1.76388919944981 / 3)
   TEST_REAL_SIMILAR(ppm_score_weighted, 0.484116946070573)
@@ -241,6 +247,7 @@ START_SECTION((virtual void test_dia_scores()))
   TEST_EQUAL(yseries_score, 1)
 }
 END_SECTION
+
 
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////

@@ -185,9 +185,13 @@ namespace OpenMS
 
     //TODO this score and the next, both rely on the CoarseIsotope of the PeptideAveragine. Maybe we could
     // DIA dotproduct and manhattan score based on library intensity and sum formula if present
+    //
+    // Compute DIA Isotope Scores here so does not have to be computed twice
     if (su_.use_ms2_isotope_scores)
     {
-      diascoring.score_with_isotopes(spectra, transitions, scores.dotprod_score_dia, scores.manhatt_score_dia, drift_lower, drift_upper);
+      diascoring.ms2_isotope_scoring(transitions, spectra, imrmfeature, scores, drift_lower, drift_upper);
+
+      //diascoring.score_with_isotopes(spectra, transitions, scores.dotprod_score_dia, scores.manhatt_score_dia, drift_lower, drift_upper);
 
       // Isotope correlation / overlap score: Is this peak part of an
       // isotopic pattern or is it the monoisotopic peak in an isotopic
@@ -195,8 +199,10 @@ namespace OpenMS
       // Currently this is computed for an averagine model of a peptide so its
       // not optimal for metabolites - but better than nothing, given that for
       // most fragments we don't really know their composition
+      /*
       diascoring
           .dia_isotope_scores(transitions, spectra, imrmfeature, scores.isotope_correlation, scores.isotope_overlap, drift_lower, drift_upper);
+      */
     }
 
     // Peptide-specific scores (only useful, when product transitions are REAL fragments, e.g. not in FFID)

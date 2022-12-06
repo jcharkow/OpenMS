@@ -135,6 +135,7 @@ namespace OpenMS
     } //end of for loop over spectra
   }
 
+
   void DiaPrescore::score(std::vector<OpenSwath::SpectrumPtr>& spec,
                           const std::vector<OpenSwath::LightTransition>& lt,
                           double& dotprod,
@@ -143,20 +144,85 @@ namespace OpenMS
                           double drift_end) const
   {
     std::vector<std::pair<double, double> > res;
-    std::vector<std::pair<double, double> > spectrumWIso, spectrumWIsoNegPreIso;
+
     int chg;
     // add expected isotope intensities for every transition productMZ based on averagine
     //TODO allow usage of annotated formulas from transition.compound.sum_formula
+    std::vector<std::pair<double, double> > spectrumWIso;
+
     for (const auto& transition : lt)
     {
       chg = 1;
       if (transition.fragment_charge != 0) chg = transition.fragment_charge;
+      std::cout << "Transition Fragment Charge is: " << std::endl;
       DIAHelpers::addSinglePeakIsotopes2Spec(transition.getProductMZ(),
                                              transition.getLibraryIntensity(),
                                              spectrumWIso,
                                              nr_isotopes_,
                                              chg);
+
+      std::cout << "spectrum with iso points are: ";
+      for (auto i: spectrumWIso)
+      {
+        std::cout << i.first << "   ";
+      }
+      std::cout << std::endl;
     }
+
+    // now that have the theoretical spectrum call the helper function
+    scoreHelper_(spec, lt, dotprod, manhattan, drift_start, drift_end, spectrumWIso);
+  }
+
+
+
+  void DiaPrescore::score(std::vector<OpenSwath::SpectrumPtr>& spec,
+                          std::vector<IsotopeDistribution>& isotope_dist,
+                          const std::vector<OpenSwath::LightTransition>& lt,
+                          double& dotprod,
+                          double& manhattan,
+                          double drift_start,
+                          double drift_end) const
+  {
+
+    std::cout << "JOSH starting diaPrescore!" << std::endl;
+    std::vector<std::pair<double, double> > res;
+
+    int chg, transChg; // chg is charge state will feed to function, transChg is the charge state stored in the transition
+
+    // add expected isotope intensities for every transition productMZ based on averagine
+    //TODO allow usage of annotated formulas from transition.compound.sum_formula
+    std::vector<std::pair<double, double> > spectrumWIso;
+
+    // Store all isotopic infomation in a single spectrum, multiply by spectrum Intensity
+    for (size_t transitionIdx=0; transitionIdx < lt.size(); transitionIdx++)
+    {
+      // copy current theoretical spec to spectrumWIso
+      chg = 1;
+      transChg = lt[transitionIdx].getProductChargeState();
+      if (transChg != 0) chg = transChg;
+      std::cout << "Transition Fragment Charge is: " << chg << std::endl;
+      DIAHelpers::addSinglePeakIsotopes2Spec(lt[transitionIdx].getProductMZ(), chg, lt[transitionIdx].getLibraryIntensity(), isotope_dist[transitionIdx], spectrumWIso);
+      std::cout << "spectrum with iso points are: ";
+      for (auto i: spectrumWIso)
+      {
+        std::cout << "(" << i.first << "," << i.second << ")   ";
+      }
+      std::cout << std::endl;
+
+    }
+
+    // once fetch the theoretical spectra in proper format, call the helper function
+    scoreHelper_(spec, lt, dotprod, manhattan, drift_start, drift_end, spectrumWIso);
+  }
+
+  void DiaPrescore::scoreHelper_(std::vector<OpenSwath::SpectrumPtr>& spec, const std::vector<OpenSwath::LightTransition>& lt, double& dotprod, double& manhattan, double drift_start, double drift_end, std::vector<std::pair<double, double> >& spectrumWIso) const
+  {
+    std::vector<std::pair<double, double> > res;
+    int chg;
+    // add expected isotope intensities for every transition productMZ based on averagine
+    //TODO allow usage of annotated formulas from transition.compound.sum_formula
+    std::vector<std::pair<double, double> > spectrumWIsoNegPreIso;
+
     // duplicate since we will add differently weighted preIsotope intensities
     spectrumWIsoNegPreIso.reserve(spectrumWIso.size());
     std::copy(spectrumWIso.begin(), spectrumWIso.end(), back_inserter(spectrumWIsoNegPreIso));

@@ -389,7 +389,7 @@ namespace OpenMS::DIAHelpers
       }
     } // end getBYSeries
 
-    void  getAveragineIsotopeDistribution(const double product_mz,
+    void getAveragineIsotopeDistribution(const double product_mz,
                                          std::vector<std::pair<double, double> >& isotopes_spec,
                                          int charge,
                                          const int nr_isotopes,
@@ -403,13 +403,18 @@ namespace OpenMS::DIAHelpers
       //Note: this is a rough estimate of the weight, usually the protons should be deducted first, left for backwards compatibility.
       auto d = solver.estimateFromPeptideWeight(product_mz * charge);
 
+      getAveragineIsotopeDistribution(product_mz, d, isotopes_spec, charge, mannmass);
+     }
+
+    void getAveragineIsotopeDistribution(const double product_mz, IsotopeDistribution isotopeDist, std::vector<std::pair<double, double> >& isotopes_spec, const int charge, const double mannmass)
+    {
       double mass = product_mz;
-      for (IsotopeDistribution::Iterator it = d.begin(); it != d.end(); ++it)
+      for (IsotopeDistribution::Iterator it = isotopeDist.begin(); it != isotopeDist.end(); ++it)
       {
         isotopes_spec.emplace_back(mass, it->getIntensity());
         mass += mannmass / charge;
       }
-    } //end of dia_isotope_corr_sub
+    }
 
     //simulate spectrum from AASequence
     void simulateSpectrumFromAASequence(const AASequence& aa,
@@ -440,6 +445,20 @@ namespace OpenMS::DIAHelpers
           isotopes[j].second *= spec[i].second; //multiple isotope intensity by spec intensity
           isotope_masses.push_back(isotopes[j]);
         }
+      }
+    }
+
+    /// given a peak of experimental mz and intensity, add isotope pattern to a "spectrum".
+    // given an theoretical istope distribution (isotopes) add it to the spectrum (isotope_masses)
+    // isotopeDistribution is cahced from previous calculation
+    void addSinglePeakIsotopes2Spec(double mz, int charge, double ity, IsotopeDistribution isotopeDistribution, std::vector<std::pair<double, double> >& isotope_masses) //[out]
+    {
+      std::vector<std::pair<double, double> > isotopes;
+      getAveragineIsotopeDistribution(mz, isotopeDistribution, isotopes, charge);
+      for (Size j = 0; j < isotopes.size(); ++j)
+      {
+        isotopes[j].second *= ity; //multiple isotope intensity by spec intensity
+        isotope_masses.push_back(isotopes[j]);
       }
     }
 
