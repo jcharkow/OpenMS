@@ -39,6 +39,7 @@ set(sources_list
   TargetedSpectraExtractor.cpp
   TransitionTSVFile.cpp
   TransitionPQPFile.cpp
+  OpenSwathIsotopeGeneratorCacher.cpp
 )
 
 ### add path to the filenames

@@ -57,20 +57,20 @@ namespace OpenMS
 
 
 
-    std::map<double, IsotopeDistribution> cachedDistributions_;
     double massStep_; // step between adjacent isotope distributions
     double halfMassStep_; // cached value of half of the mass step
     CoarseIsotopePatternGenerator solver_; // used for computing the isotope distributions
-
+    std::map<double, IsotopeDistribution> cachedIsotopeDistributions_;
 
   public:
 
     OpenSwathIsotopeGeneratorCacher(const Size max_isotope, const double massStep, const bool round_masses = false):
-      solver_(max_isotope, round_masses),
       massStep_(massStep),
-      halfMassStep_(massStep / 2.0)
+      halfMassStep_(massStep / 2.0),
+      solver_(max_isotope, round_masses),
+      cachedIsotopeDistributions_()
     {
-    }
+    };
 
     /// Destructor
     ~OpenSwathIsotopeGeneratorCacher();
@@ -81,13 +81,12 @@ namespace OpenMS
      *
      * Sets the parameters for the scoring.
      *
-     * @param mzStart - start mz to generate a theoretical isotope distribtuion
-     * @param mzEnd - end mz to generate a theoretical isotope distribtuion
-     * @param mzStep - step between precursor mz for isotope distribution
+     * @param massStart - start mz to generate a theoretical isotope distribtuion
+     * @param massEnd - end mz to generate a theoretical isotope distribtuion
+     * @param massStep - step between precursor mz for isotope distribution
      *
     */
-    void initialize(double mzStart,
-                    int mzEnd);
+    void initialize(double massStart, double massEnd, double massStep);
 
     double getMassStep();
 
@@ -116,8 +115,8 @@ namespace OpenMS
      * charge - charge of mz
      * mannmass - ???
      */
-    IsotopeDistribution get(double mz, int charge, const double mannmass = 1.00048) const;
-
+    //std::vector<std::pair<double, double>>  get(double mz, int charge, const double mannmass = 1.00048) const;
+    std::vector<std::pair<double, double>> get(double mz, int charge, const double mannmass = 1.00048);
   };
 }
 
