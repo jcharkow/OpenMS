@@ -82,7 +82,7 @@ namespace OpenMS
      * Sets the parameters for the scoring.
      *
      * @param massStart - start mz to generate a theoretical isotope distribtuion
-     * @param massEnd - end mz to generate a theoretical isotope distribtuion
+     * @param massEnd - end mz to generate a theoretical isotope distribtuion (non inclusive)
      * @param massStep - step between precursor mz for isotope distribution
      *
     */
@@ -95,6 +95,12 @@ namespace OpenMS
     int getMaxIsotope();
 
     bool getRoundMasses();
+
+
+    /** @brief fetches a copy of the cachedIsotopeDistribution map, useful for testing
+     *
+     */
+    std::map<double, IsotopeDistribution> fetchCache();
 
 
 
