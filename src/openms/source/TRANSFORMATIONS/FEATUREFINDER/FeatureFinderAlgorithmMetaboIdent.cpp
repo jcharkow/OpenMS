@@ -40,6 +40,7 @@
 #include <OpenMS/TRANSFORMATIONS/FEATUREFINDER/TraceFitter.h>
 
 #include <OpenMS/ANALYSIS/OPENSWATH/ChromatogramExtractor.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/SimpleOpenMSSpectraAccessFactory.h>
 #include <OpenMS/CHEMISTRY/ISOTOPEDISTRIBUTION/CoarseIsotopePatternGenerator.h>
 #include <OpenMS/CHEMISTRY/ISOTOPEDISTRIBUTION/IsotopeDistribution.h>
@@ -71,8 +72,8 @@ namespace OpenMS
     defaults_.setMinFloat("extract:mz_window", 0.0);
 
     defaults_.setValue(
-      "extract:rt_window", 
-      0.0, 
+      "extract:rt_window",
+      0.0,
       "RT window size (in sec.) for chromatogram extraction. If set, this parameter takes precedence over 'extract:rt_quantile'.",
       vector<string>{"advanced"});
     defaults_.setMinFloat("extract:rt_window", 0.0);
@@ -81,7 +82,7 @@ namespace OpenMS
     defaults_.setMinInt("extract:n_isotopes", 2);
     defaults_.setValue(
       "extract:isotope_pmin",
-      0.0, 
+      0.0,
       "Minimum probability for an isotope to be included in the assay for a peptide. If set, this parameter takes precedence over 'extract:n_isotopes'.",
       vector<string>{"advanced"});
     defaults_.setMinFloat("extract:isotope_pmin", 0.0);
@@ -92,20 +93,20 @@ namespace OpenMS
     defaults_.setValue("detect:peak_width", 60.0, "Expected elution peak width in seconds, for smoothing (Gauss filter). Also determines the RT extration window, unless set explicitly via 'extract:rt_window'.");
     defaults_.setMinFloat("detect:peak_width", 0.0);
     defaults_.setValue(
-      "detect:min_peak_width", 
-      0.2, 
+      "detect:min_peak_width",
+      0.2,
       "Minimum elution peak width. Absolute value in seconds if 1 or greater, else relative to 'peak_width'.",
       vector<string>{"advanced"});
     defaults_.setMinFloat("detect:min_peak_width", 0.0);
 
     defaults_.setValue(
-      "detect:signal_to_noise", 
-      0.8, 
+      "detect:signal_to_noise",
+      0.8,
       "Signal-to-noise threshold for OpenSWATH feature detection",
       vector<string>{"advanced"});
     defaults_.setMinFloat("detect:signal_to_noise", 0.1);
 
-    defaults_.setSectionDescription("detect", "Parameters for detecting features in extracted ion chromatograms");  
+    defaults_.setSectionDescription("detect", "Parameters for detecting features in extracted ion chromatograms");
 
     // parameters for model fitting (via ElutionModelFitter):
     defaults_.setValue("model:type", "symmetric", "Type of elution model to fit to features");
@@ -161,16 +162,16 @@ namespace OpenMS
     candidates_out_ = (string)param_.getValue("candidates_out");
   }
 
-  void FeatureFinderAlgorithmMetaboIdent::run(const vector<FeatureFinderAlgorithmMetaboIdent::FeatureFinderMetaboIdentCompound>& metaboIdentTable, 
-    FeatureMap& features, 
+  void FeatureFinderAlgorithmMetaboIdent::run(const vector<FeatureFinderAlgorithmMetaboIdent::FeatureFinderMetaboIdentCompound>& metaboIdentTable,
+    FeatureMap& features,
     const String& spectra_file)
   {
     // if proper mzML is annotated in MS data use this as reference. Otherwise, overwrite with spectra_file information.
-    features.setPrimaryMSRunPath({spectra_file}, ms_data_); 
-  
+    features.setPrimaryMSRunPath({spectra_file}, ms_data_);
+
     if (ms_data_.empty())
     {
-      OPENMS_LOG_WARN << "Warning: No MS1 scans in:"<< spectra_file << endl;      
+      OPENMS_LOG_WARN << "Warning: No MS1 scans in:"<< spectra_file << endl;
       return;
     }
 
@@ -196,8 +197,8 @@ namespace OpenMS
     // totally breaks the OpenSWATH feature detection (no features found)!
     params.setValue("TransitionGroupPicker:PeakPickerMRM:signal_to_noise",
                     signal_to_noise_);
-    
-    params.setValue("TransitionGroupPicker:PeakPickerMRM:write_sn_log_messages", "false");     
+
+    params.setValue("TransitionGroupPicker:PeakPickerMRM:write_sn_log_messages", "false");
     params.setValue("TransitionGroupPicker:recalculate_peaks", "true");
     params.setValue("TransitionGroupPicker:PeakPickerMRM:peak_width", -1.0);
     params.setValue("TransitionGroupPicker:PeakPickerMRM:method",
@@ -230,8 +231,9 @@ namespace OpenMS
 
     OPENMS_LOG_INFO << "Detecting chromatographic peaks..." << endl;
     OpenMS_Log_info.remove(cout); // suppress status output from OpenSWATH
+    OpenSwathIsotopeGeneratorCacher isotopeCacher(2,1); //TODO fill in with actual values
     feat_finder_.pickExperiment(chrom_data_, features, library_,
-                                TransformationDescription(), ms_data_);
+                                TransformationDescription(), ms_data_, isotopeCacher);
     OpenMS_Log_info.insert(cout);
     OPENMS_LOG_INFO << "Found " << features.size()
                     << " feature candidates in total." << endl;
@@ -243,7 +245,7 @@ namespace OpenMS
     // write auxiliary output:
     // features.setProteinIdentifications(proteins);
     features.ensureUniqueId();
-    
+
     // sort features:
     sort(features.begin(), features.end(), feature_compare_);
 
@@ -287,7 +289,7 @@ namespace OpenMS
       if (features.empty())
       {
         OPENMS_LOG_INFO << "No features left after filtering." << endl;
-      }    
+      }
     }
 
     if (features.empty()) return;
@@ -468,7 +470,7 @@ namespace OpenMS
       transition.setCompoundRef(target_id);
       library_.addTransition(transition);
       isotope_probs_[transition_name] = iso.getIntensity();
-      
+
       ++counter;
     }
   }
@@ -917,9 +919,9 @@ namespace OpenMS
   }
 
   void FeatureFinderAlgorithmMetaboIdent::setMSData(const PeakMap& m)
-  { 
-    ms_data_ = m; 
-    
+  {
+    ms_data_ = m;
+
     vector<MSSpectrum>& specs = ms_data_.getSpectra();
 
     // keep only MS1
@@ -930,9 +932,9 @@ namespace OpenMS
   }
 
   void FeatureFinderAlgorithmMetaboIdent::setMSData(PeakMap&& m)
-  { 
-    ms_data_ = std::move(m); 
-    
+  {
+    ms_data_ = std::move(m);
+
     vector<MSSpectrum>& specs = ms_data_.getSpectra();
 
     // keep only MS1

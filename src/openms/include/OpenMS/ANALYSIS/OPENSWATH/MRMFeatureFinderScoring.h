@@ -37,11 +37,11 @@
 #define USE_SP_INTERFACE
 
 // Actual scoring
-#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathScoring.h>
-
-#include <OpenMS/ANALYSIS/OPENSWATH/DIAScoring.h>
-#include <OpenMS/ANALYSIS/OPENSWATH/SONARScoring.h>
 #include <OpenMS/TRANSFORMATIONS/FEATUREFINDER/EmgScoring.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/DIAScoring.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathScoring.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/SONARScoring.h>
 
 // Kernel classes
 #include <OpenMS/KERNEL/StandardTypes.h>
@@ -132,7 +132,8 @@ public:
                         FeatureMap& output,
                         const TargetedExperiment& transition_exp,
                         const TransformationDescription& trafo,
-                        const PeakMap& swath_map);
+                        const PeakMap& swath_map,
+                        const OpenSwathIsotopeGeneratorCacher& isotopeCacher);
 
     /** @brief Pick and score features in a single experiment from chromatograms
      *
@@ -153,7 +154,8 @@ public:
                         const OpenSwath::LightTargetedExperiment& transition_exp,
                         const TransformationDescription& trafo,
                         const std::vector<OpenSwath::SwathMap>& swath_maps,
-                        TransitionGroupMapType& transition_group_map);
+                        TransitionGroupMapType& transition_group_map,
+                        const OpenSwathIsotopeGeneratorCacher& isotopeCacher);
 
     /** @brief Prepares the internal mappings of peptides and proteins.
      *
@@ -186,6 +188,7 @@ public:
                          const TransformationDescription & trafo,
                          const std::vector<OpenSwath::SwathMap>& swath_maps,
                          FeatureMap& output,
+                         const OpenSwathIsotopeGeneratorCacher& isotopeCacher,
                          bool ms1only = false) const;
 
     /** @brief Set the flag for strict mapping
@@ -268,7 +271,9 @@ private:
      * @param swath_maps Optional SWATH-MS (DIA) map corresponding from which
      *                  the chromatograms were extracted. Use empty map if no
      *                  data is available.
+     * @param OpenSwathIsotopeGeneratorCacher cache containing precomputed isotope distributions
      * @return a struct of type OpenSwath_Ind_Scores containing either target or decoy values
+     *
     */
     OpenSwath_Ind_Scores scoreIdentification_(MRMTransitionGroupType& transition_group_identification,
                                               OpenSwathScoring& scorer,
@@ -276,7 +281,8 @@ private:
                                               const std::vector<std::string> & native_ids_detection,
                                               const double det_intensity_ratio_score,
                                               const double det_mi_ratio_score,
-                                              const std::vector<OpenSwath::SwathMap>& swath_maps) const;
+                                              const std::vector<OpenSwath::SwathMap>& swath_maps,
+                                              const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
 
     void prepareFeatureOutput_(OpenMS::MRMFeature& mrmfeature, bool ms1only, int charge) const;
 

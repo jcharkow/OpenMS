@@ -37,6 +37,7 @@
 #include <OpenMS/CHEMISTRY/TheoreticalSpectrumGenerator.h>
 #include <OpenMS/CHEMISTRY/ISOTOPEDISTRIBUTION/CoarseIsotopePatternGenerator.h>
 #include <OpenMS/TRANSFORMATIONS/FEATUREFINDER/FeatureFinderAlgorithmPickedHelperStructs.h>
+#include <OpenMS/CONCEPT/LogStream.h>
 
 namespace OpenMS
 {
@@ -89,6 +90,100 @@ namespace OpenMS
 
     cachedIsotopeDistributions_[mass] = dist;
     return dist;
+  }
+
+  IsotopeDistribution OpenSwathIsotopeGeneratorCacher::computeMiss(double mass) const
+  {
+    OPENMS_LOG_DEBUG << "Cache miss :(" << std::endl;
+    CoarseIsotopePatternGenerator tempSolver = solver_; //copy the isotope generator to enable const signature
+    return tempSolver.estimateFromPeptideWeight(mass);
+  }
+
+  IsotopeDistribution OpenSwathIsotopeGeneratorCacher::getImmutable(double mass) const
+  {
+    /*
+    // print the cachedIsotopeDistribution list
+    for (const auto &[key, value]:cachedIsotopeDistributions_)
+    {
+      std::cout << "key is: " << key << std::endl;
+    }
+    */
+
+    if (mass <= (cachedIsotopeDistributions_.begin()->first + halfMassStep_) ) // all cached greater than target (with tolerance)
+    {
+      //std::cout << "All cached elements strictly greater than target (with tolerance)" << std::endl;
+      if ( (cachedIsotopeDistributions_.begin()->first - mass) <= halfMassStep_)
+      {
+        //std::cout << "first element matches";
+        return cachedIsotopeDistributions_.begin()->second;
+      }
+      else
+      {
+        //std::cout << "first element does not match";
+        return computeMiss(mass);
+      }
+    }
+    else // mass is somewhere in the middle or all elements are less than mass
+    {
+      auto upperBound = cachedIsotopeDistributions_.upper_bound(mass);
+      auto prevEle = upperBound;
+      prevEle--;
+      //std::cout << "ptr previous: " << prevEle->first << std::endl;
+      //std::cout << "upper bound (first element not less than " << mass << ": " << upperBound->first << std::endl;
+
+      if (upperBound == cachedIsotopeDistributions_.end())
+      {
+        //std::cout << "upper bound is at the end, meaning all elements are less than or equal to mass" << std::endl;
+        if (mass - prevEle->first <= halfMassStep_)
+        {
+          //std::cout << "last element is in range" << std::endl;
+          return prevEle->second;
+        }
+        else
+        {
+          //std::cout << "last element is not in range" << std::endl;
+          return computeMiss(mass);
+        }
+      }
+      else if ((mass - prevEle->first) > halfMassStep_)
+      {
+        //std::cout << "mass" << mass << std::endl;
+        //std::cout << "Previous element is too far away (half mass step: " << (mass - prevEle->first) << ")"  << std::endl;
+        if ((upperBound->first - mass) <= halfMassStep_)
+        {
+
+          //std::cout << "upper bound in range, match!" << std::endl;
+          return upperBound->second;
+        }
+        else
+        {
+          //std::cout << "upper bound not in range, new entry" << std::endl;
+          return computeMiss(mass);
+        }
+      }
+      else //prevEle in range
+      {
+        //std::cout << "previous element is in range" << std::endl;
+        if ((upperBound->first - mass) > halfMassStep_)
+        {
+          //std::cout << "upper bound not in range match previous element" << std::endl;
+        }
+        else // both elements in range
+        {
+          //std::cout << "both elements in range see which is closer" << std::endl;
+          if ((upperBound->first - mass) <= (mass - prevEle->first))
+          {
+            //std::cout << "upper bound is closer" << std::endl;
+            return upperBound->second;
+          }
+          else
+          {
+            //std::cout << "previous element is closer" << std::endl;
+            return prevEle->second;
+          }
+        }
+      }
+    }
   }
 
   IsotopeDistribution OpenSwathIsotopeGeneratorCacher::get(double mass)
@@ -241,6 +336,21 @@ namespace OpenMS
     }
     */
 
+  std::vector<std::pair<double, double>> OpenSwathIsotopeGeneratorCacher::getImmutable(double product_mz, int charge, const double mannmass) const
+  {
+    IsotopeDistribution distribution = getImmutable(product_mz * charge);
+
+    double currentIsotopeMz = product_mz; // mz value of current isotope
+
+    std::vector<std::pair<double, double> > isotopes_spec;
+    for (IsotopeDistribution::Iterator it = distribution.begin(); it != distribution.end(); ++it)
+    {
+      isotopes_spec.emplace_back(currentIsotopeMz, it->getIntensity());
+      currentIsotopeMz += mannmass / charge;
+    }
+
+    return isotopes_spec;
+  }
 
 
 

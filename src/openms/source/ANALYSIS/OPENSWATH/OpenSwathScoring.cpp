@@ -43,6 +43,7 @@
 #include <OpenMS/ANALYSIS/OPENSWATH/MRMScoring.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/SONARScoring.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/IonMobilityScoring.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
 
 // auxiliary
 #include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/DataAccessHelper.h>
@@ -135,7 +136,8 @@ namespace OpenMS
                                             std::vector<double>& masserror_ppm,
                                             const double drift_lower,
                                             const double drift_upper,
-                                            const double drift_target)
+                                            const double drift_target,
+                                            const OpenSwathIsotopeGeneratorCacher& isotopeCacher)
   {
     OPENMS_PRECONDITION(imrmfeature != nullptr, "Feature to be scored cannot be null");
     OPENMS_PRECONDITION(transitions.size() > 0, "There needs to be at least one transition.");
@@ -187,7 +189,7 @@ namespace OpenMS
     // DIA dotproduct and manhattan score based on library intensity and sum formula if present
     if (su_.use_ms2_isotope_scores)
     {
-      diascoring.score_with_isotopes(spectra, transitions, scores.dotprod_score_dia, scores.manhatt_score_dia, drift_lower, drift_upper);
+      diascoring.score_with_isotopes(spectra, transitions, scores.dotprod_score_dia, scores.manhatt_score_dia, drift_lower, drift_upper, isotopeCacher);
 
       // Isotope correlation / overlap score: Is this peak part of an
       // isotopic pattern or is it the monoisotopic peak in an isotopic
@@ -196,7 +198,7 @@ namespace OpenMS
       // not optimal for metabolites - but better than nothing, given that for
       // most fragments we don't really know their composition
       diascoring
-          .dia_isotope_scores(transitions, spectra, imrmfeature, scores.isotope_correlation, scores.isotope_overlap, drift_lower, drift_upper);
+          .dia_isotope_scores(transitions, spectra, imrmfeature, scores.isotope_correlation, scores.isotope_overlap, drift_lower, drift_upper, isotopeCacher);
     }
 
     // Peptide-specific scores (only useful, when product transitions are REAL fragments, e.g. not in FFID)
@@ -215,7 +217,7 @@ namespace OpenMS
       double precursor_mz = transitions[0].precursor_mz;
       double rt = imrmfeature->getRT();
 
-      calculatePrecursorDIAScores(ms1_map, diascoring, precursor_mz, rt, compound, scores, drift_lower, drift_upper);
+      calculatePrecursorDIAScores(ms1_map, diascoring, precursor_mz, rt, compound, scores, drift_lower, drift_upper, isotopeCacher);
     }
 
 
@@ -240,7 +242,7 @@ namespace OpenMS
                                    double rt,
                                    const CompoundType& compound,
                                    OpenSwath_Scores & scores,
-                                   double drift_lower, double drift_upper)
+                                   double drift_lower, double drift_upper, const OpenSwathIsotopeGeneratorCacher& isotopeCacher)
   {
     // Compute precursor-level scores:
     // - compute mass difference in ppm
@@ -261,6 +263,7 @@ namespace OpenMS
       {
         if (!compound.sequence.empty())
         {
+          // if computing the isotope distribution from an emperical formula than cannot use the caching.
           diascoring.dia_ms1_isotope_scores(precursor_mz, ms1_spectrum, scores.ms1_isotope_correlation,
                                             scores.ms1_isotope_overlap,
                                             AASequence::fromString(compound.sequence).getFormula(Residue::Full, precursor_charge), drift_lower, drift_upper);
@@ -269,7 +272,7 @@ namespace OpenMS
         {
           diascoring.dia_ms1_isotope_scores_averagine(precursor_mz, ms1_spectrum,
                                                       scores.ms1_isotope_correlation,
-                                                      scores.ms1_isotope_overlap, precursor_charge, drift_lower, drift_upper);
+                                                      scores.ms1_isotope_overlap, precursor_charge, drift_lower, drift_upper, isotopeCacher);
         }
       }
       else
@@ -290,7 +293,7 @@ namespace OpenMS
         {
           diascoring.dia_ms1_isotope_scores_averagine(precursor_mz, ms1_spectrum,
                                                       scores.ms1_isotope_correlation,
-                                                      scores.ms1_isotope_overlap, precursor_charge, drift_lower, drift_upper);
+                                                      scores.ms1_isotope_overlap, precursor_charge, drift_lower, drift_upper, isotopeCacher);
         }
       }
     }
@@ -301,7 +304,7 @@ namespace OpenMS
                                               const std::vector<OpenSwath::SwathMap>& swath_maps,
                                               const OpenMS::DIAScoring & diascoring,
                                               OpenSwath_Scores & scores,
-                                              double drift_lower, double drift_upper)
+                                              double drift_lower, double drift_upper, const OpenSwathIsotopeGeneratorCacher& isotopeCacher)
   {
     OPENMS_PRECONDITION(imrmfeature != nullptr, "Feature to be scored cannot be null");
     OPENMS_PRECONDITION(swath_maps.size() > 0, "There needs to be at least one swath map.");
@@ -344,7 +347,8 @@ namespace OpenMS
                                                 scores.isotope_overlap,
                                                 putative_product_charge,
 						drift_lower,
-						drift_upper);
+						drift_upper,
+                                                isotopeCacher);
     // Mass deviation score
     diascoring.dia_ms1_massdiff_score(transition.getProductMZ(), spectrum, scores.massdev_score, drift_lower, drift_upper);
   }

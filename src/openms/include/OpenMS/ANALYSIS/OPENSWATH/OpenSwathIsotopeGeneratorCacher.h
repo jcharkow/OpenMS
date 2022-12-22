@@ -110,7 +110,7 @@ namespace OpenMS
     IsotopeDistribution addEntry(double mass);
 
     /** @breif gets the cached isotope distribution for the provided mass
-     * if no isotope distribution exist within the halfMassStep_ than create and cache a new distribution
+     * if no isotope distribution exist within the halfMassStep_ then create and cache a new distribution
      *
      * @param mass - mass to fetch the isotope distribution
      */
@@ -122,7 +122,26 @@ namespace OpenMS
      * mannmass - ???
      */
     //std::vector<std::pair<double, double>>  get(double mz, int charge, const double mannmass = 1.00048) const;
+
+    /** @brief computes a missed cache but does not add corresponding mass to cache
+     */
+    IsotopeDistribution computeMiss(double mass) const;
+
+    /** @brief gets form the cached isotope distribution for the provided mass
+     *
+     * if no isotope distribution exist within the halfMassStep_ then compute on the spot without caching
+     */
+    IsotopeDistribution getImmutable(double mass) const;
+
+    /** @brief gets from cached isotope distribution for provided m/z and charge
+     *  if no isotope distribution exists within the halfMassStep_ then create and cache a new distribution
+     */
     std::vector<std::pair<double, double>> get(double mz, int charge, const double mannmass = 1.00048);
+
+
+    /** @brief gets from cached isotope distribution for provided m/z and charge
+     *  if no isotope distribution exists within the halfMassStep_ then create (but do not cache) a new distribution
+     */
+    std::vector<std::pair<double, double>> getImmutable(double mz, int charge, const double mannmass = 1.00048) const;
   };
 }
-

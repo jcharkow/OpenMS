@@ -33,6 +33,7 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/ANALYSIS/OPENSWATH/DIAPrescoring.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
 
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/SpectrumHelpers.h>
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/TransitionHelper.h>
@@ -45,6 +46,8 @@
 #include <iostream>
 #include <algorithm>
 #include <utility>
+
+
 
 namespace OpenMS
 {
@@ -80,7 +83,7 @@ namespace OpenMS
 
   void DiaPrescore::operator()(const OpenSwath::SpectrumAccessPtr& swath_ptr,
                                OpenSwath::LightTargetedExperiment& transition_exp_used,
-                               OpenSwath::IDataFrameWriter* ivw, double drift_start, double drift_end) const
+                               OpenSwath::IDataFrameWriter* ivw, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     //getParams();
     typedef std::map<std::string, std::vector<OpenSwath::LightTransition> > Mmap;
@@ -122,7 +125,7 @@ namespace OpenMS
         double score1;
         double score2;
         //OpenSwath::LightPeptide pep;
-        score(spec, beg->second, score1, score2, drift_start, drift_end);
+        score(spec, beg->second, score1, score2, drift_start, drift_end, isotopeCacher);
 
         score1v.push_back(score1);
         score2v.push_back(score2);
@@ -140,7 +143,8 @@ namespace OpenMS
                           double& dotprod,
                           double& manhattan,
                           double drift_start,
-                          double drift_end) const
+                          double drift_end,
+                          const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     std::vector<std::pair<double, double> > res;
     std::vector<std::pair<double, double> > spectrumWIso, spectrumWIsoNegPreIso;
@@ -155,7 +159,8 @@ namespace OpenMS
                                              transition.getLibraryIntensity(),
                                              spectrumWIso,
                                              nr_isotopes_,
-                                             chg);
+                                             chg,
+                                             isotopeCacher);
     }
     // duplicate since we will add differently weighted preIsotope intensities
     spectrumWIsoNegPreIso.reserve(spectrumWIso.size());

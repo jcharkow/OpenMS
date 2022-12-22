@@ -42,6 +42,9 @@
 
 #include <utility>
 
+
+#include  <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
+
 namespace OpenMS::DIAHelpers
   {
 
@@ -444,10 +447,9 @@ namespace OpenMS::DIAHelpers
     /// given a peak of experimental mz and intensity, add isotope pattern to a "spectrum".
     void addSinglePeakIsotopes2Spec(double mz, double ity,
                                     std::vector<std::pair<double, double> >& isotope_masses, //[out]
-                                    Size nr_isotopes, int charge)
+                                    Size nr_isotopes, int charge, OpenSwathIsotopeGeneratorCacher isotopeCacher)
     {
-      std::vector<std::pair<double, double> > isotopes;
-      getAveragineIsotopeDistribution(mz, isotopes, charge, nr_isotopes);
+      std::vector<std::pair<double, double> > isotopes = isotopeCacher.getImmutable(mz, charge);  // note nr_isotopes is already set
       for (Size j = 0; j < isotopes.size(); ++j)
       {
         isotopes[j].second *= ity; //multiple isotope intensity by spec intensity

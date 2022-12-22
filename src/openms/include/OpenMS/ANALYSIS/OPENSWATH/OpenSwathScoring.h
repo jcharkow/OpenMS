@@ -42,8 +42,9 @@
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/SwathMap.h>
 
 // scoring
-#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathScores.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/DIAScoring.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathScores.h>
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
@@ -190,7 +191,8 @@ namespace OpenMS
                             std::vector<double>& mzerror_ppm,
                             const double drift_lower,
                             const double drift_upper,
-                            const double drift_target);
+                            const double drift_target,
+                            const OpenSwathIsotopeGeneratorCacher& isotopeCacher);
 
     /** @brief Score a single chromatographic feature using the precursor map.
      *
@@ -203,6 +205,7 @@ namespace OpenMS
      * @param scores The object to store the result
      * @param drift_lower Drift time lower extraction boundary
      * @param drift_upper Drift time upper extraction boundary
+     * @param isotopCacher cache of previously computed isotope distributions
      *
     */
     void calculatePrecursorDIAScores(const OpenSwath::SpectrumAccessPtr& ms1_map,
@@ -212,7 +215,8 @@ namespace OpenMS
                                      const CompoundType& compound,
                                      OpenSwath_Scores& scores,
                                      double drift_lower,
-                                     double drift_upper);
+                                     double drift_upper,
+                                     const OpenSwathIsotopeGeneratorCacher& isotopeCacher);
 
     /** @brief Score a single chromatographic feature using DIA / SWATH scores.
      *
@@ -225,6 +229,7 @@ namespace OpenMS
      * @param scores The object to store the result
      * @param drift_lower Drift time lower extraction boundary
      * @param drift_upper Drift time upper extraction boundary
+     * @param isotopeCacher cached of previous computed isotope distributions
      *
     */
     void calculateDIAIdScores(OpenSwath::IMRMFeature* imrmfeature,
@@ -233,7 +238,8 @@ namespace OpenMS
                               const OpenMS::DIAScoring & diascoring,
                               OpenSwath_Scores & scores,
                               double drift_lower,
-                              double drift_upper);
+                              double drift_upper,
+                              const OpenSwathIsotopeGeneratorCacher& isotopeCacher);
 
     /** @brief Computing the normalized library intensities from the transition objects
      *

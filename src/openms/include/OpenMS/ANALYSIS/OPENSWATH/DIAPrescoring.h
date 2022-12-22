@@ -39,6 +39,8 @@
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/TransitionExperiment.h>
 
 #include <OpenMS/DATASTRUCTURES/DefaultParamHandler.h>
+#include  <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
+
 
 namespace OpenMS
 {
@@ -84,7 +86,8 @@ public:
                double& dotprod,
                double& manhattan,
                double drift_start,
-               double drift_end) const;
+               double drift_end,
+               const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
 
     /**
       @brief Compute manhattan and dotprod score for all spectra which can be accessed by
@@ -92,7 +95,7 @@ public:
     */
     void operator()(const OpenSwath::SpectrumAccessPtr& swath_ptr,
                     OpenSwath::LightTargetedExperiment& transition_exp_used,
-                    OpenSwath::IDataFrameWriter* ivw, double drift_start, double drift_end) const;
+                    OpenSwath::IDataFrameWriter* ivw, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
   };
 
 
