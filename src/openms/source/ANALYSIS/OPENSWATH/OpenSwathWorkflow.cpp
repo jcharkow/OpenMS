@@ -180,7 +180,9 @@ namespace OpenMS
     OpenSwath::SpectrumAccessPtr chromatogram_ptr = OpenSwath::SpectrumAccessPtr(new OpenMS::SpectrumAccessOpenMS(xic_map));
 
     featureFinder.setStrictFlag(false); // TODO remove this, it should be strict (e.g. all transitions need to be present for RT norm)
-    OpenSwathIsotopeGeneratorCacher isotopeCacher(2,1); //TODO initialize this right
+
+    OpenSwathIsotopeGeneratorCacher isotopeCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes"), 1);
+    isotopeCacher.initialize(200.5, 2001.5, 1);
     featureFinder.pickExperiment(chromatogram_ptr, featureFile, transition_exp_used, empty_trafo, empty_swath_maps, transition_group_map, isotopeCacher);
 
     // 4. Find most likely correct feature for each compound and add it to the
@@ -930,8 +932,6 @@ namespace OpenMS
     trafo_inv.invert();
 
     MRMFeatureFinderScoring featureFinder;
-
-    std::cout << "JOSH" << feature_finder_param.getValue("Scoring:DIAScoring:dia_nr_isotopes") << std::endl;
     MRMTransitionGroupPicker trgroup_picker;
 
     // To ensure multi-threading safe access to the individual spectra, we
@@ -994,11 +994,10 @@ namespace OpenMS
 
     std::vector<String> to_tsv_output, to_osw_output;
 
-    // initialize the OpenSwathIsotopeGeneratorCacher, for now hardcode it but come back
-    //OpenSwathIsotopeGeneratorCacher(const Size max_isotope, const double massStep, const bool round_masses = false):
-    OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher(2, 0.5);
-    isotopeCacher.initialize(100.5, 400.5, 1);
+    // initialize the OpenSwathIsotopeGeneratorCacher
+    OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes"), 1);
 
+    isotopeCacher.initialize(200.5, 2001.5, 1);
 
     ///////////////////////////////////
     // Start of main function

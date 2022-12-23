@@ -196,17 +196,112 @@ START_SECTION(IsotopeDistribution OpenSwathIsotopeGeneratorCacher::get(double ma
     TEST_REAL_SIMILAR(cachedDistribution.getContainer()[i].getIntensity(), testDistribution.getContainer()[i].getIntensity())
   }
 
-
-
-
-
 }
 
 END_SECTION
 
 
+START_SECTION(std::vector<std::pair<double double>> OpenSwathIsotopeGeneratorCacher::get(double product_mz, int charge, const double mannmass) )
+{
+  // Setup
+  int maxIsotope = 4;
+  double massStep = 5;
+  IsotopeDistribution cachedDistribution;
+  IsotopeDistribution testDistribution;
+  OpenSwathIsotopeGeneratorCacher isotopeCacher(maxIsotope, massStep);
+  isotopeCacher.initialize(100, 120, massStep); // since non inclusive massEnd should generate cache for 100 and 101
 
+  // Case #1:
+  auto dist = isotopeCacher.get(100., 1);
+  TEST_EQUAL(dist.size(), 4);
+
+  std::vector<std::pair<double, double>> test;
+  test.push_back(std::make_pair(100., 0.9496341));
+  test.push_back(std::make_pair(101., 0.0473560));
+  test.push_back(std::make_pair(102., 0.0029034));
+  test.push_back(std::make_pair(103., 0.0001064));
+  for (Size i =0; i<test.size(); i++)
+  {
+    std::cout << "test is: " << test[i].first  << ", " << test[i].second << std::endl;
+    std::cout << "dist is: " << dist[i].first  << ", " << dist[i].second << std::endl;
+    TEST_EQUAL(round(dist[i].first), test[i].first);
+    TEST_REAL_SIMILAR(dist[i].second, test[i].second);
+  }
+}
+END_SECTION
 
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
 END_TEST
+
+
+/*
+#if 0
+START_SECTION([EXTRA] getAveragineIsotopeDistribution_test)
+{
+
+  std::vector<std::pair<double, double> > tmp;
+  OpenMS::DIAHelpers::getAveragineIsotopeDistribution(100., tmp);
+  TEST_EQUAL(tmp.size() == 4, true);
+
+  double mass1[] = { 100, 101.00048, 102.00096, 103.00144 };
+  double int1[] =
+      { 0.9496341, 0.0473560, 0.0029034, 0.0001064 };
+
+  double * mm = &mass1[0];
+  double * ii = &int1[0];
+  for (unsigned int i = 0; i < tmp.size(); ++i, ++mm, ++ii) {
+
+    std::cout << "mass :" << std::setprecision(10) << tmp[i].first
+        << "intensity :" << tmp[i].second << std::endl;
+    TEST_REAL_SIMILAR(tmp[i].first, *mm);
+    TEST_REAL_SIMILAR(tmp[i].second, *ii);
+  }
+
+  tmp.clear();
+  OpenMS::DIAHelpers::getAveragineIsotopeDistribution(30., tmp);
+  double mass2[] = { 30, 31.0005, 32.001, 33.0014 };
+  double int2[] = { 0.987254, 0.012721, 2.41038e-05, 2.28364e-08 };
+  mm = &mass2[0];
+  ii = &int2[0];
+  for (unsigned int i = 0; i < tmp.size(); ++i, ++mm, ++ii) {
+    std::cout << "mass :" << tmp[i].first << "intensity :" << tmp[i].second
+        << std::endl;
+    std::cout << "mass :" << std::setprecision(10) << tmp[i].first
+        << "intensity :" << tmp[i].second << std::endl;
+    std::cout << i << "dm" <<  *mm - tmp[i].first << " di " << *ii - tmp[i].second << std::endl;
+    TEST_REAL_SIMILAR(tmp[i].first, *mm)
+    TEST_REAL_SIMILAR(tmp[i].second, *ii)
+  }
+
+  tmp.clear();
+  OpenMS::DIAHelpers::getAveragineIsotopeDistribution(110., tmp);
+  for (unsigned int i = 0; i < tmp.size(); ++i) {
+    std::cout << "mass :" << tmp[i].first << "intensity :" << tmp[i].second
+        << std::endl;
+  }
+
+  tmp.clear();
+  OpenMS::DIAHelpers::getAveragineIsotopeDistribution(120., tmp);
+  for (unsigned int i = 0; i < tmp.size(); ++i) {
+    std::cout << "mass :" << tmp[i].first << "intensity :" << tmp[i].second
+        << std::endl;
+  }
+
+  tmp.clear();
+  OpenMS::DIAHelpers::getAveragineIsotopeDistribution(300., tmp);
+  for (unsigned int i = 0; i < tmp.size(); ++i) {
+    std::cout << "mass :" << tmp[i].first << "intensity :" << tmp[i].second
+        << std::endl;
+  }
+
+  tmp.clear();
+  OpenMS::DIAHelpers::getAveragineIsotopeDistribution(500., tmp);
+  for (unsigned int i = 0; i < tmp.size(); ++i) {
+    std::cout << "mass :" << tmp[i].first << "intensity :" << tmp[i].second
+        << std::endl;
+  }
+
+}
+END_SECTION
+*/
