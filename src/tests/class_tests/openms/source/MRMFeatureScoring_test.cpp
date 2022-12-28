@@ -69,6 +69,9 @@ START_TEST(MRMScoring, "$Id$")
 OpenSwath::MRMScoring* ptr = nullptr;
 OpenSwath::MRMScoring* nullPointer = nullptr;
 
+OpenSwathIsotopeGeneratorCacher isotopeCacher(4, 1); // here have 4 isotopes
+isotopeCacher.initialize(1, 1, 1); // make empty so cache is not used
+
 START_SECTION(MRMScoring())
 {
   ptr = new OpenSwath::MRMScoring();
@@ -177,6 +180,10 @@ START_SECTION((virtual void test_dia_scores()))
   p_dia.setValue("dia_nr_charges", 4);
   diascoring.setParameters(p_dia);
 
+
+  OpenSwathIsotopeGeneratorCacher isotopeCacher2((int) p_dia.getValue("dia_nr_isotopes") + 1, 1);
+  isotopeCacher2.initialize(1, 1, 1); // make empty so cache is not used
+
   // calculate the normalized library intensity (expected value of the intensities)
   // Numpy
   // arr1 = [ 0,1,3,5,2,0 ];
@@ -201,7 +208,7 @@ START_SECTION((virtual void test_dia_scores()))
   std::vector<OpenSwath::SpectrumPtr> sptrArr;
   sptrArr.push_back(sptr);
 
-  diascoring.dia_isotope_scores(transitions, sptrArr, imrmfeature, isotope_corr, isotope_overlap, -1, -1);
+  diascoring.dia_isotope_scores(transitions, sptrArr, imrmfeature, isotope_corr, isotope_overlap, -1, -1, isotopeCacher2);
 
   delete imrmfeature;
 
