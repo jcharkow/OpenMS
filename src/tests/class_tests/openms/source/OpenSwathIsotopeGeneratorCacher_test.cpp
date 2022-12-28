@@ -122,7 +122,7 @@ START_SECTION(IsotopeDistribution OpenSwathIsotopeGeneratorCacher::get(double ma
     TEST_REAL_SIMILAR(cachedDistribution.getContainer()[i].getIntensity(), testDistribution.getContainer()[i].getIntensity())
   }
 
-  // ########## Case #2 get(107.5) Should fetch distribution of mass 110 because it is the closest to the requested mass and it is less than halfStep away #################
+  // ########## Case #2 get(107.5) Should fetch distribution of mass 110 because it is the closest to the requested mass and it is less than halfStep away (rounding up) #################
   std::cout << "Case 2" << " get(" << 107.5 <<  ")" << std::endl;
   cachedDistribution = isotopeCacher.get(107.5);
   testDistribution = isotopeGenerator.estimateFromPeptideWeight(110);
@@ -185,7 +185,7 @@ START_SECTION(IsotopeDistribution OpenSwathIsotopeGeneratorCacher::get(double ma
   }
 
   // ########## Case #7 get(89) Should fetch distribution of mass 90.5 because this is close
-  std::cout << "Case 6" << std::endl;
+  std::cout << "Case 7" << std::endl;
   cachedDistribution = isotopeCacher.get(89);
   testDistribution = isotopeGenerator.estimateFromPeptideWeight(90.5); // don't need to recreate this
 
@@ -199,6 +199,104 @@ START_SECTION(IsotopeDistribution OpenSwathIsotopeGeneratorCacher::get(double ma
 }
 
 END_SECTION
+
+START_SECTION(IsotopeDistribution OpenSwathIsotopeGeneratorCacher::getImmutable(double mass))
+{
+  // Setup
+  int maxIsotope = 2;
+  double massStep = 5;
+  IsotopeDistribution cachedDistribution;
+  IsotopeDistribution testDistribution;
+  OpenSwathIsotopeGeneratorCacher isotopeCacher(maxIsotope, massStep);
+  isotopeCacher.initialize(100, 120, massStep); // since non inclusive massEnd should generate cache for 100 and 101
+  CoarseIsotopePatternGenerator isotopeGenerator(maxIsotope, massStep);
+
+
+  // ############ Case #1 getImmutable(100) Should fetch distribution of mass 100 because it is in the spectrum ###############
+  std::cout << "Case 1" << std::endl;
+  cachedDistribution = isotopeCacher.getImmutable(100);
+  testDistribution = isotopeGenerator.estimateFromPeptideWeight(100);
+
+  TEST_EQUAL(testDistribution.size(), cachedDistribution.size())
+  for (Size i = 0; i != testDistribution.size(); ++i)
+  {
+    TEST_EQUAL(round(cachedDistribution.getContainer()[i].getMZ()), testDistribution.getContainer()[i].getMZ())
+    TEST_REAL_SIMILAR(cachedDistribution.getContainer()[i].getIntensity(), testDistribution.getContainer()[i].getIntensity())
+  }
+
+  // ########## Case #2 getImmutable(107.5) Should fetch distribution of mass 110 because it is the closest to the requested mass and it is less than halfStep away #################
+  std::cout << "Case 2" << " getImmutable(" << 107.5 <<  ")" << std::endl;
+  cachedDistribution = isotopeCacher.getImmutable(107.5);
+  testDistribution = isotopeGenerator.estimateFromPeptideWeight(110);
+
+  TEST_EQUAL(testDistribution.size(), cachedDistribution.size())
+  for (Size i = 0; i != testDistribution.size(); ++i)
+  {
+    TEST_EQUAL(round(cachedDistribution.getContainer()[i].getMZ()), testDistribution.getContainer()[i].getMZ())
+    TEST_REAL_SIMILAR(cachedDistribution.getContainer()[i].getIntensity(), testDistribution.getContainer()[i].getIntensity())
+  }
+
+
+  // ########## Case #3 getImmutable(103) Should fetch distribution of mass 105 because it is the closest to the requested mass (always round up if halfway of step) and it is less than halfStep away #################
+
+  std::cout << "Case 3" << std::endl;
+  cachedDistribution = isotopeCacher.getImmutable(103);
+  testDistribution = isotopeGenerator.estimateFromPeptideWeight(105);
+
+  TEST_EQUAL(testDistribution.size(), cachedDistribution.size())
+  for (Size i = 0; i != testDistribution.size(); ++i)
+  {
+    TEST_EQUAL(round(cachedDistribution.getContainer()[i].getMZ()), testDistribution.getContainer()[i].getMZ())
+    TEST_REAL_SIMILAR(cachedDistribution.getContainer()[i].getIntensity(), testDistribution.getContainer()[i].getIntensity())
+  }
+
+  // ########## Case #4 getImmutable(200.4) Should fetch distribution of mass 200.4 because there is no cached distribution close to requested mass
+  std::cout << "Case 4" << std::endl;
+  cachedDistribution = isotopeCacher.getImmutable(200.4);
+  testDistribution = isotopeGenerator.estimateFromPeptideWeight(200.4); // don't need to recreate this
+
+  TEST_EQUAL(testDistribution.size(), cachedDistribution.size())
+  for (Size i = 0; i != testDistribution.size(); ++i)
+  {
+    TEST_EQUAL(round(cachedDistribution.getContainer()[i].getMZ()), testDistribution.getContainer()[i].getMZ())
+    TEST_REAL_SIMILAR(cachedDistribution.getContainer()[i].getIntensity(), testDistribution.getContainer()[i].getIntensity())
+  }
+
+  // ########## Case #6 getImmutable(90.5) Should fetch distribution of mass 90.5 because no value is close to this
+  std::cout << "Case 6" << std::endl;
+  cachedDistribution = isotopeCacher.getImmutable(90.5);
+  testDistribution = isotopeGenerator.estimateFromPeptideWeight(90.5); // don't need to recreate this
+
+  TEST_EQUAL(testDistribution.size(), cachedDistribution.size())
+  for (Size i = 0; i != testDistribution.size(); ++i)
+  {
+    TEST_EQUAL(round(cachedDistribution.getContainer()[i].getMZ()), testDistribution.getContainer()[i].getMZ())
+    TEST_REAL_SIMILAR(cachedDistribution.getContainer()[i].getIntensity(), testDistribution.getContainer()[i].getIntensity())
+  }
+}
+
+END_SECTION
+
+START_SECTION(IsotopeDistribution OpenSwathIsotopeGeneratorCacher::getImmutable(double mass))
+{
+  // Setup
+  int maxIsotope = 2;
+  double massStep = 1;
+  IsotopeDistribution cachedDistribution;
+  OpenSwathIsotopeGeneratorCacher isotopeCacher(maxIsotope, massStep);
+  isotopeCacher.initialize(200.5, 2001.5, massStep); // since non inclusive massEnd should generate cache for 100 and 101
+  CoarseIsotopePatternGenerator isotopeGenerator(maxIsotope, massStep);
+
+  // ############ Case #1 get(100) Should fetch distribution of mass 100 because it is in the spectrum ###############
+  std::cout << "testing 580.309" << std::endl;
+  cachedDistribution = isotopeCacher.getImmutable(580.309);
+
+  std::cout << "testing 709.351" << std::endl;
+  cachedDistribution = isotopeCacher.getImmutable(709.351);
+
+}
+END_SECTION
+
 
 
 START_SECTION(std::vector<std::pair<double double>> OpenSwathIsotopeGeneratorCacher::get(double product_mz, int charge, const double mannmass) )
