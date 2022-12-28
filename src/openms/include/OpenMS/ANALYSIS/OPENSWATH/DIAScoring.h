@@ -117,7 +117,7 @@ public:
                             double& isotope_overlap,
 			    double drift_lower,
 			    double drift_upper,
-                            const OpenSwathIsotopeGeneratorCacher isotopeCacher) const;
+                            const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
 
     /// Massdiff scores, see class description
     void dia_massdiff_score(const std::vector<TransitionType>& transitions,
@@ -142,7 +142,7 @@ public:
 
     /// Precursor isotope scores for precursors (peptides and metabolites)
     void dia_ms1_isotope_scores_averagine(double precursor_mz, const std::vector<SpectrumPtrType>& spectrum,
-                                          double& isotope_corr, double& isotope_overlap, int charge_state, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher isotopeCacher) const;
+                                          double& isotope_corr, double& isotope_overlap, int charge_state, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
     void dia_ms1_isotope_scores(double precursor_mz, const std::vector<SpectrumPtrType>& spectrum,
                                 double& isotope_corr, double& isotope_overlap, const EmpiricalFormula& sum_formula, double drift_start, double drift_end) const;
 
@@ -158,7 +158,7 @@ public:
                              double& manhattan,
                              double drift_start,
                              double drift_end,
-                             const OpenSwathIsotopeGeneratorCacher isotopeCacher) const;
+                             const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
     //@}
 
 private:

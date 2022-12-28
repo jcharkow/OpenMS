@@ -169,7 +169,7 @@ namespace OpenMS
     /// Old + new peaks are pushed to @p isotopeMasses
     OPENMS_DLLAPI void addSinglePeakIsotopes2Spec(double mz, double ity,
                                                   std::vector<std::pair<double, double> >& isotope_masses, //[out]
-                                                  Size nr_isotopes, int charge, const OpenSwathIsotopeGeneratorCacher isotopeCacher);
+                                                  Size nr_isotopes, int charge, const OpenSwathIsotopeGeneratorCacher& isotopeCacher);
 
     /// sorts vector of pairs by first
     OPENMS_DLLAPI void sortByFirst(std::vector<std::pair<double, double> >& tmp);

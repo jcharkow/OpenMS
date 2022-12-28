@@ -127,7 +127,7 @@ namespace OpenMS
   // DIA / SWATH scoring
 
   void DIAScoring::dia_isotope_scores(const std::vector<TransitionType>& transitions, std::vector<SpectrumPtrType>& spectrum,
-                                      OpenSwath::IMRMFeature* mrmfeature, double& isotope_corr, double& isotope_overlap, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher isotopeCacher) const
+                                      OpenSwath::IMRMFeature* mrmfeature, double& isotope_corr, double& isotope_overlap, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     isotope_corr = 0;
     isotope_overlap = 0;
@@ -246,7 +246,7 @@ namespace OpenMS
 
   void DIAScoring::dia_ms1_isotope_scores_averagine(double precursor_mz, const std::vector<SpectrumPtrType>& spectrum,
                                                     double& isotope_corr, double& isotope_overlap,
-                                                    int charge_state, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher isotopeCacher) const
+                                                    int charge_state, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     std::vector<double> exp_isotopes_int;
     getIsotopeIntysFromExpSpec_(precursor_mz, spectrum, exp_isotopes_int, charge_state, drift_start, drift_end);
@@ -303,7 +303,7 @@ namespace OpenMS
   }
 
   void DIAScoring::score_with_isotopes(std::vector<SpectrumPtrType>& spectrum, const std::vector<TransitionType>& transitions,
-                                       double& dotprod, double& manhattan, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher isotopeCacher) const
+                                       double& dotprod, double& manhattan, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     OpenMS::DiaPrescore dp(dia_extract_window_, dia_nr_isotopes_, dia_nr_charges_); // note with isotope cacher cannot set dia_nr_isotopes basically just a filler here
     dp.score(spectrum, transitions, dotprod, manhattan, drift_start, drift_end, isotopeCacher);

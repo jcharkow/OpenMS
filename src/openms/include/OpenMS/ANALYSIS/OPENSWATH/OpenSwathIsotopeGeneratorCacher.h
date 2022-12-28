@@ -143,5 +143,11 @@ namespace OpenMS
      *  if no isotope distribution exists within the halfMassStep_ then create (but do not cache) a new distribution
      */
     std::vector<std::pair<double, double>> getImmutable(double mz, int charge, const double mannmass = 1.00048) const;
+
+
+private:
+  OpenSwathIsotopeGeneratorCacher(OpenSwathIsotopeGeneratorCacher&);
+  OpenSwathIsotopeGeneratorCacher& operator=(const OpenSwathIsotopeGeneratorCacher&);
+
   };
 }

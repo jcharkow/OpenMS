@@ -447,7 +447,7 @@ namespace OpenMS::DIAHelpers
     /// given a peak of experimental mz and intensity, add isotope pattern to a "spectrum".
     void addSinglePeakIsotopes2Spec(double mz, double ity,
                                     std::vector<std::pair<double, double> >& isotope_masses, //[out]
-                                    Size nr_isotopes, int charge, OpenSwathIsotopeGeneratorCacher isotopeCacher)
+                                    Size nr_isotopes, int charge, const OpenSwathIsotopeGeneratorCacher& isotopeCacher)
     {
       std::vector<std::pair<double, double> > isotopes = isotopeCacher.getImmutable(mz, charge);  // note nr_isotopes is already set
       for (Size j = 0; j < isotopes.size(); ++j)
