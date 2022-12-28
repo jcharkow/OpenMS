@@ -41,8 +41,6 @@
 
 namespace OpenMS
 {
-
-  //
   OpenSwathIsotopeGeneratorCacher::~OpenSwathIsotopeGeneratorCacher() = default;
   // note these should be mass values rather than m/z values
   void OpenSwathIsotopeGeneratorCacher::initialize(double massStart, double massEnd, double massStep)
@@ -83,7 +81,6 @@ namespace OpenMS
     return cachedIsotopeDistributions_;
   }
 
-
   IsotopeDistribution OpenSwathIsotopeGeneratorCacher::addEntry(double mass)
   {
     IsotopeDistribution dist = solver_.estimateFromPeptideWeight(mass);
@@ -94,22 +91,14 @@ namespace OpenMS
 
   IsotopeDistribution OpenSwathIsotopeGeneratorCacher::computeMiss(double mass) const
   {
-    OPENMS_LOG_DEBUG << "Cache miss :(" << std::endl;
     CoarseIsotopePatternGenerator tempSolver = solver_; //copy the isotope generator to enable const signature
     return tempSolver.estimateFromPeptideWeight(mass);
   }
 
+  // note in this implementation we are guarenteed that all elements are equally spaced
   IsotopeDistribution OpenSwathIsotopeGeneratorCacher::getImmutable(double mass) const
   {
-    /*
-    // print the cachedIsotopeDistribution list
-    for (const auto &[key, value]:cachedIsotopeDistributions_)
-    {
-      //std::cout << "key is: " << key << std::endl;
-    }
-    */
 
-    //std::cout << "JOSH start get immutable" << std::endl;
     if (mass <= (cachedIsotopeDistributions_.begin()->first + halfMassStep_) ) // all cached greater than target (with tolerance)
     {
       //std::cout << "All cached elements strictly greater than target (with tolerance)" << std::endl;
@@ -126,75 +115,29 @@ namespace OpenMS
     }
     else // mass is somewhere in the middle or all elements are less than mass
     {
-      auto upperBound = cachedIsotopeDistributions_.upper_bound(mass);
-      auto prevEle = upperBound;
-      prevEle--;
-      //std::cout << "ptr previous: " << prevEle->first << std::endl;
-      //std::cout << "upper bound (first element not less than " << mass << ": " << upperBound->first << std::endl;
+      // map the mass to a function that only the bins are whole numbers, therefore we will be rounding to the nearest bin
+      double roundErr = 1.0 / massStep_; // map
+      double massRounded = std::round(mass * roundErr) / roundErr;
 
-      if (upperBound == cachedIsotopeDistributions_.end())
-      {
-        //std::cout << "upper bound is at the end, meaning all elements are less than or equal to mass" << std::endl;
-        if (mass - prevEle->first <= halfMassStep_)
-        {
-          //std::cout << "last element is in range" << std::endl;
-          return prevEle->second;
-        }
-        else
-        {
-          //std::cout << "last element is not in range" << std::endl;
-          return computeMiss(mass);
-        }
-      }
-      else if ((mass - prevEle->first) > halfMassStep_)
-      {
-        //std::cout << "mass" << mass << std::endl;
-        //std::cout << "Previous element is too far away (half mass step: " << (mass - prevEle->first) << ")"  << std::endl;
-        if ((upperBound->first - mass) <= halfMassStep_)
-        {
+      auto foundEle = cachedIsotopeDistributions_.find(massRounded);
 
-          //std::cout << "upper bound in range, match!" << std::endl;
-          return upperBound->second;
-        }
-        else
-        {
-          //std::cout << "upper bound not in range, new entry" << std::endl;
-          return computeMiss(mass);
-        }
+      if (foundEle != cachedIsotopeDistributions_.end()){
+        //std::cout << "ele found" << std::endl;
+        return foundEle->second;
       }
-      else //prevEle in range
+      else
       {
-        //std::cout << "previous element is in range" << std::endl;
-        if ((upperBound->first - mass) > halfMassStep_)
-        {
-          //std::cout << "upper bound not in range match previous element" << std::endl;
-          return prevEle->second;
-        }
-        else // both elements in range
-        {
-          //std::cout << "both elements in range see which is closer" << std::endl;
-          if ((upperBound->first - mass) <= (mass - prevEle->first))
-          {
-            //std::cout << "upper bound is closer" << std::endl;
-            return upperBound->second;
-          }
-          else
-          {
-            //std::cout << "previous element is closer" << std::endl;
-            return prevEle->second;
-          }
-        }
+        OPENMS_LOG_WARN << "Cache Miss" << std::endl;
+        //std::cout << "ele not found" << std::endl;
+        return computeMiss(mass);
       }
     }
+    throw Exception::Postcondition(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Function should never end up here, all possible conditions exhausted");
+    return cachedIsotopeDistributions_.begin()->second;
   }
 
   IsotopeDistribution OpenSwathIsotopeGeneratorCacher::get(double mass)
   {
-    for (const auto &[key, value]:cachedIsotopeDistributions_)
-    {
-      //std::cout << "key is: " << key << std::endl;
-    }
-
     if (mass <= (cachedIsotopeDistributions_.begin()->first + halfMassStep_) ) // all cached greater than target (with tolerance)
     {
       //std::cout << "All cached elements strictly greater than target (with tolerance)" << std::endl;
@@ -270,73 +213,9 @@ namespace OpenMS
         }
       }
     }
+    throw Exception::Postcondition(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Function should never end up here, all possible conditions exhausted");
+    return cachedIsotopeDistributions_.begin()->second;
   }
-
-
-
-
-/*
-    if ((ele == cachedIsotopeDistributions_.end()) & (previousEle == cachedIsotopeDistributions_.end()) | (ele == cachedIsotopeDistributions_.begin()) // all cached elements are greater than target mass
-    {
-      //std::cout << "All elements greater than target mass, creating entry" << std::endl;
-      return addEnrtry(mass);
-    }
-    else if ((ele == cachedIsotopeDistributions_.end()) & (previousEle != cachedIsotopeDistributions_.end())) // last element might match
-    {
-      //std::cout << "Last element might match" << std::endl;
-      if (std::abs(previousEle->first - mass) < halfStep_)
-      {
-        //std::cout << "Last element matches" << std::endl;
-        return previousEle->second;
-      }
-      else
-      {
-        return addEntry(mass);
-      }
-    }
-    //else if ((ele == cachedIsotopeDistributions_.begin()) & (previousEle != cachedIsotopeDistributions_.end())) // last element might match
-                                                                             //
-      // at the end of the array, possible that we still have a match though if this is just slightly over the last element
-      //std::cout << "At the end of the array..." << std::endl;
-      if (std::abs(previousEle->first - mass) < std::abs(ele->first - mass)) // check if the previous entry is within range
-      {
-          double rslt = std::abs(previousEle->first - mass) < std::abs(ele->first - mass);
-          //std::cout << "rslt is: " << rslt << std::endl;
-          //std::cout << "Taking previous element" << std::endl;
-          return ele->second;
-      }
-      else // previous entry not within range
-      {
-        double rslt = std::abs(previousEle->first - mass) < std::abs(ele->first - mass);
-        //std::cout << "rslt is: " << rslt << std::endl;
-        //std::cout << "No match creating entry" << std::endl;
-        return addEntry(mass);
-      }
-
-    // determine if the current element or the element before it is closer
-    if (std::abs(previousEle->first - mass) < std::abs(ele->first - mass)) // check if the previous entry is closer than the first entry
-    {
-        double rslt = std::abs(previousEle->first - mass) < std::abs(ele->first - mass);
-        //std::cout << "rslt is: " << rslt << std::endl;
-        //std::cout << "Taking previous element" << std::endl;
-        ele = previousEle;
-    }
-
-    if (std::abs(ele->first - mass) > halfMassStep_) // element found is more than halfMassStep_ away from target mass so generate a new entry
-    {
-      double rslt = std::abs(ele->first - mass) > halfMassStep_;
-
-      //std::cout << "Closest element is not in range, creating entry" << " closest element: " << ele->first << " delta: " << rslt << std::endl;
-      return addEntry(mass);
-    }
-    else // there is a current cached distribution that can be used!
-    {
-      //std::cout << "Using the cache" << std::endl;
-
-      return ele->second;
-    }
-    }
-    */
 
   std::vector<std::pair<double, double>> OpenSwathIsotopeGeneratorCacher::getImmutable(double product_mz, int charge, const double mannmass) const
   {
@@ -356,8 +235,6 @@ namespace OpenMS
 
     return isotopes_spec;
   }
-
-
 
   std::vector<std::pair<double, double>> OpenSwathIsotopeGeneratorCacher::get(double product_mz, int charge, const double mannmass)
   {
