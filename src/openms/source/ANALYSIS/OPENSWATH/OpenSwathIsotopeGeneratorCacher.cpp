@@ -46,6 +46,7 @@ namespace OpenMS
   void OpenSwathIsotopeGeneratorCacher::initialize(double massStart, double massEnd, double massStep)
   {
     massStep_ = massStep;
+    //std::cout << "initializing from " << massStart << " to " << massEnd << " with step " << massStep_ << std::endl;
     for (double mass=massStart; mass < massEnd; mass += massStep_)
     {
       // create the theoretical distribution
@@ -99,6 +100,7 @@ namespace OpenMS
   IsotopeDistribution OpenSwathIsotopeGeneratorCacher::getImmutable(double mass) const
   {
 
+    //std::cout << "Begin search with mass " << mass <<  std::endl;
     if (mass <= (cachedIsotopeDistributions_.begin()->first + halfMassStep_) ) // all cached greater than target (with tolerance)
     {
       //std::cout << "All cached elements strictly greater than target (with tolerance)" << std::endl;
@@ -116,22 +118,132 @@ namespace OpenMS
     else // mass is somewhere in the middle or all elements are less than mass
     {
       // map the mass to a function that only the bins are whole numbers, therefore we will be rounding to the nearest bin
-      double roundErr = 1.0 / massStep_; // map
+      //double roundErr = 1.0 / massStep_; // map
+      //double roundErr = 2.0;
+      auto upperBound = cachedIsotopeDistributions_.upper_bound(mass);
+      auto prevEle = upperBound;
+      prevEle--;
+      //std::cout << "ptr previous: " << prevEle->first << std::endl;
+      //std::cout << "upper bound (first element greater or equal to) " << mass << ": " << upperBound->first << std::endl;
+
+      if (upperBound == cachedIsotopeDistributions_.end())
+      {
+        //std::cout << "upper bound is at the end, meaning all elements are less than or equal to mass" << std::endl;
+        if (mass - prevEle->first <= halfMassStep_)
+        {
+          //std::cout << "last element is in range" << std::endl;
+          return prevEle->second;
+        }
+        else
+        {
+          //std::cout << "last element is not in range" << std::endl;
+          return computeMiss(mass);
+        }
+      }
+      else if ((mass - prevEle->first) > halfMassStep_)
+      {
+        //std::cout << "mass" << mass << std::endl;
+        //std::cout << "Previous element is too far away (half mass step: " << (mass - prevEle->first) << ")"  << std::endl;
+        if ((upperBound->first - mass) <= halfMassStep_)
+        {
+
+          //std::cout << "upper bound in range, match!" << std::endl;
+          /*
+          std::cout << "cache match is : " << upperBound->first << std::endl;
+            std::cout << "cache match is : " << upperBound->first << std::endl;
+            std::cout << "values are: ";
+            for (auto i:upperBound->second)
+            {
+              std::cout << i << " " << std::endl;
+            }
+            std::cout << std::endl;
+            */
+          return upperBound->second;
+        }
+        else
+        {
+          //std::cout << "upper bound not in range, new entry" << std::endl;
+          return computeMiss(mass);
+        }
+      }
+      else //prevEle in range
+      {
+        //std::cout << "previous element is in range" << std::endl;
+        if ((upperBound->first - mass) > halfMassStep_)
+        {
+          //std::cout << "upper bound not in range match previous element" << std::endl;
+          /*
+          std::cout << "cache match is: " << prevEle->first << std::endl;
+
+          std::cout << "cache match is: " << prevEle->first << std::endl;
+          std::cout << "values are: ";
+
+          for (auto i:prevEle->second)
+          {
+            std::cout << i << " " << std::endl;
+          }
+          std::cout << std::endl;
+          */
+          return  prevEle->second;
+        }
+        else // both elements in range
+        {
+//          std::cout << "both elements in range see which is closer" << std::endl;
+          if ((upperBound->first - mass) <= (mass - prevEle->first))
+          {
+//            std::cout << "upper bound is closer" << std::endl;
+            /*
+            std::cout << "cache match is : " << upperBound->first << std::endl;
+
+            std::cout << "values are: ";
+            for (auto i:upperBound->second)
+            {
+              std::cout << i << " " << std::endl;
+            }
+            std::cout << std::endl;
+            */
+
+            return upperBound->second;
+          }
+          else
+          {
+            //std::cout << "previous element is closer" << std::endl;
+
+            std::cout << "cache match is: " << prevEle->first << std::endl;
+            std::cout << "values are: ";
+            /*
+            for (auto i:prevEle->second)
+            {
+              std::cout << i << " " << std::endl;
+            }
+            */
+            std::cout << std::endl;
+            return prevEle->second;
+          }
+        }
+      }
+    }
+
+    /*
+      std::cout << "roundErr is: " << roundErr << std::endl;
       double massRounded = std::round(mass * roundErr) / roundErr;
+      std::cout << "mass rounded: " << massRounded << std::endl;
 
       auto foundEle = cachedIsotopeDistributions_.find(massRounded);
+      std::cout << "found element is " << foundEle->first << std::endl;
 
       if (foundEle != cachedIsotopeDistributions_.end()){
-        //std::cout << "ele found" << std::endl;
+        std::cout << "ele found" << std::endl;
         return foundEle->second;
       }
       else
       {
         OPENMS_LOG_WARN << "Cache Miss" << std::endl;
-        //std::cout << "ele not found" << std::endl;
+        std::cout << "ele not found" << std::endl;
         return computeMiss(mass);
       }
     }
+    */
     throw Exception::Postcondition(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Function should never end up here, all possible conditions exhausted");
     return cachedIsotopeDistributions_.begin()->second;
   }

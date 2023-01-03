@@ -181,7 +181,7 @@ namespace OpenMS
 
     featureFinder.setStrictFlag(false); // TODO remove this, it should be strict (e.g. all transitions need to be present for RT norm)
 
-    OpenSwathIsotopeGeneratorCacher isotopeCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes"), 1);
+    OpenSwathIsotopeGeneratorCacher isotopeCacher((int) feature_finder_param.getValue("DIAScoring:dia_nr_isotopes") + 1, 1);
     isotopeCacher.initialize(200.5, 2001.5, 1);
     featureFinder.pickExperiment(chromatogram_ptr, featureFile, transition_exp_used, empty_trafo, empty_swath_maps, transition_group_map, isotopeCacher);
 
@@ -548,7 +548,7 @@ namespace OpenMS
 
       const OpenSwath::LightTargetedExperiment& transition_exp_used = transition_exp;
 
-      OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes"), 1);
+      OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes") + 1, 1);
       isotopeCacher.initialize(200.5, 2001.5, 1);
 
 
@@ -645,7 +645,7 @@ namespace OpenMS
     };
 
     // set up isotope cacher, to be used by all threads
-    OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes"), 1);
+    OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher((int) feature_finder_param.getValue("DIAScoring:dia_nr_isotopes") + 1, 1);
     isotopeCacher.initialize(200.5, 2001.5, 1);
 
     // (iv) Perform extraction and scoring of fragment ion chromatograms (MS2)
@@ -1004,11 +1004,6 @@ namespace OpenMS
     }
 
     std::vector<String> to_tsv_output, to_osw_output;
-
-    // initialize the OpenSwathIsotopeGeneratorCacher
-    //OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes"), 1);
-
-    //isotopeCacher.initialize(200.5, 2001.5, 1);
 
     ///////////////////////////////////
     // Start of main function
