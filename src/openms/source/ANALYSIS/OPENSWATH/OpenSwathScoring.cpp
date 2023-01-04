@@ -135,7 +135,9 @@ namespace OpenMS
                                             std::vector<double>& masserror_ppm,
                                             const double drift_lower,
                                             const double drift_upper,
-                                            const double drift_target)
+                                            const double drift_target,
+                                            const double rt_start,
+                                            const double rt_end)
   {
     OPENMS_PRECONDITION(imrmfeature != nullptr, "Feature to be scored cannot be null");
     OPENMS_PRECONDITION(transitions.size() > 0, "There needs to be at least one transition.");
@@ -163,8 +165,16 @@ namespace OpenMS
     std::vector<double> normalized_library_intensity;
     getNormalized_library_intensities_(transitions, normalized_library_intensity);
 
-    // find spectrum that is closest to the apex of the peak using binary search
-    std::vector<OpenSwath::SpectrumPtr> spectra = fetchSpectrumSwath(used_swath_maps, imrmfeature->getRT(), add_up_spectra_, drift_lower, drift_upper);
+    std::vector<OpenSwath::SpectrumPtr> spectra;
+    if (add_up_spectra_ == -1) // automatically determine how many spectra to add using the rt boundaries
+    {
+      spectra = fetchSpectrumSwathAuto(used_swath_maps, drift_lower, drift_upper, rt_start, rt_end);
+      scores.numSpectraAdd = spectra.size();
+    }
+    else  // spectrum addition is a constant number
+    {
+      spectra = fetchSpectrumSwath(used_swath_maps, imrmfeature->getRT(), add_up_spectra_, drift_lower, drift_upper);
+    }
 
     // set the DIA parameters
     double dia_extract_window_ = (double)diascoring.getParameters().getValue("dia_extraction_window");
@@ -532,6 +542,48 @@ namespace OpenMS
     OpenSwath::Scoring::normalize_sum(&normalized_library_intensity[0], boost::numeric_cast<int>(normalized_library_intensity.size()));
   }
 
+  std::vector<OpenSwath::SpectrumPtr> OpenSwathScoring::fetchSpectrumSwathAuto(OpenSwath::SpectrumAccessPtr swathmap, double drift_lower, double drift_upper, double rt_start, double rt_end)
+  {
+
+    std::vector<OpenSwath::SpectrumPtr> all_spectra = fetchMultipleSpectraAuto_(swathmap, rt_start, rt_end);
+    if (spectra_addition_method_ == "simple")
+    {
+      return all_spectra;
+    }
+    else
+    {
+      std::vector<OpenSwath::SpectrumPtr> spectrum_out;
+      spectrum_out.push_back(getAddedSpectra_(all_spectra, drift_lower, drift_upper));
+      return spectrum_out;
+    }
+  }
+
+  std::vector<OpenSwath::SpectrumPtr> OpenSwathScoring::fetchSpectrumSwathAuto(std::vector<OpenSwath::SwathMap> swath_maps, double drift_lower, double drift_upper, double rt_start, double rt_end)
+  {
+    OPENMS_PRECONDITION(!swath_maps.empty(), "swath_maps vector cannot be empty")
+
+    // This is not SONAR data
+    if (swath_maps.size() == 1)
+    {
+      return fetchSpectrumSwathAuto(swath_maps[0].sptr, drift_lower, drift_upper, rt_start, rt_end);
+    }
+    else
+    {
+      // multiple SWATH maps for a single precursor -> this is SONAR data, in all cases only return a single spectrum
+      std::vector<OpenSwath::SpectrumPtr> all_spectra;
+      for (size_t i = 0; i < swath_maps.size(); ++i)
+      {
+        std::vector<OpenSwath::SpectrumPtr> spectrum_vector = fetchMultipleSpectraAuto_(swath_maps[i].sptr, rt_start, rt_end);
+        OpenSwath::SpectrumPtr spec = getAddedSpectra_(spectrum_vector, drift_lower, drift_upper);
+        all_spectra.push_back(spec);
+      }
+      OpenSwath::SpectrumPtr spectrum_ = SpectrumAddition::addUpSpectra(all_spectra, spacing_for_spectra_resampling_, true);
+      std::vector<OpenSwath::SpectrumPtr> spectrum_out;
+      spectrum_out.push_back(spectrum_);
+      return spectrum_out;
+    }
+  }
+
   std::vector<OpenSwath::SpectrumPtr> OpenSwathScoring::fetchSpectrumSwath(OpenSwath::SpectrumAccessPtr swathmap, double RT, int nr_spectra_to_add, double drift_lower, double drift_upper)
   {
 
@@ -621,6 +673,25 @@ namespace OpenMS
       output->setIntensityArray(intens_arr_out);
       output->getDataArrays().push_back(im_arr_out);
       return output;
+  }
+
+  std::vector<OpenSwath::SpectrumPtr> OpenSwathScoring::fetchMultipleSpectraAuto_(const OpenSwath::SpectrumAccessPtr& swath_map,
+                                                            double rt_start, double rt_end)
+  {
+    std::vector<std::size_t> indices = swath_map->getSpectraRTRange(rt_start, rt_end);
+    std::vector<OpenSwath::SpectrumPtr> all_spectra;
+
+    if (indices.empty() )
+    {
+      return all_spectra;
+    }
+
+    for (const auto i:indices)
+    {
+        all_spectra.push_back(swath_map->getSpectrumById(i));
+    }
+
+    return all_spectra;
   }
 
   std::vector<OpenSwath::SpectrumPtr> OpenSwathScoring::fetchMultipleSpectra_(const OpenSwath::SpectrumAccessPtr& swath_map,

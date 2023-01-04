@@ -98,8 +98,8 @@ namespace OpenMS
     defaults_.setValidStrings("write_convex_hull", {"true","false"});
     defaults_.setValue("spectrum_addition_method", "simple", "For spectrum addition, either use simple concatenation or use peak resampling", {"advanced"});
     defaults_.setValidStrings("spectrum_addition_method", {"simple", "resample"});
-    defaults_.setValue("add_up_spectra", 1, "Add up spectra around the peak apex (needs to be a non-even integer)", {"advanced"});
-    defaults_.setMinInt("add_up_spectra", 1);
+    defaults_.setValue("add_up_spectra", 1, "Add up spectra around the peak apex (needs to be a non-even integer), if set to -1 all spectra across peak width are summed", {"advanced"});
+    //defaults_.setMinInt("add_up_spectra", 1);
     defaults_.setValue("spacing_for_spectra_resampling", 0.005, "If spectra are to be added, use this spacing to add them up", {"advanced"});
     defaults_.setMinFloat("spacing_for_spectra_resampling", 0.0);
     defaults_.setValue("uis_threshold_sn", -1, "S/N threshold to consider identification transition (set to -1 to consider all)");
@@ -194,7 +194,7 @@ namespace OpenMS
   void MRMFeatureFinderScoring::pickExperiment(const OpenSwath::SpectrumAccessPtr& input,
                                                FeatureMap& output,
                                                const OpenSwath::LightTargetedExperiment& transition_exp,
-                                               const TransformationDescription& trafo, 
+                                               const TransformationDescription& trafo,
                                                const std::vector<OpenSwath::SwathMap>& swath_maps,
                                                TransitionGroupMapType& transition_group_map)
   {
@@ -331,7 +331,7 @@ namespace OpenMS
   {
     MRMFeature idmrmfeature = trgr_ident.getFeaturesMuteable()[feature_idx];
     OpenSwath::IMRMFeature* idimrmfeature;
-    idimrmfeature = new MRMFeatureOpenMS(idmrmfeature);  
+    idimrmfeature = new MRMFeatureOpenMS(idmrmfeature);
 
     // get drift time upper/lower offset (this assumes that all chromatograms
     // are derived from the same precursor with the same drift time)
@@ -357,7 +357,7 @@ namespace OpenMS
       OpenSwath::ISignalToNoisePtr snptr(new OpenMS::SignalToNoiseOpenMS< MSChromatogram >(
             trgr_ident.getChromatogram(trgr_ident.getTransitions()[i].getNativeID()),
             sn_win_len_, sn_bin_count_, write_log_messages_));
-      if (  (snptr->getValueAtRT(idmrmfeature.getRT()) > uis_threshold_sn_) 
+      if (  (snptr->getValueAtRT(idmrmfeature.getRT()) > uis_threshold_sn_)
             && (idmrmfeature.getFeature(trgr_ident.getTransitions()[i].getNativeID()).getIntensity() > uis_threshold_peak_area_))
       {
         signal_noise_estimators_identification.push_back(snptr);
@@ -369,7 +369,7 @@ namespace OpenMS
     if (!native_ids_identification.empty())
     {
       scorer.calculateChromatographicIdScores(idimrmfeature,
-                                              native_ids_identification, 
+                                              native_ids_identification,
                                               native_ids_detection,
                                               signal_noise_estimators_identification,
                                               idscores);
@@ -456,7 +456,7 @@ namespace OpenMS
       {
         OpenSwath_Scores tmp_scores;
 
-        scorer.calculateDIAIdScores(idimrmfeature, 
+        scorer.calculateDIAIdScores(idimrmfeature,
                                     trgr_ident.getTransition(native_ids_identification[i]),
                                     swath_maps, diascoring_, tmp_scores, drift_lower, drift_upper);
 
@@ -474,9 +474,9 @@ namespace OpenMS
   }
 
   void MRMFeatureFinderScoring::scorePeakgroups(MRMTransitionGroupType& transition_group,
-                                                const TransformationDescription& trafo, 
+                                                const TransformationDescription& trafo,
                                                 const std::vector<OpenSwath::SwathMap>& swath_maps,
-                                                FeatureMap& output, 
+                                                FeatureMap& output,
                                                 bool ms1only) const
   {
     if (PeptideRefMap_.empty())
@@ -565,12 +565,16 @@ namespace OpenMS
     for (SignedSize feature_idx = 0; feature_idx < (SignedSize) mrmfeatures.size(); ++feature_idx)
     {
       auto& mrmfeature = mrmfeatures[feature_idx];
+
+      double rt_start = mrmfeature.getMetaValue("leftWidth");
+      double rt_end = mrmfeature.getMetaValue("rightWidth");
+
       OpenSwath::IMRMFeature* imrmfeature;
       imrmfeature = new MRMFeatureOpenMS(mrmfeature);
 
       OPENMS_LOG_DEBUG << "Scoring feature " << (mrmfeature) << " == " << mrmfeature.getMetaValue("PeptideRef") <<
         " [ expected RT " << PeptideRefMap_.at(mrmfeature.getMetaValue("PeptideRef"))->rt << " / " << expected_rt << " ]" <<
-        " with " << transition_group_detection.size()  << " transitions and " << 
+        " with " << transition_group_detection.size()  << " transitions and " <<
         transition_group_detection.getChromatograms().size() << " chromatograms" << std::endl;
 
       int group_size = boost::numeric_cast<int>(transition_group_detection.size());
@@ -578,7 +582,7 @@ namespace OpenMS
       {
         delete imrmfeature; // free resources before continuing
         throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
-                                         "Error: Transition group " + transition_group_detection.getTransitionGroupID() + 
+                                         "Error: Transition group " + transition_group_detection.getTransitionGroupID() +
                                          " has no chromatograms.");
       }
       bool swath_present = (!swath_maps.empty() && swath_maps[0].sptr->getNrSpectra() > 0);
@@ -600,15 +604,15 @@ namespace OpenMS
         scores.sn_ratio = mrmscore_.calcSNScore(imrmfeature, ms1_signal_noise_estimators);
         // everything below S/N 1 can be set to zero (and the log safely applied)
         if (scores.sn_ratio < 1)
-        { 
+        {
           scores.log_sn_score = 0;
         }
         else
-        { 
+        {
           scores.log_sn_score = std::log(scores.sn_ratio);
         }
-        if (su_.use_sn_score_) 
-        { 
+        if (su_.use_sn_score_)
+        {
           mrmfeature.addScore("sn_ratio", scores.sn_ratio);
           mrmfeature.addScore("var_log_sn_score", scores.log_sn_score);
           // compute subfeature log-SN values
@@ -640,7 +644,7 @@ namespace OpenMS
           mrmfeature.addScore("var_norm_rt_score", scores.norm_rt_score);
         }
 
-        // full spectra scores 
+        // full spectra scores
         if (ms1_map_ && ms1_map_->getNrSpectra() > 0 && mrmfeature.getMZ() > 0)
         {
           scorer.calculatePrecursorDIAScores(ms1_map_, diascoring_, precursor_mz, imrmfeature->getRT(), *pep, scores, drift_lower, drift_upper);
@@ -702,7 +706,7 @@ namespace OpenMS
           scorer.calculateDIAScores(imrmfeature,
                                     transition_group_detection.getTransitions(),
                                     swath_maps, ms1_map_, diascoring_, *pep, scores, masserror_ppm,
-                                    drift_lower, drift_upper, drift_target);
+                                    drift_lower, drift_upper, drift_target, rt_start, rt_end);
           mrmfeature.setMetaValue("masserror_ppm", masserror_ppm);
         }
         if (sonar_present && su_.use_sonar_scores)
@@ -901,6 +905,7 @@ namespace OpenMS
 
         if (swath_present && su_.use_im_scores)
         {
+          mrmfeature.addScore("num_spectra_add", scores.numSpectraAdd);
           mrmfeature.addScore("var_im_xcorr_shape", scores.im_xcorr_shape_score);
           mrmfeature.addScore("var_im_xcorr_coelution", scores.im_xcorr_coelution_score);
           mrmfeature.addScore("var_im_delta_score", scores.im_delta_score);
@@ -956,7 +961,7 @@ namespace OpenMS
         mrmfeature.setMetaValue("missedCleavages", pd.peptideCount(pep_hit_.getSequence()) - 1);
       }
 
-      // set protein accession numbers 
+      // set protein accession numbers
       for (Size k = 0; k < pep->protein_refs.size(); k++)
       {
         PeptideEvidence pe;

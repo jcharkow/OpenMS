@@ -178,6 +178,8 @@ namespace OpenMS
      * @param mzerror_ppm m/z and mass error (in ppm) for all transitions
      * @param drift_lower Drift time lower extraction boundary
      * @param drift_upper Drift time upper extraction boundary
+     * @param rt_start retention time lower boundary
+     * @param rt_end retention time upper boundary
      *
     */
     void calculateDIAScores(OpenSwath::IMRMFeature* imrmfeature,
@@ -190,7 +192,9 @@ namespace OpenMS
                             std::vector<double>& mzerror_ppm,
                             const double drift_lower,
                             const double drift_upper,
-                            const double drift_target);
+                            const double drift_target,
+                            const double rt_start,
+                            const double rt_end);
 
     /** @brief Score a single chromatographic feature using the precursor map.
      *
@@ -301,12 +305,27 @@ namespace OpenMS
     */
     std::vector<OpenSwath::SpectrumPtr> fetchSpectrumSwath(OpenSwath::SpectrumAccessPtr swath_map, double RT, int nr_spectra_to_add, double drift_lower, double drift_upper);
 
+    /** @breif similar to fetchSpectrumSwath() however select spectra across entire rt range of the feature
+     */
+    std::vector<OpenSwath::SpectrumPtr> fetchSpectrumSwathAuto(OpenSwath::SpectrumAccessPtr swathmap, double drift_lower, double drift_upper, double rt_start, double rt_end);
+
+
+    /** @breif similar to fetchSpectrumSwath() however select spectra across entire rt range of the feature
+     */
+    std::vector<OpenSwath::SpectrumPtr> fetchSpectrumSwathAuto(std::vector<OpenSwath::SwathMap> swath_maps, double drift_lower, double drift_upper, double rt_start, double rt_end);
+
 
   protected:
 
     /** @breif Fetches multiple spectrum pointers in an vector format
     */
     std::vector<OpenSwath::SpectrumPtr> fetchMultipleSpectra_(const OpenSwath::SpectrumAccessPtr& swath_map, double RT, int nr_spectra_to_fetch);
+
+
+    /** @breif fetches multiple spectrum pointers in vector format inbetween the range of rt_start and rt_end
+     *
+     */
+    std::vector<OpenSwath::SpectrumPtr> fetchMultipleSpectraAuto_(const OpenSwath::SpectrumAccessPtr& swath_map, double rt_start, double rt_end);
 
     /** @breif converts a ion mobility enhanced spectrum to a non ion mobility spectrum by filtering by drift time
      */
