@@ -905,6 +905,7 @@ namespace OpenMS
 
         if (swath_present && su_.use_im_scores)
         {
+          mrmfeature.addScore("num_spectra_add", scores.numSpectraAdd);
           mrmfeature.addScore("var_im_xcorr_shape", scores.im_xcorr_shape_score);
           mrmfeature.addScore("var_im_xcorr_coelution", scores.im_xcorr_coelution_score);
           mrmfeature.addScore("var_im_delta_score", scores.im_delta_score);

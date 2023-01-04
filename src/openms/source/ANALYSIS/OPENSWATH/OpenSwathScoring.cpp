@@ -169,6 +169,7 @@ namespace OpenMS
     if (add_up_spectra_ == -1) // automatically determine how many spectra to add using the rt boundaries
     {
       spectra = fetchSpectrumSwathAuto(used_swath_maps, drift_lower, drift_upper, rt_start, rt_end);
+      scores.numSpectraAdd = spectra.size();
     }
     else  // spectrum addition is a constant number
     {
