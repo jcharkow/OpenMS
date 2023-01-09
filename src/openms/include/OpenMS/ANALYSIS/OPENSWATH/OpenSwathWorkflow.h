@@ -55,6 +55,7 @@
 #include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/SimpleOpenMSSpectraAccessFactory.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathTSVWriter.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathOSWWriter.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
 
 // Algorithms
 #include <OpenMS/ANALYSIS/OPENSWATH/MRMRTNormalizer.h>
@@ -545,6 +546,7 @@ protected:
         FeatureMap& output,
         OpenSwathTSVWriter & tsv_writer,
         OpenSwathOSWWriter & osw_writer,
+        const OpenSwathIsotopeGeneratorCacher & isotopeCacher,
         int nr_ms1_isotopes = 0,
         bool ms1only = false) const;
 

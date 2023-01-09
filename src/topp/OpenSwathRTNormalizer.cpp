@@ -1,32 +1,32 @@
 // --------------------------------------------------------------------------
-//                   OpenMS -- Open-Source Mass Spectrometry               
+//                   OpenMS -- Open-Source Mass Spectrometry
 // --------------------------------------------------------------------------
 // Copyright The OpenMS Team -- Eberhard Karls University Tuebingen,
 // ETH Zurich, and Freie Universitaet Berlin 2002-2022.
-// 
+//
 // This software is released under a three-clause BSD license:
 //  * Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
 //  * Redistributions in binary form must reproduce the above copyright
 //    notice, this list of conditions and the following disclaimer in the
 //    documentation and/or other materials provided with the distribution.
-//  * Neither the name of any author or any participating institution 
-//    may be used to endorse or promote products derived from this software 
+//  * Neither the name of any author or any participating institution
+//    may be used to endorse or promote products derived from this software
 //    without specific prior written permission.
-// For a full list of authors, refer to the file AUTHORS. 
+// For a full list of authors, refer to the file AUTHORS.
 // --------------------------------------------------------------------------
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 // AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL ANY OF THE AUTHORS OR THE CONTRIBUTING 
-// INSTITUTIONS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
-// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
-// OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+// ARE DISCLAIMED. IN NO EVENT SHALL ANY OF THE AUTHORS OR THE CONTRIBUTING
+// INSTITUTIONS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+// OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 // ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//
 // --------------------------------------------------------------------------
 // $Maintainer: Hannes Roest, George Rosenberger $
 // $Authors: Hannes Roest, George Rosenberger $
@@ -110,7 +110,7 @@ protected:
 
     registerInputFile_("tr", "<file>", "", "transition file with the RT peptides ('TraML' or 'csv')");
     setValidFormats_("tr", ListUtils::create<String>("csv,traML"));
-    
+
     registerOutputFile_("out", "<file>", "", "output file");
     setValidFormats_("out", ListUtils::create<String>("trafoXML"));
 
@@ -199,7 +199,7 @@ protected:
     std::map<std::string, double> PeptideRTMap;
     for (Size i = 0; i < targeted_exp.getCompounds().size(); i++)
     {
-      PeptideRTMap[targeted_exp.getCompounds()[i].id] = targeted_exp.getCompounds()[i].rt; 
+      PeptideRTMap[targeted_exp.getCompounds()[i].id] = targeted_exp.getCompounds()[i].rt;
     }
 
     MzMLFile f;
@@ -232,7 +232,7 @@ protected:
       f.load(file_list[i], *xic_map.get());
 
       // Initialize the featureFile and set its parameters (disable for example
-      // the RT score since here do not know the RT transformation) 
+      // the RT score since here do not know the RT transformation)
       MRMFeatureFinderScoring featureFinder;
       Param scoring_params = getParam_().copy("algorithm:", true);
       scoring_params.setValue("Scores:use_rt_score", "false");
@@ -244,12 +244,15 @@ protected:
       }
       featureFinder.setParameters(scoring_params);
       featureFinder.setStrictFlag(false);
-      
+
       std::vector< OpenSwath::SwathMap > swath_maps(1);
       swath_maps[0].sptr = SimpleOpenMSSpectraFactory::getSpectrumAccessOpenMSPtr(swath_map);
       OpenSwath::SpectrumAccessPtr chromatogram_ptr = SimpleOpenMSSpectraFactory::getSpectrumAccessOpenMSPtr(xic_map);
       OpenMS::MRMFeatureFinderScoring::TransitionGroupMapType transition_group_map;
-      featureFinder.pickExperiment(chromatogram_ptr, featureFile, targeted_exp, trafo, swath_maps, transition_group_map);
+
+      OpenSwathIsotopeGeneratorCacher isotopeCacher(scoring_params.getValue("DIAScoring:dia_nr_isotopes"), 1);
+      isotopeCacher.initialize(200.5, 2001.5, 1);
+      featureFinder.pickExperiment(chromatogram_ptr, featureFile, targeted_exp, trafo, swath_maps, transition_group_map, isotopeCacher);
 
       // add all the chromatograms to the output
       for (Size k = 0; k < xic_map->getChromatograms().size(); k++)
@@ -259,7 +262,7 @@ protected:
 
       // find most likely correct feature for each group and add it to the
       // "pairs" vector by computing pairs of iRT and real RT
-      std::map<std::string, double> res = OpenSwathHelper::simpleFindBestFeature(transition_group_map, 
+      std::map<std::string, double> res = OpenSwathHelper::simpleFindBestFeature(transition_group_map,
         estimateBestPeptides, pepEstimationParams.getValue("OverallQualityCutoff"));
       for (std::map<std::string, double>::iterator it = res.begin(); it != res.end(); ++it)
       {
@@ -286,11 +289,11 @@ protected:
         RTNormParams.getValue("RANSACMaxIterations"), max_rt_threshold,
         RTNormParams.getValue("RANSACSamplingSize"));
     }
-    else if (outlier_method == "none") 
+    else if (outlier_method == "none")
     {
       pairs_corrected = pairs;
     }
-    else 
+    else
     {
       throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
         String("Illegal argument '") + outlier_method + "' used for outlierMethod (valid: 'iter_residual', 'iter_jackknife', 'ransac', 'none').");

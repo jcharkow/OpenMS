@@ -227,8 +227,11 @@ protected:
       OpenMS::MRMFeatureFinderScoring::TransitionGroupMapType transition_group_map;
       OpenSwath::SpectrumAccessPtr chromatogram_ptr = SimpleOpenMSSpectraFactory::getSpectrumAccessOpenMSPtr(exp);
       std::vector< OpenSwath::SwathMap > empty_maps;
+
+      OpenSwathIsotopeGeneratorCacher isotopeCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes"), 1);
+      isotopeCacher.initialize(200.5, 2001.5, 1);
       featureFinder.pickExperiment(chromatogram_ptr, out_featureFile,
-                                   transition_exp, trafo, empty_maps, transition_group_map);
+                                   transition_exp, trafo, empty_maps, transition_group_map, isotopeCacher);
       out_featureFile.ensureUniqueId();
       addDataProcessing_(out_featureFile, getProcessingInfo_(DataProcessing::QUANTITATION));
       FeatureXMLFile().store(out, out_featureFile);
@@ -281,8 +284,12 @@ protected:
         OpenSwath::SpectrumAccessPtr chromatogram_ptr = SimpleOpenMSSpectraFactory::getSpectrumAccessOpenMSPtr(exp);
         std::vector< OpenSwath::SwathMap > swath_maps(1);
         swath_maps[0].sptr = swath_ptr;
+
+
+        OpenSwathIsotopeGeneratorCacher isotopeCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes"), 1);
+        isotopeCacher.initialize(200.5, 2001.5, 1);
         featureFinder.pickExperiment(chromatogram_ptr, featureFile,
-                                     transition_exp_used, trafo, swath_maps, transition_group_map);
+                                     transition_exp_used, trafo, swath_maps, transition_group_map, isotopeCacher);
 
         // write all features and the protein identifications from tmp_featureFile into featureFile
 #ifdef _OPENMP

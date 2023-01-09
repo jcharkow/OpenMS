@@ -42,6 +42,9 @@
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/ITransition.h>
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/TransitionExperiment.h>
 
+
+#include  <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
+
 namespace OpenMS
 {
   class TheoreticalSpectrumGenerator;
@@ -113,7 +116,8 @@ public:
                             double& isotope_corr,
                             double& isotope_overlap,
 			    double drift_lower,
-			    double drift_upper) const;
+			    double drift_upper,
+                            const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
 
     /// Massdiff scores, see class description
     void dia_massdiff_score(const std::vector<TransitionType>& transitions,
@@ -138,7 +142,7 @@ public:
 
     /// Precursor isotope scores for precursors (peptides and metabolites)
     void dia_ms1_isotope_scores_averagine(double precursor_mz, const std::vector<SpectrumPtrType>& spectrum,
-                                          double& isotope_corr, double& isotope_overlap, int charge_state, double drift_start, double drift_end) const;
+                                          double& isotope_corr, double& isotope_overlap, int charge_state, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
     void dia_ms1_isotope_scores(double precursor_mz, const std::vector<SpectrumPtrType>& spectrum,
                                 double& isotope_corr, double& isotope_overlap, const EmpiricalFormula& sum_formula, double drift_start, double drift_end) const;
 
@@ -153,7 +157,8 @@ public:
                              double& dotprod,
                              double& manhattan,
                              double drift_start,
-                             double drift_end) const;
+                             double drift_end,
+                             const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
     //@}
 
 private:
@@ -172,7 +177,7 @@ private:
                               const std::vector<SpectrumPtrType>& spectrum,
                               std::map<std::string, double>& intensities,
                               double& isotope_corr,
-                              double& isotope_overlap, double drift_start, double drift_end) const;
+                              double& isotope_overlap, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
 
     /// retrieves intensities from MRMFeature
     /// computes a vector of relative intensities for each feature (output to intensities)
@@ -210,7 +215,7 @@ private:
     */
     double scoreIsotopePattern_(const std::vector<double>& isotopes_int,
                                 double product_mz,
-                                int putative_fragment_charge) const;
+                                int putative_fragment_charge, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const;
 
     /**
     @brief Compare an experimental isotope pattern to a theoretical one

@@ -713,6 +713,7 @@ if(NOT DISABLE_OPENSWATH)
     CachedMzML_test
     CachedMzMLHandler_test
     HDF5_test
+    OpenSwathIsotopeGeneratorCacher_test
   )
 endif(NOT DISABLE_OPENSWATH)
 

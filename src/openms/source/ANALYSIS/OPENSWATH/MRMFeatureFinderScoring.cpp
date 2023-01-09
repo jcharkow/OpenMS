@@ -45,6 +45,7 @@
 
 // Helpers
 #include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathHelper.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
 #include <OpenMS/CHEMISTRY/ProteaseDigestion.h>
 
 #include <boost/range/adaptor/map.hpp>
@@ -172,7 +173,8 @@ namespace OpenMS
                                                FeatureMap& output,
                                                const TargetedExperiment& transition_exp_,
                                                const TransformationDescription& trafo,
-                                               const PeakMap& swath_map)
+                                               const PeakMap& swath_map,
+                                               const OpenSwathIsotopeGeneratorCacher& isotopeCacher)
   {
     OpenSwath::LightTargetedExperiment transition_exp;
     OpenSwathDataAccessHelper::convertTargetedExp(transition_exp_, transition_exp);
@@ -189,7 +191,7 @@ namespace OpenMS
     std::vector<OpenSwath::SwathMap> swath_ptrs;
     swath_ptrs.push_back(m);
 
-    pickExperiment(chromatogram_ptr, output, transition_exp, trafo, swath_ptrs, transition_group_map);
+    pickExperiment(chromatogram_ptr, output, transition_exp, trafo, swath_ptrs, transition_group_map, isotopeCacher);
   }
 
   void MRMFeatureFinderScoring::pickExperiment(const OpenSwath::SpectrumAccessPtr& input,
@@ -197,7 +199,8 @@ namespace OpenMS
                                                const OpenSwath::LightTargetedExperiment& transition_exp,
                                                const TransformationDescription& trafo,
                                                const std::vector<OpenSwath::SwathMap>& swath_maps,
-                                               TransitionGroupMapType& transition_group_map)
+                                               TransitionGroupMapType& transition_group_map,
+                                               const OpenSwathIsotopeGeneratorCacher& isotopeCacher)
   {
     //
     // Step 1
@@ -258,7 +261,7 @@ namespace OpenMS
       }
 
       trgroup_picker.pickTransitionGroup(transition_group);
-      scorePeakgroups(trgroup_it->second, trafo, swath_maps, output);
+      scorePeakgroups(trgroup_it->second, trafo, swath_maps, output, isotopeCacher);
     }
     endProgress();
 
@@ -328,7 +331,8 @@ namespace OpenMS
                                                                      const std::vector<std::string>& native_ids_detection,
                                                                      const double det_intensity_ratio_score,
                                                                      const double det_mi_ratio_score,
-                                                                     const std::vector<OpenSwath::SwathMap>& swath_maps) const
+                                                                     const std::vector<OpenSwath::SwathMap>& swath_maps,
+                                                                     const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     MRMFeature idmrmfeature = trgr_ident.getFeaturesMuteable()[feature_idx];
     OpenSwath::IMRMFeature* idimrmfeature;
@@ -459,7 +463,7 @@ namespace OpenMS
 
         scorer.calculateDIAIdScores(idimrmfeature,
                                     trgr_ident.getTransition(native_ids_identification[i]),
-                                    swath_maps, diascoring_, tmp_scores, drift_lower, drift_upper);
+                                    swath_maps, diascoring_, tmp_scores, drift_lower, drift_upper, isotopeCacher);
 
         ind_isotope_correlation.push_back(tmp_scores.isotope_correlation);
         ind_isotope_overlap.push_back(tmp_scores.isotope_overlap);
@@ -478,6 +482,7 @@ namespace OpenMS
                                                 const TransformationDescription& trafo,
                                                 const std::vector<OpenSwath::SwathMap>& swath_maps,
                                                 FeatureMap& output,
+                                                const OpenSwathIsotopeGeneratorCacher& isotopeCacher,
                                                 bool ms1only) const
   {
     if (PeptideRefMap_.empty())
@@ -645,7 +650,7 @@ namespace OpenMS
         // full spectra scores
         if (ms1_map_ && ms1_map_->getNrSpectra() > 0 && mrmfeature.getMZ() > 0)
         {
-          scorer.calculatePrecursorDIAScores(ms1_map_, diascoring_, precursor_mz, imrmfeature->getRT(), *pep, scores, drift_lower, drift_upper);
+          scorer.calculatePrecursorDIAScores(ms1_map_, diascoring_, precursor_mz, imrmfeature->getRT(), *pep, scores, drift_lower, drift_upper, isotopeCacher);
         }
         if (su_.use_ms1_fullscan)
         {
@@ -704,7 +709,7 @@ namespace OpenMS
           scorer.calculateDIAScores(imrmfeature,
                                     transition_group_detection.getTransitions(),
                                     swath_maps, ms1_map_, diascoring_, *pep, scores, masserror_ppm,
-                                    drift_lower, drift_upper, drift_target);
+                                    drift_lower, drift_upper, drift_target, isotopeCacher);
           mrmfeature.setMetaValue("masserror_ppm", masserror_ppm);
         }
         if (sonar_present && su_.use_sonar_scores)
@@ -735,14 +740,14 @@ namespace OpenMS
         {
           OpenSwath_Ind_Scores idscores = scoreIdentification_(transition_group_identification, scorer, feature_idx,
                                                                native_ids_detection, det_intensity_ratio_score,
-                                                               det_mi_ratio_score, swath_maps);
+                                                               det_mi_ratio_score, swath_maps, isotopeCacher);
           mrmfeature.IDScoresAsMetaValue(false, idscores);
         }
         if (su_.use_uis_scores && !transition_group_identification_decoy.getTransitions().empty())
         {
           OpenSwath_Ind_Scores idscores = scoreIdentification_(transition_group_identification_decoy, scorer, feature_idx,
                                                                native_ids_detection, det_intensity_ratio_score,
-                                                               det_mi_ratio_score, swath_maps);
+                                                               det_mi_ratio_score, swath_maps, isotopeCacher);
           mrmfeature.IDScoresAsMetaValue(true, idscores);
         }
 

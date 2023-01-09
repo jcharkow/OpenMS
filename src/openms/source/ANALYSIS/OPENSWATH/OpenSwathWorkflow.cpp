@@ -180,7 +180,10 @@ namespace OpenMS
     OpenSwath::SpectrumAccessPtr chromatogram_ptr = OpenSwath::SpectrumAccessPtr(new OpenMS::SpectrumAccessOpenMS(xic_map));
 
     featureFinder.setStrictFlag(false); // TODO remove this, it should be strict (e.g. all transitions need to be present for RT norm)
-    featureFinder.pickExperiment(chromatogram_ptr, featureFile, transition_exp_used, empty_trafo, empty_swath_maps, transition_group_map);
+
+    OpenSwathIsotopeGeneratorCacher isotopeCacher((int) feature_finder_param.getValue("DIAScoring:dia_nr_isotopes") + 1, 1);
+    isotopeCacher.initialize(200.5, 2001.5, 1);
+    featureFinder.pickExperiment(chromatogram_ptr, featureFile, transition_exp_used, empty_trafo, empty_swath_maps, transition_group_map, isotopeCacher);
 
     // 4. Find most likely correct feature for each compound and add it to the
     // "pairs" vector by computing pairs of iRT and real RT.
@@ -546,9 +549,14 @@ namespace OpenMS
       boost::shared_ptr<MSExperiment> empty_exp = boost::shared_ptr<MSExperiment>(new MSExperiment);
 
       const OpenSwath::LightTargetedExperiment& transition_exp_used = transition_exp;
+
+      OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher((int) feature_finder_param.getValue("DIAScoring:dia_nr_isotopes") + 1, 1);
+      isotopeCacher.initialize(200.5, 2001.5, 1);
+
+
       scoreAllChromatograms_(std::vector<MSChromatogram>(), ms1_chromatograms, swath_maps, transition_exp_used,
                             feature_finder_param, trafo,
-                            cp.rt_extraction_window, featureFile, tsv_writer, osw_writer, ms1_isotopes, true);
+                            cp.rt_extraction_window, featureFile, tsv_writer, osw_writer, isotopeCacher, ms1_isotopes, true);
 
       // write features to output if so desired
       std::vector< OpenMS::MSChromatogram > chromatograms;
@@ -637,6 +645,10 @@ namespace OpenMS
     }
     else {
     };
+
+    // set up isotope cacher, to be used by all threads
+    OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher((int) feature_finder_param.getValue("DIAScoring:dia_nr_isotopes") + 1, 1);
+    isotopeCacher.initialize(200.5, 2001.5, 1);
 
     // (iv) Perform extraction and scoring of fragment ion chromatograms (MS2)
     // We set dynamic scheduling such that the maps are worked on in the order
@@ -730,6 +742,7 @@ namespace OpenMS
 
           SignedSize nr_batches = (transition_exp_used_all.getCompounds().size() / batch_size);
 
+
 #ifdef _OPENMP
 #ifdef MT_ENABLE_NESTED_OPENMP
           // If we have a multiple of threads_outer_loop_ here, then use nested
@@ -812,7 +825,7 @@ namespace OpenMS
             std::vector< OpenSwath::SwathMap > tmp = {swath_maps[i]};
             tmp.back().sptr = current_swath_map_inner;
             scoreAllChromatograms_(chrom_exp.getChromatograms(), ms1_chromatograms, tmp, transition_exp_used,
-                feature_finder_param, trafo, cp.rt_extraction_window, featureFile, tsv_writer, osw_writer, ms1_isotopes);
+                feature_finder_param, trafo, cp.rt_extraction_window, featureFile, tsv_writer, osw_writer, isotopeCacher, ms1_isotopes);
 
             // Step 4: write all chromatograms and features out into an output object / file
             // (this needs to be done in a critical section since we only have one
@@ -924,6 +937,7 @@ namespace OpenMS
     FeatureMap& output,
     OpenSwathTSVWriter & tsv_writer,
     OpenSwathOSWWriter & osw_writer,
+    const OpenSwathIsotopeGeneratorCacher& isotopeCacher,
     int nr_ms1_isotopes,
     bool ms1only) const
   {
@@ -992,6 +1006,7 @@ namespace OpenMS
     }
 
     std::vector<String> to_tsv_output, to_osw_output;
+
     ///////////////////////////////////
     // Start of main function
     // Iterating over all the assays
@@ -1061,7 +1076,7 @@ namespace OpenMS
 
       // 3. / 4. Process the MRMTransitionGroup: find peakgroups and score them
       trgroup_picker.pickTransitionGroup(transition_group);
-      featureFinder.scorePeakgroups(transition_group, trafo, swath_maps, output, ms1only);
+      featureFinder.scorePeakgroups(transition_group, trafo, swath_maps, output, isotopeCacher, ms1only);
 
       // Ensure that a detection transition is used to derive features for output
       if (detection_assay_it == nullptr && !output.empty())
@@ -1338,8 +1353,12 @@ namespace OpenMS
 
             // Step 3: score these extracted transitions
             FeatureMap featureFile;
+
+            OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes"), 1);
+            isotopeCacher.initialize(200.5, 2001.5, 1);
+
             scoreAllChromatograms_(chrom_exp.getChromatograms(), ms1_chromatograms, used_maps, transition_exp_used,
-                                   feature_finder_param, trafo, cp.rt_extraction_window, featureFile, tsv_writer, osw_writer);
+                                   feature_finder_param, trafo, cp.rt_extraction_window, featureFile, tsv_writer, osw_writer, isotopeCacher);
 
             // Step 4: write all chromatograms and features out into an output object / file
             // (this needs to be done in a critical section since we only have one

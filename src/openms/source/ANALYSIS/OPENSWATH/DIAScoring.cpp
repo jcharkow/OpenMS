@@ -127,14 +127,14 @@ namespace OpenMS
   // DIA / SWATH scoring
 
   void DIAScoring::dia_isotope_scores(const std::vector<TransitionType>& transitions, std::vector<SpectrumPtrType>& spectrum,
-                                      OpenSwath::IMRMFeature* mrmfeature, double& isotope_corr, double& isotope_overlap, double drift_start, double drift_end) const
+                                      OpenSwath::IMRMFeature* mrmfeature, double& isotope_corr, double& isotope_overlap, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     isotope_corr = 0;
     isotope_overlap = 0;
     // first compute a map of relative intensities from the feature, then compute the score
     std::map<std::string, double> intensities;
     getFirstIsotopeRelativeIntensities_(transitions, mrmfeature, intensities);
-    diaIsotopeScoresSub_(transitions, spectrum, intensities, isotope_corr, isotope_overlap, drift_start, drift_end);
+    diaIsotopeScoresSub_(transitions, spectrum, intensities, isotope_corr, isotope_overlap, drift_start, drift_end, isotopeCacher);
   }
 
   void DIAScoring::dia_massdiff_score(const std::vector<TransitionType>& transitions,
@@ -213,6 +213,7 @@ namespace OpenMS
     // although precursor_mz can be received from the empirical formula (if non-empty), the actual precursor could be
     // slightly different. And also for compounds, usually the neutral sum_formula without adducts is given.
     // Therefore calculate the isotopes based on the formula but place them at precursor_mz
+    // For emperical formula estimation we do not use isotope cacher
     std::vector<double> isotopes_int;
     getIsotopeIntysFromExpSpec_(precursor_mz, spectrum, isotopes_int, sum_formula.getCharge(), drift_start, drift_end);
 
@@ -245,13 +246,13 @@ namespace OpenMS
 
   void DIAScoring::dia_ms1_isotope_scores_averagine(double precursor_mz, const std::vector<SpectrumPtrType>& spectrum,
                                                     double& isotope_corr, double& isotope_overlap,
-                                                    int charge_state, double drift_start, double drift_end) const
+                                                    int charge_state, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     std::vector<double> exp_isotopes_int;
     getIsotopeIntysFromExpSpec_(precursor_mz, spectrum, exp_isotopes_int, charge_state, drift_start, drift_end);
-    CoarseIsotopePatternGenerator solver(dia_nr_isotopes_ + 1);
     // NOTE: this is a rough estimate of the neutral mz value since we would not know the charge carrier for negative ions
-    IsotopeDistribution isotope_dist = solver.estimateFromPeptideWeight(std::fabs(precursor_mz * charge_state));
+
+    IsotopeDistribution isotope_dist = isotopeCacher.getImmutable(std::fabs(precursor_mz * charge_state)); //TODO this was originally +1 dia_nr_isotopes
 
     double max_ratio;
     int nr_occurrences;
@@ -302,10 +303,10 @@ namespace OpenMS
   }
 
   void DIAScoring::score_with_isotopes(std::vector<SpectrumPtrType>& spectrum, const std::vector<TransitionType>& transitions,
-                                       double& dotprod, double& manhattan, double drift_start, double drift_end) const
+                                       double& dotprod, double& manhattan, double drift_start, double drift_end, const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
-    OpenMS::DiaPrescore dp(dia_extract_window_, dia_nr_isotopes_, dia_nr_charges_);
-    dp.score(spectrum, transitions, dotprod, manhattan, drift_start, drift_end);
+    OpenMS::DiaPrescore dp(dia_extract_window_, dia_nr_isotopes_, dia_nr_charges_); // note with isotope cacher cannot set dia_nr_isotopes basically just a filler here
+    dp.score(spectrum, transitions, dotprod, manhattan, drift_start, drift_end, isotopeCacher);
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -329,7 +330,8 @@ namespace OpenMS
                                         double& isotope_corr,
                                         double& isotope_overlap,
 					double drift_start,
-					double drift_end) const
+					double drift_end,
+                                        const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     std::vector<double> isotopes_int;
     double max_ratio;
@@ -362,7 +364,7 @@ namespace OpenMS
 
       // calculate the scores:
       // isotope correlation (forward) and the isotope overlap (backward) scores
-      double score = scoreIsotopePattern_(isotopes_int, transitions[k].getProductMZ(), putative_fragment_charge);
+      double score = scoreIsotopePattern_(isotopes_int, transitions[k].getProductMZ(), putative_fragment_charge, isotopeCacher);
       isotope_corr += score * rel_intensity;
       largePeaksBeforeFirstIsotope_(spectrum, transitions[k].getProductMZ(), isotopes_int[0], nr_occurences, max_ratio, drift_start, drift_end);
       isotope_overlap += nr_occurences * rel_intensity;
@@ -420,16 +422,15 @@ namespace OpenMS
 
   double DIAScoring::scoreIsotopePattern_(const std::vector<double>& isotopes_int,
                                           double product_mz,
-                                          int putative_fragment_charge) const
+                                          int putative_fragment_charge,
+                                          const OpenSwathIsotopeGeneratorCacher& isotopeCacher) const
   {
     OPENMS_PRECONDITION(putative_fragment_charge != 0, "Charge needs to be set to != 0"); // charge can be positive and negative
 
     IsotopeDistribution isotope_dist;
 
-    // create the theoretical distribution from the peptide weight
-    CoarseIsotopePatternGenerator solver(dia_nr_isotopes_ + 1);
     // NOTE: this is a rough estimate of the neutral mz value since we would not know the charge carrier for negative ions
-    isotope_dist = solver.estimateFromPeptideWeight(std::fabs(product_mz * putative_fragment_charge));
+    isotope_dist = isotopeCacher.getImmutable(std::fabs(product_mz * putative_fragment_charge));
 
     return scoreIsotopePattern_(isotopes_int, isotope_dist);
   } //end of dia_isotope_corr_sub

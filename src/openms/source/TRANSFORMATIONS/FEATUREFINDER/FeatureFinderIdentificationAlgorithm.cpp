@@ -40,6 +40,7 @@
 
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/ChromatogramExtractor.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathIsotopeGeneratorCacher.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/SimpleOpenMSSpectraAccessFactory.h>
 #include <OpenMS/ANALYSIS/SVM/SimpleSVM.h>
 #include <OpenMS/ANALYSIS/MAPMATCHING/MapAlignmentAlgorithmIdentification.h>
@@ -83,22 +84,22 @@ namespace OpenMS
     defaults_.setMinInt("extract:n_isotopes", 2);
     defaults_.setValue(
       "extract:isotope_pmin",
-      0.0, 
+      0.0,
       "Minimum probability for an isotope to be included in the assay for a peptide. If set, this parameter takes precedence over 'extract:n_isotopes'.",
       {"advanced"});
     defaults_.setMinFloat("extract:isotope_pmin", 0.0);
     defaults_.setMaxFloat("extract:isotope_pmin", 1.0);
     defaults_.setValue(
-      "extract:rt_quantile", 
-      0.95, 
+      "extract:rt_quantile",
+      0.95,
       "Quantile of the RT deviations between aligned internal and external IDs to use for scaling the RT extraction window",
       {"advanced"});
     defaults_.setMinFloat("extract:rt_quantile", 0.0);
     defaults_.setMaxFloat("extract:rt_quantile", 1.0);
 
     defaults_.setValue(
-      "extract:rt_window", 
-      0.0, 
+      "extract:rt_window",
+      0.0,
       "RT window size (in sec.) for chromatogram extraction. If set, this parameter takes precedence over 'extract:rt_quantile'.",
       {"advanced"});
     defaults_.setMinFloat("extract:rt_window", 0.0);
@@ -108,15 +109,15 @@ namespace OpenMS
     defaults_.setValue("detect:peak_width", 60.0, "Expected elution peak width in seconds, for smoothing (Gauss filter). Also determines the RT extration window, unless set explicitly via 'extract:rt_window'.");
     defaults_.setMinFloat("detect:peak_width", 0.0);
     defaults_.setValue(
-      "detect:min_peak_width", 
-      0.2, 
+      "detect:min_peak_width",
+      0.2,
       "Minimum elution peak width. Absolute value in seconds if 1 or greater, else relative to 'peak_width'.",
       {"advanced"});
     defaults_.setMinFloat("detect:min_peak_width", 0.0);
 
     defaults_.setValue(
-      "detect:signal_to_noise", 
-      0.8, 
+      "detect:signal_to_noise",
+      0.8,
       "Signal-to-noise threshold for OpenSWATH feature detection",
        {"advanced"});
     defaults_.setMinFloat("detect:signal_to_noise", 0.1);
@@ -145,14 +146,14 @@ namespace OpenMS
     String score_metavalues = "peak_apices_sum,var_xcorr_coelution,var_xcorr_shape,var_library_sangle,var_intensity_score,sn_ratio,var_log_sn_score,var_elution_model_fit_score,xx_lda_prelim_score,var_ms1_isotope_correlation_score,var_ms1_isotope_overlap_score,var_massdev_score,main_var_xx_swath_prelim_score";
 
     defaults_.setValue(
-      "svm:predictors", 
-      score_metavalues, 
+      "svm:predictors",
+      score_metavalues,
       "Names of OpenSWATH scores to use as predictors for the SVM (comma-separated list)",
       {"advanced"});
 
     defaults_.setValue(
-      "svm:min_prob", 
-      0.0, 
+      "svm:min_prob",
+      0.0,
       "Minimum probability of correctness, as predicted by the SVM, required to retain a feature candidate",
       {"advanced"});
     defaults_.setMinFloat("svm:min_prob", 0.0);
@@ -191,28 +192,28 @@ namespace OpenMS
 
   void FeatureFinderIdentificationAlgorithm::setMSData(const PeakMap& ms_data)
   {
-    ms_data_ = ms_data; 
-    
+    ms_data_ = ms_data;
+
     vector<MSSpectrum>& specs = ms_data_.getSpectra();
 
     // keep only MS1
     specs.erase(
       std::remove_if(specs.begin(), specs.end(),
         [](const MSSpectrum & s) { return s.getMSLevel() != 1; }),
-      specs.end());    
+      specs.end());
   }
 
   void FeatureFinderIdentificationAlgorithm::setMSData(PeakMap&& ms_data)
   {
-    ms_data_ = std::move(ms_data); 
-    
+    ms_data_ = std::move(ms_data);
+
     vector<MSSpectrum>& specs = ms_data_.getSpectra();
 
     // keep only MS1
     specs.erase(
       std::remove_if(specs.begin(), specs.end(),
         [](const MSSpectrum & s) { return s.getMSLevel() != 1; }),
-      specs.end());    
+      specs.end());
   }
 
   PeakMap& FeatureFinderIdentificationAlgorithm::getChromatograms()
@@ -299,9 +300,9 @@ namespace OpenMS
     params.setValue("TransitionGroupPicker:recalculate_peaks", "true");
     params.setValue("TransitionGroupPicker:PeakPickerMRM:peak_width", -1.0);
     params.setValue("TransitionGroupPicker:PeakPickerMRM:method",
-                    "corrected");    
+                    "corrected");
     params.setValue("TransitionGroupPicker:PeakPickerMRM:write_sn_log_messages", "false"); // disabled in OpenSWATH
-    
+
     feat_finder_.setParameters(params);
     feat_finder_.setLogType(ProgressLogger::NONE);
     feat_finder_.setStrictFlag(false);
@@ -506,8 +507,9 @@ namespace OpenMS
       {
         OpenMS_Log_info.remove(cout);
       }
+      OpenSwathIsotopeGeneratorCacher isotopeCacher(2, 1); // TODO fix this is just initialized randomly for testing
       feat_finder_.pickExperiment(chrom_data_, features, library_,
-                                  TransformationDescription(), ms_data_);
+                                  TransformationDescription(), ms_data_, isotopeCacher);
       if (debug_level_ < 1)
       {
         OpenMS_Log_info.insert(cout); // revert logging change
@@ -1001,8 +1003,8 @@ namespace OpenMS
 
   /// generate transitions (isotopic traces) for a peptide ion and add them to the library:
   void FeatureFinderIdentificationAlgorithm::generateTransitions_(
-    const String& peptide_id, 
-    double mz, 
+    const String& peptide_id,
+    double mz,
     Int charge,
     const IsotopeDistribution& iso_dist)
   {
@@ -1032,16 +1034,16 @@ namespace OpenMS
   {
     if (n_pos < svm_n_parts_)
     {
-      String msg = "Not enough positive observations for " + 
+      String msg = "Not enough positive observations for " +
         String(svm_n_parts_) + "-fold cross-validation" + note + ".";
-      throw Exception::MissingInformation(__FILE__, __LINE__, 
+      throw Exception::MissingInformation(__FILE__, __LINE__,
                                           OPENMS_PRETTY_FUNCTION, msg);
     }
     if (n_neg < svm_n_parts_)
     {
-      String msg = "Not enough negative observations for " + 
+      String msg = "Not enough negative observations for " +
         String(svm_n_parts_) + "-fold cross-validation" + note + ".";
-      throw Exception::MissingInformation(__FILE__, __LINE__, 
+      throw Exception::MissingInformation(__FILE__, __LINE__,
                                           OPENMS_PRETTY_FUNCTION, msg);
     }
   }
@@ -1320,7 +1322,7 @@ namespace OpenMS
     if (!quantify_decoys_)
     {
       if (hit.metaValueExists("target_decoy") && hit.getMetaValue("target_decoy") == "decoy")
-      { 
+      {
         unassignedIDs_.push_back(peptide);
         return;
       }
@@ -1413,7 +1415,7 @@ namespace OpenMS
     if (valid_obs.size() < half_win_size + 1)
     {
       String msg = "Not enough observations for intensity-bias filtering.";
-      throw Exception::MissingInformation(__FILE__, __LINE__, 
+      throw Exception::MissingInformation(__FILE__, __LINE__,
                                           OPENMS_PRETTY_FUNCTION, msg);
     }
     srand(time(nullptr)); // seed random number generator
@@ -1627,7 +1629,7 @@ namespace OpenMS
 
     std::vector<SimpleSVM::Prediction> predictions;
     svm.predict(predictions);
-    OPENMS_POSTCONDITION(predictions.size() == features.size(), 
+    OPENMS_POSTCONDITION(predictions.size() == features.size(),
                          "SVM predictions for all features expected");
     for (Size i = 0; i < features.size(); ++i)
     {
@@ -1656,7 +1658,7 @@ namespace OpenMS
     else if (feature_class == "unknown")
     {
       svm_probs_external_.insert(best_quality);
-      if (best_quality >= quality_cutoff) 
+      if (best_quality >= quality_cutoff)
       {
         best_feature.setOverallQuality(best_quality);
         ++n_external_features_;
@@ -1759,7 +1761,7 @@ namespace OpenMS
                                                    prob_it->second.second);
       OPENMS_LOG_INFO << "Estimated FDR of features detected based on 'external' IDs: "
                << fdr * 100.0 << "%" << endl;
-      fdr = (fdr * n_external_features_) / (n_external_features_ + 
+      fdr = (fdr * n_external_features_) / (n_external_features_ +
                                             n_internal_features_);
       OPENMS_LOG_INFO << "Estimated FDR of all detected features: " << fdr * 100.0
                << "%" << endl;
