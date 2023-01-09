@@ -548,7 +548,7 @@ namespace OpenMS
 
       const OpenSwath::LightTargetedExperiment& transition_exp_used = transition_exp;
 
-      OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher(feature_finder_param.getValue("DIAScoring:dia_nr_isotopes") + 1, 1);
+      OpenSwathIsotopeGeneratorCacher isotopeCacher = OpenSwathIsotopeGeneratorCacher((int) feature_finder_param.getValue("DIAScoring:dia_nr_isotopes") + 1, 1);
       isotopeCacher.initialize(200.5, 2001.5, 1);
 
 
