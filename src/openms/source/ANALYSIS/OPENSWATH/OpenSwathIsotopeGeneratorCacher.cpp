@@ -100,7 +100,12 @@ namespace OpenMS
   IsotopeDistribution OpenSwathIsotopeGeneratorCacher::getImmutable(double mass) const
   {
 
+    //std::cout << "josh in getImmutable" << std::endl;
     //std::cout << "Begin search with mass " << mass <<  std::endl;
+    if (cachedIsotopeDistributions_.empty())
+    {
+      return computeMiss(mass);
+    }
     if (mass <= (cachedIsotopeDistributions_.begin()->first + halfMassStep_) ) // all cached greater than target (with tolerance)
     {
       //std::cout << "All cached elements strictly greater than target (with tolerance)" << std::endl;
@@ -188,10 +193,10 @@ namespace OpenMS
         }
         else // both elements in range
         {
-//          std::cout << "both elements in range see which is closer" << std::endl;
+          //std::cout << "both elements in range see which is closer" << std::endl;
           if ((upperBound->first - mass) <= (mass - prevEle->first))
           {
-//            std::cout << "upper bound is closer" << std::endl;
+            //std::cout << "upper bound is closer" << std::endl;
             /*
             std::cout << "cache match is : " << upperBound->first << std::endl;
 

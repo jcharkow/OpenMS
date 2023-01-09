@@ -465,7 +465,7 @@ protected:
                            const TransformationDescription& trafo,
                            const ChromExtractParams & chromatogram_extraction_params,
                            const ChromExtractParams & ms1_chromatogram_extraction_params,
-                           const Param & feature_finder_param,
+                           Param & feature_finder_param,
                            const OpenSwath::LightTargetedExperiment& assay_library,
                            FeatureMap& result_featureFile,
                            bool store_features_in_featureFile,
