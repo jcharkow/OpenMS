@@ -440,7 +440,8 @@ protected:
       OpenSwathCalibrationWorkflow wf;
       wf.setLogType(log_type_);
       TransformationDescription im_trafo;
-      trafo_rtnorm = wf.performRTNormalization(irt_transitions, swath_maps, im_trafo,
+      std::vector < double > mz_trafo;
+      trafo_rtnorm = wf.performRTNormalization(irt_transitions, swath_maps, im_trafo, mz_trafo,
                                                min_rsq, min_coverage,
                                                feature_finder_param,
                                                cp_irt, irt_detection_param,

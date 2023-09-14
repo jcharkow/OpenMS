@@ -74,6 +74,11 @@ public:
     void load(const String& filename, TransformationDescription& transformation, bool fit_model=true);
 
     /**
+     @brief Loads the tranformationation from a TransformationXML string buffer
+    */
+    void loads(const String& content, TransformationDescription& transformation, bool fit_model=true);
+
+    /**
     @brief Stores the data in an TransformationXML file
 
     The data is read in and stored in the file named 'filename'.
@@ -82,6 +87,13 @@ public:
     @exception Exception::IllegalArgument is thrown if unsupported parameter types have been set
     */
     void store(const String& filename, const TransformationDescription& transformation);
+
+    /**
+     @brief dumps transformationXML into String
+
+     This is useful for attaching the XML content to an .sqlite file
+     **/
+    String dump(const TransformationDescription& transformation);
 
 protected:
     // Docu in base class

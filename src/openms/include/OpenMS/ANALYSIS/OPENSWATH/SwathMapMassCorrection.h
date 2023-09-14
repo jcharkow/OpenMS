@@ -38,6 +38,7 @@
 
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/SwathMap.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/MRMFeatureFinderScoring.h>
+#include <OpenMS/ANALYSIS/MAPMATCHING/TransformationDescription.h>
 
 namespace OpenMS
 {
@@ -81,10 +82,11 @@ public:
      * @param targeted_exp The corresponding spectral library (required for extraction coordinates)
      * @param swath_maps The raw swath maps from the current run, will be modified (replaced with a corrected version)
      * @param pasef Whether the data is PASEF data with possible overlapping m/z windows (with different ion mobility). In this case, the "best" SWATH window (with precursor cetntered around IM) is chosen.
+     * @param regression_params regression parameters ouptted by correction
      */
     void correctMZ(const std::map<String, OpenMS::MRMFeatureFinderScoring::MRMTransitionGroupType *>& transition_group_map,
                    const OpenSwath::LightTargetedExperiment & targeted_exp,
-                   std::vector< OpenSwath::SwathMap > & swath_maps, const bool pasef);
+                   std::vector< OpenSwath::SwathMap > & swath_maps, const bool pasef, std::vector< double >& regression_params);
 
     /**
      * @brief Correct the ion mobility values of a SWATH map based on the RT-normalization peptides

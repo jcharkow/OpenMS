@@ -42,6 +42,7 @@
 #include <OpenMS/FORMAT/TraMLFile.h>
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <OpenMS/FORMAT/FeatureXMLFile.h>
+#include <OpenMS/FORMAT/OSWFile.h>
 #include <OpenMS/FORMAT/TransformationXMLFile.h>
 #include <OpenMS/FORMAT/SwathFile.h>
 #include <OpenMS/FORMAT/DATAACCESS/MSDataTransformingConsumer.h>
@@ -64,6 +65,7 @@
 #include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathHelper.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/DataAccessHelper.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/SimpleOpenMSSpectraAccessFactory.h>
+#include <OpenMS/ANALYSIS/OPENSWATH/DATAACCESS/SpectrumAccessQuadMZTransforming.h>
 
 // Algorithms
 #include <OpenMS/ANALYSIS/OPENSWATH/MRMRTNormalizer.h>
@@ -449,6 +451,9 @@ protected:
     registerInputFile_("rt_norm", "<file>", "", "RT normalization file (how to map the RTs of this run to the ones stored in the library). If set, tr_irt may be omitted.", false, true);
     setValidFormats_("rt_norm", ListUtils::create<String>("trafoXML"));
 
+    registerInputFile_("osw_template", "<file>", "", "Template OpenSwath file used for applying calibrations from previous experiment.", false);
+    setValidFormats_("osw_template", ListUtils::create<String>("osw"));
+
     registerInputFile_("swath_windows_file", "<file>", "", "Optional, tab-separated file containing the SWATH windows for extraction: lower_offset upper_offset. Note that the first line is a header and will be skipped.", false);
     registerFlag_("sort_swath_maps", "Sort input SWATH files when matching to SWATH windows from swath_windows_file", true);
 
@@ -680,6 +685,7 @@ protected:
     String irt_tr_file = getStringOption_("tr_irt");
     String nonlinear_irt_tr_file = getStringOption_("tr_irt_nonlinear");
     String trafo_in = getStringOption_("rt_norm");
+    String osw_template = getStringOption_("osw_template");
     String swath_windows_file = getStringOption_("swath_windows_file");
 
     String out_chrom = getStringOption_("out_chrom");
@@ -879,6 +885,9 @@ protected:
     calibration_param.setValue("im_extraction_window", cp_irt.im_extraction_window);
     calibration_param.setValue("mz_correction_function", mz_correction_function);
     TransformationDescription trafo_rtnorm;
+    TransformationDescription im_trafo; // exp -> theoretical
+    std::vector < double > mz_trafo;
+    /*
     if (nonlinear_irt_tr_file.empty())
     {
       trafo_rtnorm = performCalibration(trafo_in, irt_tr_file, swath_maps,
@@ -886,6 +895,37 @@ protected:
                                         cp_irt, irt_detection_param, calibration_param,
                                         debug_level, sonar, pasef, load_into_memory,
                                         irt_trafo_out, irt_mzml_out);
+    }
+    */
+    if (!osw_template.empty())
+    {
+      OSWFile oswf(osw_template);
+
+      // Load the RT Model, OpenSwath model normalization parameters are ignored
+      trafo_rtnorm = oswf.readTransformation(OSWFile::CalibrationDimension::RT);
+
+      // Load the IM Model, OpenSwath model normalization parameters are ignored
+      im_trafo = oswf.readTransformation(OSWFile::CalibrationDimension::IM);
+      TransformationDescription im_trafo_inv = im_trafo;
+      im_trafo_inv.invert(); // theoretical -> experimental
+
+      // We now modify the library as this is the easiest thing to do
+      for (auto & p : transition_exp.getCompounds())
+      {
+        p.drift_time = im_trafo_inv.apply(p.drift_time);
+      }
+
+      // Load the MZ regression parameters, OpenSwath model normalization parameters are ignored
+      mz_trafo = oswf.readTransformation();
+      // Replace the swath files with a transforming wrapper.
+      // TODO for is ppm need to save parameters
+      for (SignedSize i = 0; i < boost::numeric_cast<SignedSize>(swath_maps.size()); ++i)
+      {
+        swath_maps[i].sptr = boost::shared_ptr<OpenSwath::ISpectrumAccess>(
+          new SpectrumAccessQuadMZTransforming(swath_maps[i].sptr,
+            mz_trafo[0], mz_trafo[1], mz_trafo[2], true)); //TODO read off parameters is ppm
+      }
+
     }
     else
     {
@@ -922,8 +962,7 @@ protected:
       Param nonlinear_irt = irt_detection_param;
       nonlinear_irt.setValue("estimateBestPeptides", "true");
 
-      TransformationDescription im_trafo; // exp -> theoretical
-      trafo_rtnorm = wf.doDataNormalization_(transition_exp_nl, chromatograms, im_trafo, swath_maps,
+      trafo_rtnorm = wf.doDataNormalization_(transition_exp_nl, chromatograms, im_trafo, mz_trafo, swath_maps,
                                              min_rsq, min_coverage,
                                              feature_finder_param, nonlinear_irt, calibration_param, pasef);
 
@@ -967,7 +1006,7 @@ protected:
     {
       OpenSwathWorkflow wf(use_ms1_traces, use_ms1_im, prm, pasef, outer_loop_threads);
       wf.setLogType(log_type_);
-      wf.performExtraction(swath_maps, trafo_rtnorm, cp, cp_ms1, feature_finder_param, transition_exp,
+      wf.performExtraction(swath_maps, trafo_rtnorm, im_trafo, cp, cp_ms1, feature_finder_param, transition_exp,
           out_featureFile, !out.empty(), tsvwriter, oswwriter, chromatogramConsumer, batchSize, ms1_isotopes, load_into_memory);
     }
 
@@ -979,6 +1018,15 @@ protected:
     }
 
     delete chromatogramConsumer;
+
+    // Add Calibration Information to OSW file if active
+    if (oswwriter.isActive())
+    {
+      OSWFile oswf(out_osw);
+      oswf.writeCalibration(out_osw, trafo_rtnorm, OSWFile::CalibrationDimension::RT);  // attach trafo_rt_norm to .osw file
+      oswf.writeCalibration(out_osw, im_trafo, OSWFile::CalibrationDimension::IM);  // attach im_trafo to .osw file
+      oswf.writeCalibration(out_osw, mz_trafo, OSWFile::CalibrationDimension::MZ);
+    }
 
     return EXECUTION_OK;
   }

@@ -391,7 +391,8 @@ namespace OpenMS
     const std::map<String, OpenMS::MRMFeatureFinderScoring::MRMTransitionGroupType *> & transition_group_map,
     const OpenSwath::LightTargetedExperiment& targeted_exp,
     std::vector< OpenSwath::SwathMap > & swath_maps,
-    const bool pasef)
+    const bool pasef,
+    std::vector<double>& regression_params)
   {
     bool ppm = mz_extraction_window_ppm_;
     double mz_extr_window = mz_extraction_window_;
@@ -406,6 +407,9 @@ namespace OpenMS
 
     if (corr_type == "none")
     {
+      regression_params.push_back(0.0);
+      regression_params.push_back(0.0);
+      regression_params.push_back(0.0);
       return;
     }
 
@@ -508,9 +512,11 @@ namespace OpenMS
       }
     }
 
-    std::vector<double> regression_params;
     if (corr_type == "none" || data_all.size() < 3)
     {
+      regression_params.push_back(0.0);
+      regression_params.push_back(0.0);
+      regression_params.push_back(0.0);
       return;
     }
     else if (corr_type == "unweighted_regression")

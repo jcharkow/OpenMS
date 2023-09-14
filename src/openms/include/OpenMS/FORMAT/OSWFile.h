@@ -34,6 +34,7 @@
 
 #pragma once
 
+#include <OpenMS/ANALYSIS/MAPMATCHING/TransformationDescription.h>
 #include <OpenMS/CONCEPT/Exception.h>
 #include <OpenMS/DATASTRUCTURES/OSWData.h>
 #include <OpenMS/DATASTRUCTURES/String.h>
@@ -61,12 +62,12 @@ namespace OpenMS
     (score_ms1, score_ms2, score_transition) with the respective confidence metrics.
     These tables can be mapped to the corresponding feature tables, are very similar
     to PyProphet results and can thus be used interchangeably.
-    
+
   */
   class OPENMS_DLLAPI OSWFile
   {
   public:
-    
+
     /// query all proteins, not just one with a particular ID
     static constexpr Size ALL_PROTEINS = -1;
 
@@ -76,8 +77,49 @@ namespace OpenMS
     OSWFile(const OSWFile& rhs) = default;
     OSWFile& operator=(const OSWFile& rhs) = default;
 
+    // Options for calibration dimension
+    enum CalibrationDimension
+    {
+      RT,
+      IM,
+      MZ
+    };
+    /**
+     * @brief Writes calibration to disk
+     *
+     * @param trafo - transformation description to store
+     * @param dimension - dimension of transformation description (RT, IM or m/z)
+     */
+    static void writeCalibration(const std::string& in_osw, const TransformationDescription& trafo, const CalibrationDimension& dimension);
+
+    /**
+     * @brief Writes mz regression parameters calibration to disk
+     *
+     * @param regression - rergession transformation to store
+     * @param dimension - dimension of transformation description (RT, IM or m/z)
+     */
+    static void writeCalibration(const std::string& in_osw, const std::vector < double >& regression, const CalibrationDimension& dimension);
+
+
+     /**
+     @brief reads a TransformationDescription stored in the OSW file
+     @param CalibrationDimension - dimension to fetch can be RT or IM (For MZ use function below)
+
+     @returns TransformationDescription
+     */
+    TransformationDescription readTransformation(const CalibrationDimension& dimension);
+
+
+     /**
+     @brief reads MZ regression parameters stored in the OSW file
+
+     @returns TransformationDescription
+     */
+    std::vector <double > readTransformation();
+
+
     /// read data from an SQLLite OSW file into @p swath_result
-    /// Depending on the number of proteins, this could take a while. 
+    /// Depending on the number of proteins, this could take a while.
     /// @note If you just want the proteins and transitions without peptides and features, use readMinimal().
     void read(OSWData& swath_result);
 
@@ -114,7 +156,7 @@ namespace OpenMS
        : score(score), qvalue(qvalue), posterior_error_prob(pep)
        {}
       PercolatorFeature(const PercolatorFeature& rhs) = default;
-      
+
       double score;
       double qvalue;
       double posterior_error_prob;
@@ -132,13 +174,14 @@ namespace OpenMS
     */
     static void writeFromPercolator(const std::string& osw_filename, const OSWFile::OSWLevel osw_level, const std::map< std::string, PercolatorFeature >& features);
 
+
     /// extract the RUN::ID from the sqMass file
     /// @throws Exception::SqlOperationFailed more than on run exists
     UInt64 getRunID() const;
 
   protected:
     /** populate transitions of @p swath_result
-    
+
       Clears swath_result entirely (incl. proteins) before adding transitions.
     */
     void readTransitions_(OSWData& swath_result);

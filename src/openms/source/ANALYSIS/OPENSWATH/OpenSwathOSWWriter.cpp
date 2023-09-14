@@ -36,6 +36,8 @@
 
 #include <OpenMS/FORMAT/SqliteConnector.h>
 
+#include <OpenMS/FORMAT/TransformationXMLFile.h>
+
 #include <sqlite3.h>
 
 namespace OpenMS
@@ -168,7 +170,12 @@ namespace OpenMS
       "VAR_MI_SCORE REAL NULL," \
       "VAR_MI_RATIO_SCORE REAL NULL," \
       "VAR_ISOTOPE_CORRELATION_SCORE REAL NULL," \
-      "VAR_ISOTOPE_OVERLAP_SCORE REAL NULL);";
+      "VAR_ISOTOPE_OVERLAP_SCORE REAL NULL);"
+
+      // Calibration Table
+      "CREATE TABLE CALIBRATION(" \
+      "DIMENSION TEXT NOT NULL," \
+      "DATA TEXT NOT NULL);";
 
     // Execute SQL create statement
     conn.executeStatement(create_sql);
@@ -495,5 +502,6 @@ namespace OpenMS
     }
     conn.executeStatement("END TRANSACTION");
   }
+
 }
 

@@ -35,6 +35,7 @@
 #include <OpenMS/FORMAT/OSWFile.h>
 
 #include <OpenMS/DATASTRUCTURES/StringListUtils.h>
+#include <OpenMS/FORMAT/TransformationXMLFile.h>
 
 #include <sqlite3.h>
 
@@ -48,6 +49,126 @@ namespace OpenMS
   using namespace std;
 
   const std::array<std::string, (Size)OSWFile::OSWLevel::SIZE_OF_OSWLEVEL> OSWFile::names_of_oswlevel = { "ms1", "ms2", "transition" };
+
+  void OSWFile::writeCalibration(const std::string& in_osw, const std::vector< double >& mz_regression, const CalibrationDimension& dimension)
+  {
+    if (CalibrationDimension::MZ == dimension)
+    {
+      SqliteConnector conn(in_osw);
+      conn.executeStatement("BEGIN TRANSACTION");
+
+      std::ostringstream oss;
+
+      for (size_t i = 0; i < mz_regression.size(); ++i) {
+          oss << mz_regression[i];
+          if (i < mz_regression.size() - 1) {
+              oss << ",";
+          }
+      }
+
+      std::string regression_string = oss.str();
+
+      conn.executeStatement("INSERT INTO CALIBRATION (DIMENSION, DATA) VALUES ('MZ','" + regression_string + "')");
+      conn.executeStatement("END TRANSACTION");
+    }
+    else
+    {
+      throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Only MZ can be exported as regression parameters");
+    }
+  }
+
+  void OSWFile::writeCalibration(const std::string& in_osw, const TransformationDescription& trafo, const CalibrationDimension& dimension)
+  {
+    SqliteConnector conn(in_osw);
+    conn.executeStatement("BEGIN TRANSACTION");
+
+    String trafo_string = TransformationXMLFile().dump(trafo);
+    String dimension_str;
+
+    switch (dimension)
+    {
+      case CalibrationDimension::RT:
+      {
+        dimension_str = "RT";
+        break;
+      }
+      case CalibrationDimension::IM:
+      {
+        dimension_str = "IM";
+        break;
+      }
+      case CalibrationDimension::MZ:
+      {
+        throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "MZ Trafo output not supported, only regression parameters can be output");
+        break;
+      }
+    }
+    conn.executeStatement("INSERT INTO CALIBRATION (DIMENSION, DATA) VALUES ('" + dimension_str + "'" + ", '" + trafo_string + "')");
+
+    conn.executeStatement("END TRANSACTION");
+  }
+
+  std::vector <double> OSWFile::readTransformation()
+  {
+    // SHOULD ONLY BE USED TO FETCH MZ
+    std::vector <double> mz_regression_param;
+
+    sqlite3_stmt* stmt;
+    String select_sql = "SELECT DATA FROM CALIBRATION WHERE DIMENSION =='MZ'";
+    conn_.prepareStatement(&stmt, select_sql);
+
+    Sql::nextRow(stmt);
+
+    String data = Sql::extractString(stmt, 0);
+
+    // regression parameters are 3 numbers divided by a comma, save this as a vector
+    std::istringstream ss(data);
+    std::string token;
+
+    while (std::getline(ss, token, ','))
+    {
+      double number;
+      std::istringstream(token) >> number;
+      mz_regression_param.push_back(number);
+    }
+
+    return mz_regression_param;
+  }
+
+  TransformationDescription OSWFile::readTransformation(const CalibrationDimension& dimension)
+  {
+    String dimension_str;
+    switch (dimension)
+    {
+      case CalibrationDimension::RT:
+      {
+        dimension_str = "RT";
+        break;
+      }
+      case CalibrationDimension::IM:
+      {
+        dimension_str = "IM";
+        break;
+      }
+      case CalibrationDimension::MZ:
+      {
+        dimension_str = "MZ";
+        break;
+      }
+    }
+
+    sqlite3_stmt* stmt;
+    String select_sql = "SELECT DATA FROM CALIBRATION WHERE DIMENSION =='" + dimension_str + "'";
+    conn_.prepareStatement(&stmt, select_sql);
+
+    Sql::nextRow(stmt);
+    String data = Sql::extractString(stmt, 0);
+
+    TransformationDescription trafo;
+    TransformationXMLFile().loads(data, trafo, true);
+
+    return trafo;
+  }
 
   void OSWFile::readToPIN(const std::string& in_osw,
                      const OSWLevel osw_level,
@@ -336,7 +457,7 @@ namespace OpenMS
     {
       readMeta_(swath_result);
       readTransitions_(swath_result);
-      getFullProteins_(swath_result);      
+      getFullProteins_(swath_result);
     }
 
 
@@ -544,7 +665,7 @@ namespace OpenMS
       { //  do not use accession to filter -- its as slow as full query
         protein_subselect = "(select * from PROTEIN  where ID = " + String(swath_result.getProteins().at(index).getID()) + ") as PROTEIN";
       }
-     
+
 
       // check of SCORE_MS2 table is available (for OSW files which underwent pyProphet)
       // set q_value to -1 if missing

@@ -276,6 +276,8 @@ protected:
      *
      * @param irt_transitions A set of transitions used for the RT normalization peptides
      * @param swath_maps The raw data (swath maps)
+     * @param im_trafo output IM tranformation
+     * @param mz_trafo output MZ tranformation
      * @param min_rsq Minimal R^2 value that is expected for the RT regression
      * @param min_coverage Minimal coverage of the chromatographic space that needs to be achieved
      * @param feature_finder_param Parameter set for the feature finding in chromatographic dimension
@@ -293,6 +295,7 @@ protected:
     TransformationDescription performRTNormalization(const OpenSwath::LightTargetedExperiment & irt_transitions,
       std::vector< OpenSwath::SwathMap > & swath_maps,
       TransformationDescription& im_trafo,
+      std::vector < double > & mz_trafo,
       double min_rsq,
       double min_coverage,
       const Param & feature_finder_param,
@@ -340,6 +343,7 @@ protected:
     TransformationDescription doDataNormalization_(const OpenSwath::LightTargetedExperiment& transition_exp_,
       const std::vector< OpenMS::MSChromatogram >& chromatograms,
       TransformationDescription& im_trafo,
+      std::vector < double >& mz_trafo,
       std::vector< OpenSwath::SwathMap > & swath_maps,
       double min_rsq,
       double min_coverage,
@@ -440,6 +444,7 @@ protected:
      *
      * @param swath_maps The raw data (swath maps)
      * @param rt_trafo Retention time transformation description (translating this runs' RT to normalized RT space)
+     * @param trafo_im Ion Mobility transformation description (translating this runs' IM to normalized IM space)
      * @param chromatogram_extraction_params Parameter set for the chromatogram extraction
      * @param ms1_chromatogram_extraction_params Parameter set for the chromatogram extraction of the MS1 data
      * @param feature_finder_param Parameter set for the feature finding in chromatographic dimension
@@ -461,6 +466,7 @@ protected:
     */
     void performExtraction(const std::vector< OpenSwath::SwathMap > & swath_maps,
                            const TransformationDescription& trafo,
+                           const TransformationDescription& trafo_im,
                            const ChromExtractParams & chromatogram_extraction_params,
                            const ChromExtractParams & ms1_chromatogram_extraction_params,
                            Param & feature_finder_param,

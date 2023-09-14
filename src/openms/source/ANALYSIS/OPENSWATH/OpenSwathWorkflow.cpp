@@ -64,6 +64,7 @@ namespace OpenMS
     const OpenSwath::LightTargetedExperiment& irt_transitions,
     std::vector< OpenSwath::SwathMap > & swath_maps,
     TransformationDescription& im_trafo,
+    std::vector< double >& mz_trafo,
     double min_rsq,
     double min_coverage,
     const Param& feature_finder_param,
@@ -107,7 +108,7 @@ namespace OpenMS
 
     // perform RT and m/z correction on the data
     TransformationDescription tr = doDataNormalization_(irt_transitions,
-        irt_chromatograms, im_trafo, swath_maps,
+        irt_chromatograms, im_trafo, mz_trafo, swath_maps,
         min_rsq, min_coverage, feature_finder_param,
         irt_detection_param, calibration_param, pasef);
     return tr;
@@ -117,6 +118,7 @@ namespace OpenMS
     const OpenSwath::LightTargetedExperiment& targeted_exp,
     const std::vector< OpenMS::MSChromatogram >& chromatograms,
     TransformationDescription& im_trafo,
+    std::vector < double > & mz_trafo,
     std::vector< OpenSwath::SwathMap > & swath_maps,
     double min_rsq,
     double min_coverage,
@@ -283,7 +285,7 @@ namespace OpenMS
     SwathMapMassCorrection mc;
     mc.setParameters(calibration_param);
 
-    mc.correctMZ(trgrmap_final, targeted_exp, swath_maps, pasef);
+    mc.correctMZ(trgrmap_final, targeted_exp, swath_maps, pasef, mz_trafo);
     mc.correctIM(trgrmap_final, targeted_exp, swath_maps, pasef, im_trafo);
 
     // 9. store RT transformation, using the selected model
@@ -501,6 +503,7 @@ namespace OpenMS
   void OpenSwathWorkflow::performExtraction(
     const std::vector< OpenSwath::SwathMap > & swath_maps,
     const TransformationDescription& trafo,
+    const TransformationDescription& trafo_im,
     const ChromExtractParams & cp,
     const ChromExtractParams & cp_ms1,
     Param & feature_finder_param,
@@ -522,6 +525,10 @@ namespace OpenMS
     // Compute inversion of the transformation
     TransformationDescription trafo_inverse = trafo;
     trafo_inverse.invert();
+
+    // Compute inversion of the IM transformation
+    TransformationDescription trafo_im_inverse = trafo_im;
+    trafo_im_inverse.invert();
 
     std::cout << "Will analyze " << transition_exp.transitions.size() << " transitions in total." << std::endl;
     int progress = 0;
