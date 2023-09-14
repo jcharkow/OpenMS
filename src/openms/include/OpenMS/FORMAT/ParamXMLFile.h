@@ -81,6 +81,17 @@ public:
       @exception Exception::ParseError is thrown if an error occurs during parsing
     */
     void load(const String& filename, Param& param);
+
+    /**
+      @brief Read XML String
+
+      @param String that contains the XML contents The file from where to read the Param object.
+      @param param The param object where the read data should be stored.
+
+      @exception Exception::ParseError is thrown if an error occurs during parsing
+    */
+    void loads(const String& buffer, Param& param);
+
   };
 
 } // namespace OpenMS

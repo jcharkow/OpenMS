@@ -118,6 +118,16 @@ namespace OpenMS
     std::vector <double > readTransformation();
 
 
+    /**
+     @brief stores parameters in .INI string in the OSW file
+    */
+    static void writeParameters(const std::string& in_osw, const Param& param);
+
+    /**
+     @brief reads parameters in a .INI string in the OSW file
+    */
+    Param readParameters();
+
     /// read data from an SQLLite OSW file into @p swath_result
     /// Depending on the number of proteins, this could take a while.
     /// @note If you just want the proteins and transitions without peptides and features, use readMinimal().

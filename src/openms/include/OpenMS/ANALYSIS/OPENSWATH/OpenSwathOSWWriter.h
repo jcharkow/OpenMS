@@ -118,8 +118,13 @@ namespace OpenMS
         <tr> <th BGCOLOR="#EBEBEB" colspan=3>CALIBRATION</th> </tr>
         <tr> <td BGCOLOR="#EBEBEB">DIMENSION</td> <td>String</td> <td> Dimension to be calibrated </tr>
         <tr> <td BGCOLOR="#EBEBEB">DATA</td> <td>String</td> <td> Tranformation in .json of rt calibration</tr>
-     </table>
+      </table>
 
+
+      <table>
+        <tr> <th BGCOLOR="#EBEBEB" colspan=3>PARAMETERS</th> </tr>
+        <tr> <td BGCOLOR="#EBEBEB">PARAMETERS</td> <td>String</td> <td> Parameter string stored in an .INI file </tr>
+      </table>
    */
   class OPENMS_DLLAPI OpenSwathOSWWriter
   {

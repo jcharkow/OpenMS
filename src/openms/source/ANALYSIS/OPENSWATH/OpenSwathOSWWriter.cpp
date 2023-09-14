@@ -170,12 +170,16 @@ namespace OpenMS
       "VAR_MI_SCORE REAL NULL," \
       "VAR_MI_RATIO_SCORE REAL NULL," \
       "VAR_ISOTOPE_CORRELATION_SCORE REAL NULL," \
-      "VAR_ISOTOPE_OVERLAP_SCORE REAL NULL);"
+      "VAR_ISOTOPE_OVERLAP_SCORE REAL NULL);" \
 
       // Calibration Table
       "CREATE TABLE CALIBRATION(" \
       "DIMENSION TEXT NOT NULL," \
-      "DATA TEXT NOT NULL);";
+      "DATA TEXT NOT NULL);"\
+
+      // Parameter Table
+      "CREATE TABLE PARAMETERS(" \
+      "PARAMETERS TEXT NOT NULL);";
 
     // Execute SQL create statement
     conn.executeStatement(create_sql);

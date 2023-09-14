@@ -681,11 +681,19 @@ protected:
 
     String out_qc = getStringOption_("out_qc");
 
+    String osw_template = getStringOption_("osw_template");
+
+    // TODO Use template arguments
+    Param template_params;
+    if (!osw_template.empty())
+    {
+      OSWFile oswf(osw_template);
+      template_params = oswf.readParameters();
+    }
 
     String irt_tr_file = getStringOption_("tr_irt");
     String nonlinear_irt_tr_file = getStringOption_("tr_irt_nonlinear");
     String trafo_in = getStringOption_("rt_norm");
-    String osw_template = getStringOption_("osw_template");
     String swath_windows_file = getStringOption_("swath_windows_file");
 
     String out_chrom = getStringOption_("out_chrom");
@@ -919,11 +927,19 @@ protected:
       mz_trafo = oswf.readTransformation();
       // Replace the swath files with a transforming wrapper.
       // TODO for is ppm need to save parameters
+
+      Param template_params = oswf.readParameters();
+
+      String mz_calib = std::string(template_params.getValue("mz_correction_function"));
+      bool is_ppm = bool(mz_calib == "quadratic_regression_delta_ppm" ||
+                         mz_calib == "weighted_quadratic_regression_delta_ppm" ||
+                         mz_calib == "regression_delta_ppm");
+
       for (SignedSize i = 0; i < boost::numeric_cast<SignedSize>(swath_maps.size()); ++i)
       {
         swath_maps[i].sptr = boost::shared_ptr<OpenSwath::ISpectrumAccess>(
           new SpectrumAccessQuadMZTransforming(swath_maps[i].sptr,
-            mz_trafo[0], mz_trafo[1], mz_trafo[2], true)); //TODO read off parameters is ppm
+            mz_trafo[0], mz_trafo[1], mz_trafo[2], is_ppm));
       }
 
     }
@@ -1026,6 +1042,9 @@ protected:
       oswf.writeCalibration(out_osw, trafo_rtnorm, OSWFile::CalibrationDimension::RT);  // attach trafo_rt_norm to .osw file
       oswf.writeCalibration(out_osw, im_trafo, OSWFile::CalibrationDimension::IM);  // attach im_trafo to .osw file
       oswf.writeCalibration(out_osw, mz_trafo, OSWFile::CalibrationDimension::MZ);
+
+      // Save .INI to OpenSwathFile
+      oswf.writeParameters(out_osw, getParam_());
     }
 
     return EXECUTION_OK;

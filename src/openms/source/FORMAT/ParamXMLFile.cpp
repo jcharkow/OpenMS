@@ -299,7 +299,7 @@ namespace OpenMS
           // for files we store the restrictions as supported_formats
           if (!restrictions.empty())
           {
-            if (it->tags.find("input file") != it->tags.end() 
+            if (it->tags.find("input file") != it->tags.end()
               || it->tags.find("output file") != it->tags.end()
               || it->tags.find("output prefix") != it->tags.end())
             {
@@ -378,6 +378,12 @@ namespace OpenMS
     }
 
     os << "</PARAMETERS>" << std::endl; // forces a flush
+  }
+
+  void ParamXMLFile::loads(const String& content, Param& param)
+  {
+    Internal::ParamXMLHandler handler(param, "", schema_version_);
+    parseBuffer_(content, &handler);
   }
 
   void ParamXMLFile::load(const String& filename, Param& param)

@@ -36,6 +36,7 @@
 
 #include <OpenMS/DATASTRUCTURES/StringListUtils.h>
 #include <OpenMS/FORMAT/TransformationXMLFile.h>
+#include <OpenMS/FORMAT/ParamXMLFile.h>
 
 #include <sqlite3.h>
 
@@ -168,6 +169,36 @@ namespace OpenMS
     TransformationXMLFile().loads(data, trafo, true);
 
     return trafo;
+  }
+
+  void OSWFile::writeParameters(const std::string& in_osw, const Param& param)
+  {
+    SqliteConnector conn(in_osw);
+    conn.executeStatement("BEGIN TRANSACTION");
+
+    //String param_xml_str = TransformationXMLFile().dump(trafo);
+    //
+    std::ostringstream os_ptr;
+    ParamXMLFile().writeXMLToStream(&os_ptr, param);
+
+    String param_xml_str = os_ptr.str();
+
+    conn.executeStatement("INSERT INTO PARAMETERS (PARAMETERS) VALUES ('" + param_xml_str + "')");
+
+    conn.executeStatement("END TRANSACTION");
+  }
+
+  Param OSWFile::readParameters()
+  {
+    sqlite3_stmt* stmt;
+    String select_sql = "SELECT PARAMETERS FROM PARAMETERS";
+    conn_.prepareStatement(&stmt, select_sql);
+
+    Sql::nextRow(stmt);
+    String data = Sql::extractString(stmt, 0);
+    Param param;
+    ParamXMLFile().loads(data, param);
+    return param;
   }
 
   void OSWFile::readToPIN(const std::string& in_osw,
