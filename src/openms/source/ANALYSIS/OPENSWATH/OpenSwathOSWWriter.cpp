@@ -170,7 +170,8 @@ namespace OpenMS
       "VAR_MI_SCORE REAL NULL," \
       "VAR_MI_RATIO_SCORE REAL NULL," \
       "VAR_ISOTOPE_CORRELATION_SCORE REAL NULL," \
-      "VAR_ISOTOPE_OVERLAP_SCORE REAL NULL);" \
+      "VAR_ISOTOPE_OVERLAP_SCORE REAL NULL," \
+      "NUM_POINTS_IN_PEAK INT NULL);" \
 
       // Calibration Table
       "CREATE TABLE CALIBRATION(" \
@@ -258,13 +259,14 @@ namespace OpenMS
             total_mi = sub_it.getMetaValue("total_mi").toString();
           }
           sql_feature_ms2_transition  << "INSERT INTO FEATURE_TRANSITION "\
-            "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, TOTAL_MI) VALUES ("
+            "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, TOTAL_MI, NUM_POINTS_IN_PEAK) VALUES ("
                                       << feature_id << ", "
                                       << sub_it.getMetaValue("native_id") << ", "
                                       << sub_it.getIntensity() << ", "
                                       << sub_it.getMetaValue("total_xic") << ", "
                                       << sub_it.getMetaValue("peak_apex_int") << ", "
-                                      << total_mi << "); ";
+                                      << total_mi << ", "
+                                      << sub_it.getMetaValue("numPoints") << "); ";
         }
         else if (sub_it.metaValueExists("FeatureLevel") && sub_it.getMetaValue("FeatureLevel") == "MS1" && sub_it.getIntensity() > 0.0)
         {

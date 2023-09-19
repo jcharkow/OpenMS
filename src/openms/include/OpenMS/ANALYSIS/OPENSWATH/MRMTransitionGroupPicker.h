@@ -107,6 +107,7 @@ public:
       - rightWidth
       - total_xic (fragment trace XIC sum)
       - peak_apices_sum
+      - numPoints: number of non 0 points in the peak
 
     */
     template <typename SpectrumT, typename TransitionT>
@@ -125,8 +126,8 @@ public:
         String native_id = chromatogram.getNativeID();
 
         // only pick detecting transitions (skip all others)
-        if (transition_group.getTransitions().size() > 0 && 
-            transition_group.hasTransition(native_id)  && 
+        if (transition_group.getTransitions().size() > 0 &&
+            transition_group.hasTransition(native_id)  &&
             !transition_group.getTransition(native_id).isDetectingTransition() )
         {
           continue;
@@ -209,7 +210,7 @@ public:
         bool skip = false;
         for (Size j = 0; j < i; j++)
         {
-          if ((double)mrm_feature.getMetaValue("leftWidth") >=  (double)features[j].getMetaValue("leftWidth") && 
+          if ((double)mrm_feature.getMetaValue("leftWidth") >=  (double)features[j].getMetaValue("leftWidth") &&
               (double)mrm_feature.getMetaValue("rightWidth") <= (double)features[j].getMetaValue("rightWidth") )
           { skip = true; }
         }
@@ -274,7 +275,7 @@ public:
       // Check for minimal peak width -> return empty feature (Intensity zero)
       if (use_consensus_)
       {
-        if (min_peak_width_ > 0.0 && std::fabs(best_right - best_left) < min_peak_width_) 
+        if (min_peak_width_ > 0.0 && std::fabs(best_right - best_left) < min_peak_width_)
         {
           return mrmFeature;
         }
@@ -283,7 +284,7 @@ public:
         {
           String outlier = "none";
           double qual = computeQuality_(transition_group, picked_chroms, chr_idx, best_left, best_right, outlier);
-          if (qual < min_qual_) 
+          if (qual < min_qual_)
           {
             return mrmFeature;
           }
@@ -335,13 +336,13 @@ public:
       return mrmFeature;
     }
 
-    /** 
-     
+    /**
+
       @brief Apex-based peak picking
 
       Pick the peak with the closest apex to the consensus apex for each
-      chromatogram.  Use the closest peak for the current peak. 
-      
+      chromatogram.  Use the closest peak for the current peak.
+
       Note that we will only set the closest peak per chromatogram to zero, so
       if there are two peaks for some transitions, we will have to get to them
       later.  If there is no peak, then we transfer transition boundaries from
@@ -350,7 +351,7 @@ public:
     template <typename SpectrumT>
     void pickApex(std::vector<SpectrumT>& picked_chroms,
                   const double best_left, const double best_right, const double peak_apex,
-                  double &min_left, double &max_right, 
+                  double &min_left, double &max_right,
                   std::vector< double > & left_edges, std::vector< double > & right_edges)
     {
       for (Size k = 0; k < picked_chroms.size(); k++)
@@ -361,8 +362,8 @@ public:
         {
           PeakIntegrator::PeakArea pa_tmp = pi_.integratePeak(  // get the peak apex
               picked_chroms[k],
-              picked_chroms[k].getFloatDataArrays()[PeakPickerMRM::IDX_LEFTBORDER][i], 
-              picked_chroms[k].getFloatDataArrays()[PeakPickerMRM::IDX_RIGHTBORDER][i]); 
+              picked_chroms[k].getFloatDataArrays()[PeakPickerMRM::IDX_LEFTBORDER][i],
+              picked_chroms[k].getFloatDataArrays()[PeakPickerMRM::IDX_RIGHTBORDER][i]);
           if (pa_tmp.apex_pos > 1e-11 && std::fabs(pa_tmp.apex_pos - peak_apex) < peak_apex_dist_min)
           { // update best candidate
             peak_apex_dist_min = std::fabs(pa_tmp.apex_pos - peak_apex);
@@ -370,7 +371,7 @@ public:
           }
         }
 
-        // Select master peak boundaries, or in the case we found at least one peak, the local peak boundaries 
+        // Select master peak boundaries, or in the case we found at least one peak, the local peak boundaries
         double l = best_left;
         double r = best_right;
         if (min_dist >= 0)
@@ -424,7 +425,7 @@ public:
           local_right = right_edges[k];
         }
 
-        const SpectrumT& chromatogram = selectChromHelper_(transition_group, transition_group.getTransitions()[k].getNativeID()); 
+        const SpectrumT& chromatogram = selectChromHelper_(transition_group, transition_group.getTransitions()[k].getNativeID());
         if (transition_group.getTransitions()[k].isDetectingTransition())
         {
           for (typename SpectrumT::const_iterator it = chromatogram.begin(); it != chromatogram.end(); it++)
@@ -434,11 +435,21 @@ public:
         }
 
         // Compute total intensity on transition-level
-        double transition_total_xic = 0; 
+        double transition_total_xic = 0;
 
         for (typename SpectrumT::const_iterator it = chromatogram.begin(); it != chromatogram.end(); it++)
         {
           transition_total_xic += it->getIntensity();
+        }
+
+        // Compute number of non 0 points on transition-level
+        int transition_numPoints = 0;
+        for (typename SpectrumT::const_iterator it = chromatogram.begin(); it != chromatogram.end(); it++)
+        {
+          if (it->getIntensity() > 0)
+          {
+            transition_numPoints += 1;
+          }
         }
 
         // Compute total mutual information on transition-level.
@@ -486,7 +497,7 @@ public:
         }
         else if (peak_integration_ == "smoothed")
         {
-          if (smoothed_chroms.size() <= k) 
+          if (smoothed_chroms.size() <= k)
           {
             throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
                                              "Tried to calculate peak area and height without any smoothed chromatograms");
@@ -497,7 +508,7 @@ public:
         {
           throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
             String("Peak integration chromatogram ") + peak_integration_ + " is not a valid method for MRMTransitionGroupPicker");
-        } 
+        }
 
         Feature f;
         double quality = 0;
@@ -553,6 +564,7 @@ public:
         f.setMetaValue("native_id", chromatogram.getNativeID());
         f.setMetaValue("peak_apex_int", peak_apex_int);
         f.setMetaValue("total_xic", transition_total_xic);
+        f.setMetaValue("numPoints", transition_numPoints);
         if (compute_total_mi_)
         {
           f.setMetaValue("total_mi", transition_total_mi);
@@ -838,7 +850,7 @@ protected:
       for (Size k = 0; k < picked_chroms.size(); k++)
       {
         const SpectrumT& chromatogram = selectChromHelper_(transition_group, picked_chroms[k].getNativeID());
-        const SpectrumT used_chromatogram = resampleChromatogram_(chromatogram, 
+        const SpectrumT used_chromatogram = resampleChromatogram_(chromatogram,
             master_peak_container, best_left - resample_boundary, best_right + resample_boundary);
 
         std::vector<double> int_here;
@@ -955,7 +967,7 @@ protected:
 
       double score = shape_score - coel_score - 1.0 * missing_peaks / picked_chroms.size();
 
-      OPENMS_LOG_DEBUG << " Computed score  " << score << " (from " <<  shape_score << 
+      OPENMS_LOG_DEBUG << " Computed score  " << score << " (from " <<  shape_score <<
         " - " << coel_score << " - " << 1.0 * missing_peaks / picked_chroms.size() << ")" << std::endl;
 
       return score;
@@ -973,7 +985,7 @@ protected:
     template <typename SpectrumT>
     void recalculatePeakBorders_(const std::vector<SpectrumT>& picked_chroms, double& best_left, double& best_right, double max_z)
     {
-      // 1. Collect all seeds that lie within the current seed 
+      // 1. Collect all seeds that lie within the current seed
       // - Per chromatogram only the most intense one counts, otherwise very
       // - low intense peaks can contribute disproportionally to the voting
       // - procedure.
@@ -1013,7 +1025,7 @@ protected:
         return;
       }
 
-      // FEATURE IDEA: instead of Z-score use modified Z-score for small data sets 
+      // FEATURE IDEA: instead of Z-score use modified Z-score for small data sets
       // http://d-scholarship.pitt.edu/7948/1/Seo.pdf
       // http://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm
       // 1. calculate median
@@ -1031,8 +1043,8 @@ protected:
                                / right_borders.size() - mean * mean);
       std::sort(right_borders.begin(), right_borders.end());
 
-      OPENMS_LOG_DEBUG << " - Recalculating right peak boundaries " << mean << " mean / best " 
-                << best_right << " std " << stdev << " : "  << std::fabs(best_right - mean) / stdev 
+      OPENMS_LOG_DEBUG << " - Recalculating right peak boundaries " << mean << " mean / best "
+                << best_right << " std " << stdev << " : "  << std::fabs(best_right - mean) / stdev
                 << " coefficient of variation" << std::endl;
 
       // Compare right borders of best transition with the mean
@@ -1048,8 +1060,8 @@ protected:
                         / left_borders.size() - mean * mean);
       std::sort(left_borders.begin(), left_borders.end());
 
-      OPENMS_LOG_DEBUG << " - Recalculating left peak boundaries " << mean << " mean / best " 
-                << best_left << " std " << stdev << " : "  << std::fabs(best_left - mean) / stdev 
+      OPENMS_LOG_DEBUG << " - Recalculating left peak boundaries " << mean << " mean / best "
+                << best_left << " std " << stdev << " : "  << std::fabs(best_left - mean) / stdev
                 << " coefficient of variation" << std::endl;
 
       // Compare left borders of best transition with the mean
