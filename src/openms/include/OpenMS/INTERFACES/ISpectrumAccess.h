@@ -32,6 +32,8 @@ public:
     virtual SpectrumPtr getSpectrumById(const std::string& id) const = 0;
     /// Return a vector of ids of spectra that are within RT +/- deltaRT
     virtual std::vector<std::size_t> getSpectraByRT(double RT, double deltaRT) const = 0;
+    /// Return a vector of ids of spectra between rt_start and rt_end
+    virtual std::vector<std::size_t> getSpectraRTRange(double rt_start, double rt_end) const = 0;
     /// Returns the number of spectra available
     virtual size_t getNrSpectra() const = 0;
     /// Returns the meta information for a spectrum

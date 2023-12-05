@@ -104,6 +104,23 @@ namespace OpenMS
     return result;
   }
 
+  std::vector<std::size_t> SpectrumAccessOpenMSCached::getSpectraRTRange(double rt_start, double rt_end) const
+  {
+    std::vector<std::size_t> result;
+    auto spectrum = meta_ms_experiment_.RTBegin(rt_start);
+    if (spectrum == meta_ms_experiment_.end()) return result;
+
+    result.push_back(std::distance(meta_ms_experiment_.begin(), spectrum));
+    spectrum++;
+
+    while (spectrum != meta_ms_experiment_.end() && spectrum->getRT() < rt_end)
+    {
+      result.push_back(spectrum - meta_ms_experiment_.begin());
+      spectrum++;
+    }
+    return result;
+  }
+
   size_t SpectrumAccessOpenMSCached::getNrSpectra() const
   {
     return meta_ms_experiment_.size();

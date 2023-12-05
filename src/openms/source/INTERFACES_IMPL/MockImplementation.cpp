@@ -35,6 +35,11 @@ public:
     {
       return std::vector<std::size_t>();
     }
+    /// Return a vector of ids of spectra that are between rt_start and rt_end
+    std::vector<std::size_t> getSpectraRTRange(double /* rt_start */, double /* rt_end */) const override
+    {
+      return std::vector<std::size_t>();
+    }
     /// Returns the number of spectra available
     size_t getNrSpectra() const override
     {

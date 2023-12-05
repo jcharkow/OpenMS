@@ -40,6 +40,11 @@ namespace OpenMS
     return sptr_->getSpectraByRT(RT, deltaRT);
   }
 
+  std::vector<std::size_t> SpectrumAccessTransforming::getSpectraRTRange(double rt_start, double rt_end) const
+  {
+    return sptr_->getSpectraRTRange(rt_start, rt_end);
+  }
+
   size_t SpectrumAccessTransforming::getNrSpectra() const
   {
     return sptr_->getNrSpectra();

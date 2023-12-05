@@ -72,8 +72,8 @@ namespace OpenMS
     defaults_.setValidStrings("write_convex_hull", {"true","false"});
     defaults_.setValue("spectrum_addition_method", "simple", "For spectrum addition, either use simple concatenation or use peak resampling", {"advanced"});
     defaults_.setValidStrings("spectrum_addition_method", {"simple", "resample"});
-    defaults_.setValue("add_up_spectra", 1, "Add up spectra around the peak apex (needs to be a non-even integer)", {"advanced"});
-    defaults_.setMinInt("add_up_spectra", 1);
+    defaults_.setValue("add_up_spectra", 1, "Add up spectra around the peak apex (needs to be a non-even integer), if set to -1 all spectra across peak width are summed", {"advanced"});
+    //defaults_.setMinInt("add_up_spectra", 1);
     defaults_.setValue("spacing_for_spectra_resampling", 0.005, "If spectra are to be added, use this spacing to add them up", {"advanced"});
     defaults_.setMinFloat("spacing_for_spectra_resampling", 0.0);
     defaults_.setValue("uis_threshold_sn", -1, "S/N threshold to consider identification transition (set to -1 to consider all)");
@@ -169,7 +169,7 @@ namespace OpenMS
   void MRMFeatureFinderScoring::pickExperiment(const OpenSwath::SpectrumAccessPtr& input,
                                                FeatureMap& output,
                                                const OpenSwath::LightTargetedExperiment& transition_exp,
-                                               const TransformationDescription& trafo,
+                                               const TransformationDescription& trafo, 
                                                const std::vector<OpenSwath::SwathMap>& swath_maps,
                                                TransitionGroupMapType& transition_group_map)
   {
@@ -306,7 +306,7 @@ namespace OpenMS
   {
     MRMFeature idmrmfeature = trgr_ident.getFeaturesMuteable()[feature_idx];
     OpenSwath::IMRMFeature* idimrmfeature;
-    idimrmfeature = new MRMFeatureOpenMS(idmrmfeature);
+    idimrmfeature = new MRMFeatureOpenMS(idmrmfeature);  
 
     // get drift time upper/lower offset (this assumes that all chromatograms
     // are derived from the same precursor with the same drift time)
@@ -549,6 +549,9 @@ namespace OpenMS
     for (SignedSize feature_idx = 0; feature_idx < (SignedSize) mrmfeatures.size(); ++feature_idx)
     {
       auto& mrmfeature = mrmfeatures[feature_idx];
+
+      RangeRT rt_range(mrmfeature.getMetaValue("leftWidth"), mrmfeature.getMetaValue("rightWidth"));
+
       OpenSwath::IMRMFeature* imrmfeature;
       imrmfeature = new MRMFeatureOpenMS(mrmfeature);
 
@@ -686,7 +689,7 @@ namespace OpenMS
           scorer.calculateDIAScores(imrmfeature,
                                     transition_group_detection.getTransitions(),
                                     swath_maps, ms1_map_, diascoring_, *pep, scores, masserror_ppm,
-                                    drift_target, im_range);
+                                    drift_target, im_range, rt_range);
           mrmfeature.setMetaValue("masserror_ppm", masserror_ppm);
         }
         if (sonar_present && su_.use_sonar_scores)
@@ -885,6 +888,7 @@ namespace OpenMS
 
         if (swath_present && su_.use_im_scores)
         {
+          mrmfeature.addScore("num_spectra_add", scores.numSpectraAdd);
           mrmfeature.addScore("var_im_xcorr_shape", scores.im_xcorr_shape_score);
           mrmfeature.addScore("var_im_xcorr_coelution", scores.im_xcorr_coelution_score);
           mrmfeature.addScore("var_im_delta_score", scores.im_delta_score);

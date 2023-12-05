@@ -138,7 +138,7 @@ namespace OpenMS
       }
       spectra.reserve(tmp_spectra.size());
       spectra_meta.reserve(tmp_spectra.size());
-    
+
       for (Size k = 0; k < tmp_spectra.size(); k++)
       {
         const MSSpectrumType& spectrum = tmp_spectra[k];
@@ -185,6 +185,11 @@ namespace OpenMS
         }
         return res_mapped;
       }
+    }
+
+    std::vector<std::size_t> SpectrumAccessSqMass::getSpectraRTRange(double rt_start, double rt_end) const
+    {
+      throw Exception::NotImplemented(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION);
     }
 
     size_t SpectrumAccessSqMass::getNrSpectra() const

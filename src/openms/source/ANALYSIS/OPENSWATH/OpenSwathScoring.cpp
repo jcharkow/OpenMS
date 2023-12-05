@@ -79,7 +79,8 @@ namespace OpenMS
                                             OpenSwath_Scores& scores,
                                             std::vector<double>& masserror_ppm,
                                             const double drift_target,// TODO is this needed
-                                            const RangeMobility& im_range)
+                                            const RangeMobility& im_range,
+                                            const RangeRT& rt_range)
   {
     OPENMS_PRECONDITION(imrmfeature != nullptr, "Feature to be scored cannot be null");
     OPENMS_PRECONDITION(transitions.size() > 0, "There needs to be at least one transition.");
@@ -107,8 +108,16 @@ namespace OpenMS
     std::vector<double> normalized_library_intensity;
     getNormalized_library_intensities_(transitions, normalized_library_intensity);
 
-    // find spectrum that is closest to the apex of the peak using binary search
-    std::vector<OpenSwath::SpectrumPtr> spectra = fetchSpectrumSwath(used_swath_maps, imrmfeature->getRT(), add_up_spectra_, im_range);
+    SpectrumSequence spectra;
+    if (add_up_spectra_ == -1) // automatically determine how many spectra to add using the rt boundaries
+    {
+      spectra = fetchSpectrumSwathAuto(used_swath_maps, im_range, rt_range);
+      scores.numSpectraAdd = spectra.size();
+    }
+    else  // spectrum addition is a constant number
+    {
+      spectra = fetchSpectrumSwath(used_swath_maps, imrmfeature->getRT(), add_up_spectra_, im_range);
+    }
 
     // set the DIA parameters
     // TODO Cache these parameters
@@ -515,6 +524,23 @@ namespace OpenMS
     }
   }
 
+  SpectrumSequence OpenSwathScoring::fetchSpectrumSwathAuto(OpenSwath::SpectrumAccessPtr swathmap, const RangeMobility& im_range, const RangeRT& rt_range)
+  {
+
+    SpectrumSequence all_spectra = swathmap->getMultipleSpectraAuto(rt_range.getMin(), rt_range.getMax());
+    if (spectra_addition_method_ == ADDITION)
+    {
+      return all_spectra; // return vector, addition is done later
+    }
+    else // (spectra_addition_method_ == RESAMPLE)
+    {
+      std::vector<OpenSwath::SpectrumPtr> spectrum_out;
+      //added_spec = SpectrumAddition::addUpSpectra(all_spectra, spacing_for_spectra_resampling_, true);
+      spectrum_out.push_back(SpectrumAddition::addUpSpectra(all_spectra, im_range, spacing_for_spectra_resampling_, true));
+      return spectrum_out;
+    }
+  }
+
   SpectrumSequence OpenSwathScoring::fetchSpectrumSwath(std::vector<OpenSwath::SwathMap> swath_maps, double RT, int nr_spectra_to_add, const RangeMobility& im_range)
   {
     OPENMS_PRECONDITION(nr_spectra_to_add >= 1, "nr_spectra_to_add must be at least 1.")
@@ -568,6 +594,66 @@ namespace OpenMS
           for (size_t i = 0; i < swath_maps.size(); ++i)
           {
             SpectrumSequence spectrumSequence = swath_maps[i].sptr->getMultipleSpectra(RT, nr_spectra_to_add);
+            all_spectra.push_back(SpectrumAddition::addUpSpectra(spectrumSequence, spacing_for_spectra_resampling_, true));
+          }
+        }
+        return { SpectrumAddition::addUpSpectra(all_spectra, spacing_for_spectra_resampling_, true) };
+      }
+    }
+  }
+
+  SpectrumSequence OpenSwathScoring::fetchSpectrumSwathAuto(std::vector<OpenSwath::SwathMap> swath_maps, const RangeMobility& im_range, const RangeRT& rt_range)
+  {
+    OPENMS_PRECONDITION(!swath_maps.empty(), "swath_maps vector cannot be empty")
+
+    // This is not SONAR data
+    if (swath_maps.size() == 1)
+    {
+      return fetchSpectrumSwathAuto(swath_maps[0].sptr, im_range, rt_range);
+    }
+    else
+    {
+      // data is not IM enhanced
+      if (!im_range.isEmpty())
+      {
+        // multiple SWATH maps for a single precursor -> this is SONAR data, in all cases only return a single spectrum
+        SpectrumSequence all_spectra;
+
+        if (spectra_addition_method_ == ADDITION)
+        {
+          for (size_t i = 0; i < swath_maps.size(); ++i)
+          {
+            SpectrumSequence spectrumSequence = swath_maps[i].sptr->getMultipleSpectraAuto(im_range.getMin(), im_range.getMax(), rt_range.getMin(), rt_range.getMax());
+          }
+        }
+        else // (spectra_addition_method_ == RESAMPLE)
+        {
+          for (size_t i = 0; i < swath_maps.size(); ++i)
+          {
+            SpectrumSequence spectrumSequence = swath_maps[i].sptr->getMultipleSpectraAuto(im_range.getMin(), im_range.getMax(), rt_range.getMin(), rt_range.getMax());
+            all_spectra.push_back(SpectrumAddition::addUpSpectra(spectrumSequence, spacing_for_spectra_resampling_, true));
+          }
+        }
+        return { SpectrumAddition::addUpSpectra(all_spectra, spacing_for_spectra_resampling_, true) };
+      }
+      else // im_range.isEmpty()
+      {
+        // multiple SWATH maps for a single precursor -> this is SONAR data, in all cases only return a single spectrum
+        SpectrumSequence all_spectra;
+
+        if (spectra_addition_method_ == ADDITION)
+        {
+          for (size_t i = 0; i < swath_maps.size(); ++i)
+          {
+            SpectrumSequence spectrumSequence = swath_maps[i].sptr->getMultipleSpectraAuto(rt_range.getMin(), rt_range.getMax());
+            all_spectra.push_back(SpectrumAddition::concatenateSpectra(spectrumSequence));
+          }
+        }
+        else // (spectra_addition_method_ == RESAMPLE)
+        {
+          for (size_t i = 0; i < swath_maps.size(); ++i)
+          {
+            SpectrumSequence spectrumSequence = swath_maps[i].sptr->getMultipleSpectraAuto(rt_range.getMin(), rt_range.getMax());
             all_spectra.push_back(SpectrumAddition::addUpSpectra(spectrumSequence, spacing_for_spectra_resampling_, true));
           }
         }

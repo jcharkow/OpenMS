@@ -28,6 +28,7 @@
 
 class RangeMZ;
 class RangeMobility;
+class RangeRT;
 
 namespace OpenMS
 {
@@ -169,6 +170,7 @@ namespace OpenMS
      * @param mzerror_ppm m/z and mass error (in ppm) for all transitions
      * @param[in] drift_target target drift value
      * @param[in] range_im drift time lower and upper bounds
+     * @param[in] range_rt retention time lower and upper bounds
      *
     */
     void calculateDIAScores(OpenSwath::IMRMFeature* imrmfeature,
@@ -180,7 +182,8 @@ namespace OpenMS
                             OpenSwath_Scores& scores,
                             std::vector<double>& mzerror_ppm,
                             const double drift_target,
-                            const RangeMobility& range_im);
+                            const RangeMobility& range_im,
+                            const RangeRT& range_rt);
 
     /** @brief Score a single chromatographic feature using the precursor map.
      *
@@ -286,17 +289,14 @@ namespace OpenMS
     */
     SpectrumSequence fetchSpectrumSwath(OpenSwath::SpectrumAccessPtr swath_map, double RT, int nr_spectra_to_add, const RangeMobility& im_range);
 
-
-  protected:
-
-    /** @breif converts a ion mobility enhanced spectrum to a non ion mobility spectrum by filtering by drift time
+    /** @breif similar to fetchSpectrumSwath() however select spectra across entire rt range of the feature
      */
-    OpenSwath::SpectrumPtr filterByDrift_(const OpenSwath::SpectrumPtr& input, const RangeMobility& range_im);
+    SpectrumSequence fetchSpectrumSwathAuto(OpenSwath::SpectrumAccessPtr swathmap, const RangeMobility& im_range, const RangeRT& rt_range);
 
 
-    /** @breif Adds up an array of spectrum into one spectrum. If the spectra are ion mobility enhanced, first filter by drift time and then add up spectra
+    /** @breif similar to fetchSpectrumSwath() however select spectra across entire rt range of the feature
      */
-    OpenSwath::SpectrumPtr getAddedSpectra_(std::vector<OpenSwath::SpectrumPtr>&, const RangeMobility& range_im);
+    SpectrumSequence fetchSpectrumSwathAuto(std::vector<OpenSwath::SwathMap> swath_maps, const RangeMobility& im_range, const RangeRT& rt_range); 
 
   };
 }

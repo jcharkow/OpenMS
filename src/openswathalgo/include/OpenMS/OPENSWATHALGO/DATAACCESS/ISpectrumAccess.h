@@ -50,6 +50,8 @@ public:
 
     /// Return a vector of ids of spectra that are within RT +/- deltaRT
     virtual std::vector<std::size_t> getSpectraByRT(double RT, double deltaRT) const = 0;
+    /// Return a vector of ids of spectra that are between rt_start and rt_end
+    virtual std::vector<std::size_t> getSpectraRTRange(double rt_start, double rt_end) const = 0;
     /// Returns the number of spectra available
     virtual size_t getNrSpectra() const = 0;
     /// Returns the meta information for a spectrum
@@ -73,6 +75,15 @@ public:
      * @p nr_spectra_to_fetch = # spectra around target RT to fetch (length of the spectrum sequence)
     */
     SpectrumSequence getMultipleSpectra(double RT, int nr_spectra_to_fetch, double drift_start, double drift_end);
+
+    
+    /* @breif Fetches a spectrumSequnce (multiple spectra pointers) across the range of RT specified. Filters all specta by the specified @p drift_start and @p drift_end
+    */
+    SpectrumSequence getMultipleSpectraAuto(double drift_start, double drift_end, double rt_start, double rt_end);
+
+    /* @breif Fetches a spectrumSequnce (multiple spectra pointers) across the range of RT specified. 
+    */
+    SpectrumSequence getMultipleSpectraAuto(double rt_start, double rt_end);
 
     /// filters a spectrum by drift time, spectrum pointer returned is a copy
     static SpectrumPtr filterByDrift(const SpectrumPtr& input, double drift_start, double drift_end)

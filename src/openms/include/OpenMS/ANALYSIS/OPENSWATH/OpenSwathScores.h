@@ -126,6 +126,8 @@ namespace OpenMS
     double dotprod_score_dia = 0;
     double manhatt_score_dia = 0;
 
+    int numSpectraAdd = 1; // num spectra that are summed up when computing DIA scores
+
     OpenSwath_Scores() = default;
 
     double get_quick_lda_score(double library_corr_,
