@@ -829,6 +829,8 @@ namespace OpenMS
         // Add the DIA / SWATH scores, ion mobility scores and SONAR scores
         if (swath_present && su_.use_dia_scores_)
         {
+          mrmfeature.addScore("num_spectra_add", scores.numSpectraAdd);
+
           if (su_.use_ms2_isotope_scores)
           {
             mrmfeature.addScore("var_isotope_correlation_score", scores.isotope_correlation);
@@ -888,7 +890,6 @@ namespace OpenMS
 
         if (swath_present && su_.use_im_scores)
         {
-          mrmfeature.addScore("num_spectra_add", scores.numSpectraAdd);
           mrmfeature.addScore("var_im_xcorr_shape", scores.im_xcorr_shape_score);
           mrmfeature.addScore("var_im_xcorr_coelution", scores.im_xcorr_coelution_score);
           mrmfeature.addScore("var_im_delta_score", scores.im_delta_score);

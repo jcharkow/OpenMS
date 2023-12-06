@@ -81,7 +81,7 @@ namespace OpenMS
       "EXP_IM REAL," \
       "DELTA_IM REAL," \
       "TOTAL_MI REAL NULL," \
-      "NUM_SPEC_ADD INT NOT NULL," \
+      "NUM_SPEC_ADD INT NULL," \
       "VAR_BSERIES_SCORE REAL NULL," \
       "VAR_DOTPROD_SCORE REAL NULL," \
       "VAR_INTENSITY_SCORE REAL NULL," \

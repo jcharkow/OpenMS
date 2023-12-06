@@ -117,10 +117,10 @@ namespace OpenMS
     else  // spectrum addition is a constant number
     {
       spectra = fetchSpectrumSwath(used_swath_maps, imrmfeature->getRT(), add_up_spectra_, im_range);
+      scores.numSpectraAdd = add_up_spectra_;
     }
 
     // set the DIA parameters
-    // TODO Cache these parameters
     double dia_extract_window_ = (double)diascoring.getParameters().getValue("dia_extraction_window");
     bool dia_extraction_ppm_ = diascoring.getParameters().getValue("dia_extraction_unit") == "ppm";
 
