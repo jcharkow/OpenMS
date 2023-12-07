@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <featureMap version="1.9" id="fm_7444998229116103684" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/OpenMS/OpenMS/develop/share/OpenMS/SCHEMAS/FeatureXML_1_9.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-	<UserParam type="stringList" name="spectra_data" value="[FeatureFinderIdentification_1_input.mzML]"/>
+	<UserParam type="stringList" name="spectra_data" value="[/home/joshua/Development/OPENMS/OpenMS/src/tests/topp/FeatureFinderIdentification_1_input.mzML]"/>
 	<featureList count="37">
 		<feature id="f_4835329514588776807">
 			<position dim="0">2024.601233363805477</position>
@@ -162,6 +162,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.596317236630373"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.998269975185394"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.5347600258509"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="1.508155729897401"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="1.295240305214938"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="4.055414787147902"/>
@@ -364,6 +365,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.501939204496035"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.994736403226852"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.407402220940101"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="17.943448961942622"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="15.873311268126084"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="2.495297566461897"/>
@@ -582,6 +584,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.421286974273773"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.995133340358734"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.276315927987643"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="21.253494592472027"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="14.758126677277407"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="2.101267188027085"/>
@@ -762,6 +765,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.767525111470923"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.99731856584549"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.660288428118682"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.482075605090886"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.385620575079687"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="4.251130011251214"/>
@@ -872,6 +876,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="0.677018369739987"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.962808400392532"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="4.287976288268554"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="8.380666327946736"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="5.9586764496682"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="0.887192693588528"/>
@@ -1062,6 +1067,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.508640104998047"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.996718049049378"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.475186579850639"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.760948673990978"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.544374915023067"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="4.068588878434191"/>
@@ -1350,6 +1356,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.578657116449675"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.979632318019867"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.555751168841823"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="1.097742471066775"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.949193523012588"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="4.079739736207683"/>
@@ -1646,6 +1653,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.553847309821744"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.978488326072693"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.541161971277277"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.592963683327525"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.763207730534284"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="4.110306633335988"/>
@@ -1826,6 +1834,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.612207792439818"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.994817167520523"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.551514356717318"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.431614306179453"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.347966082988873"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="4.15947393683158"/>
@@ -2044,6 +2053,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.505049712346531"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.980602443218231"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.370757598464245"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.552052115383353"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.543039773211125"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="3.986868218955548"/>
@@ -2174,6 +2184,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="1.255122241070502"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.780472576618195"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="3.925815286655692"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="1.060266422582216"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.99677181259609"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="1.148281949685312"/>
@@ -2454,6 +2465,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="3.120994646244767"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.981038093566895"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="6.468803854048883"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.344572194406841"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.300077405676464"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="3.231799367629902"/>
@@ -2646,6 +2658,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.514848653015868"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.997166931629181"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.458996314922436"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.807860618118897"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.504204552687989"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="4.052184937605982"/>
@@ -2764,6 +2777,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="1.405510966977269"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.994655400514603"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="5.165813429479725"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.418144643727872"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.433138111558727"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="2.149067987391471"/>
@@ -2880,6 +2894,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="1.092802744064197"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.987533986568451"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="4.724324679741967"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.295951363727171"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.283335708984678"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="1.807563554296281"/>
@@ -3040,6 +3055,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.580031182740298"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.975425690412521"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.398324831248491"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="16.556331262980276"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="16.843842693327801"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="2.662229610687314"/>
@@ -3200,6 +3216,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="3.57607839596868"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.921455174684525"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="5.633030618000663"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.175924713032881"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.202573015871767"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="2.643994284781334"/>
@@ -3310,6 +3327,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="0.542556256591324"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="-5.484521389007568e-03"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="0.943827237648787"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.0"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.0"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="-1.043158804310534"/>
@@ -3512,6 +3530,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="3.794103845869188"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.98045688867569"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="6.880907116962987"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="9.54360336593331"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="12.751237867776395"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="2.770414782416536"/>
@@ -3816,6 +3835,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="2.829686638514846"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.940495908260346"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="6.159885931119847"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="28.144090574522611"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="35.876176043274555"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="0.559142038385293"/>
@@ -4048,6 +4068,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="3.201611458899381"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.981171160936356"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="6.352193262502598"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.43272982427065"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.44795351412301"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="3.14270316206301"/>
@@ -4170,6 +4191,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="0.622433726351383"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.818022608757019"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="3.54947874187169"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.512126405660493"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.351090401070697"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="0.77221442404151"/>
@@ -4332,6 +4354,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="0.574869384708016"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.871234148740768"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="2.46678463222821"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="4.163412134864779"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="5.574539391273096"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="-0.712265006726941"/>
@@ -4452,6 +4475,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="0.026129908629291"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.791106969118118"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="2.790842163783026"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.597362756439957"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.515903515062352"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="-0.056547351280443"/>
@@ -4654,6 +4678,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="2.710570837957332"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.980328291654587"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="6.108190800229669"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="1.053106420078673"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="1.227146228096374"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="2.864907800936793"/>
@@ -4830,6 +4855,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="0.308266253923902"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.661740005016327"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="3.209306962196368"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="1.870412499833631"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="1.769816083752899"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="0.391349462468709"/>
@@ -5014,6 +5040,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="0.236572490153024"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.687795549631119"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="3.061042716846179"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="1.825877907999905"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="1.840367345645477"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="0.361495190888907"/>
@@ -5186,6 +5213,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.643383265009457"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.997846633195877"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.568216225545756"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="1.348760909139771"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="1.03245528832373"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="4.097496611197101"/>
@@ -5372,6 +5400,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.707308758341262"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.996171712875366"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.612781336875058"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.832902537954213"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.670716846584884"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="4.177951266815654"/>
@@ -5568,6 +5597,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="2.46380920647666"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.977227956056595"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="5.816516757667186"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.776434922758457"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.740130205817926"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="2.651815810438141"/>
@@ -5848,6 +5878,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.300842373390982"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.993695646524429"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.256044137193251"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.890803718434335"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.775375027344834"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="3.872574263829474"/>
@@ -6084,6 +6115,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.42067155679683"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.884280145168305"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="6.279174661185043"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.0"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.0"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="3.230932621151468"/>
@@ -6222,6 +6254,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="1.658468945238739"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="-0.105685919523239"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="-0.034201025589878"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.0"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.0"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="-3.06744875311045"/>
@@ -6336,6 +6369,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="1.268308211379996"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="-0.186303526163101"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="1.242964869343152"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.0"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.0"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="-1.221514281636197"/>
@@ -6456,6 +6490,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="1.454303979867555"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="-0.229273587465286"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="1.107190521043638"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.0"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.0"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="-1.628410141109428"/>
@@ -6570,6 +6605,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="1.239133780873341"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.892072767019272"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="2.945029695723262"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.0"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="0.0"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="0.959902054500817"/>
@@ -6794,6 +6830,7 @@
 			<UserParam type="float" name="var_log_sn_score" value="4.1743885218779"/>
 			<UserParam type="float" name="var_elution_model_fit_score" value="0.985789656639099"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="7.250285081911516"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_massdev_score" value="1.19333451679781"/>
 			<UserParam type="float" name="var_massdev_score_weighted" value="1.036255774194518"/>
 			<UserParam type="float" name="main_var_xx_swath_prelim_score" value="3.823006699172076"/>
