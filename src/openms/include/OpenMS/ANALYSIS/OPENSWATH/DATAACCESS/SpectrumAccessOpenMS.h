@@ -63,6 +63,8 @@ public:
 
     std::vector<std::size_t> getSpectraByRT(double RT, double deltaRT) const override;
 
+    std::vector<std::size_t> getSpectraRTRange(double rt_start, double rt_end) const override;
+
     size_t getNrSpectra() const override;
 
     SpectrumSettings getSpectraMetaInfo(int id) const;

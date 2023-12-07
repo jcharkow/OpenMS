@@ -23,7 +23,7 @@ namespace OpenMS
   SpectrumAccessOpenMS::SpectrumAccessOpenMS(const SpectrumAccessOpenMS & rhs) :
     ms_experiment_(rhs.ms_experiment_)
   {
-    // this only copies the pointers and not the actual data ... 
+    // this only copies the pointers and not the actual data ...
   }
 
 
@@ -152,6 +152,25 @@ namespace OpenMS
     spectrum++;
 
     while (spectrum != ms_experiment_->end() && spectrum->getRT() <= RT + deltaRT)
+    {
+      result.push_back(spectrum - ms_experiment_->begin());
+      spectrum++;
+    }
+    return result;
+  }
+
+  std::vector<std::size_t> SpectrumAccessOpenMS::getSpectraRTRange(double rt_start, double rt_end) const
+  {
+
+    // Start at the rt_start
+    std::vector<std::size_t> result;
+    auto spectrum = ms_experiment_->RTBegin(rt_start);
+    if (spectrum == ms_experiment_->end()) return result;
+
+    result.push_back(std::distance(ms_experiment_->begin(), spectrum));
+    spectrum++;
+
+    while (spectrum != ms_experiment_->end() && spectrum->getRT() <= rt_end)
     {
       result.push_back(spectrum - ms_experiment_->begin());
       spectrum++;

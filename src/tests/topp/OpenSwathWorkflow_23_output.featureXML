@@ -136,6 +136,7 @@
 			<UserParam type="float" name="sn_ratio" value="2.089455969631851"/>
 			<UserParam type="float" name="var_log_sn_score" value="0.736903730480821"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="4.86016814049967"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_isotope_correlation_score" value="0.465697732516051"/>
 			<UserParam type="float" name="var_isotope_overlap_score" value="0.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.0"/>
@@ -297,6 +298,7 @@
 			<UserParam type="float" name="sn_ratio" value="2.089455969467548"/>
 			<UserParam type="float" name="var_log_sn_score" value="0.736903730402186"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="4.853113243883652"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_isotope_correlation_score" value="0.465697732516052"/>
 			<UserParam type="float" name="var_isotope_overlap_score" value="0.0"/>
 			<UserParam type="float" name="var_massdev_score" value="2.786168947201647e-11"/>
@@ -458,6 +460,7 @@
 			<UserParam type="float" name="sn_ratio" value="2.089455969631851"/>
 			<UserParam type="float" name="var_log_sn_score" value="0.736903730480821"/>
 			<UserParam type="float" name="xx_lda_prelim_score" value="4.85311317665967"/>
+			<UserParam type="float" name="num_spectra_add" value="1.0"/>
 			<UserParam type="float" name="var_isotope_correlation_score" value="0.465697732516051"/>
 			<UserParam type="float" name="var_isotope_overlap_score" value="0.0"/>
 			<UserParam type="float" name="var_massdev_score" value="0.0"/>

@@ -24,7 +24,7 @@ namespace OpenMS
 public:
 
     explicit SpectrumAccessTransforming(OpenSwath::SpectrumAccessPtr sptr);
-        
+
     ~SpectrumAccessTransforming() override = 0;
 
     boost::shared_ptr<ISpectrumAccess> lightClone() const override = 0;
@@ -34,6 +34,8 @@ public:
     OpenSwath::SpectrumMeta getSpectrumMetaById(int id) const override;
 
     std::vector<std::size_t> getSpectraByRT(double RT, double deltaRT) const override;
+
+    std::vector<std::size_t> getSpectraRTRange(double rt_start, double rt_end) const override;
 
     size_t getNrSpectra() const override;
 

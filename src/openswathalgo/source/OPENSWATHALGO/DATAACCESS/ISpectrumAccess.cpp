@@ -90,6 +90,41 @@ namespace OpenSwath
     return all_spectra;
   }
 
+  SpectrumSequence ISpectrumAccess::getMultipleSpectraAuto(double rt_start, double rt_end)
+  {
+    std::vector<std::size_t> indices = getSpectraRTRange(rt_start, rt_end);
+    SpectrumSequence all_spectra;
+
+    if (indices.empty() )
+    {
+      return all_spectra;
+    }
+
+    for (const auto i:indices)
+    {
+      all_spectra.push_back(getSpectrumById(indices[i]));
+    }
+
+    return all_spectra;
+  }
+
+  SpectrumSequence ISpectrumAccess::getMultipleSpectraAuto(double drift_start, double drift_end, double rt_start, double rt_end)
+  {
+    std::vector<std::size_t> indices = getSpectraRTRange(rt_start, rt_end);
+    SpectrumSequence all_spectra;
+
+    if (indices.empty() )
+    {
+      return all_spectra;
+    }
+
+    for (const auto i:indices)
+    {
+      all_spectra.push_back(getSpectrumById(indices[i], drift_start, drift_end));
+    }
+
+    return all_spectra;
+  }
 
   SpectrumPtr ISpectrumAccess::getSpectrumById(int id, double drift_start, double drift_end)
   {

@@ -48,7 +48,7 @@ namespace OpenMS
     chromatograms_(rhs.chromatograms_),
     chromatogram_ids_(rhs.chromatogram_ids_)
   {
-    // this only copies the pointers and not the actual data ... 
+    // this only copies the pointers and not the actual data ...
   }
 
   boost::shared_ptr<OpenSwath::ISpectrumAccess> SpectrumAccessOpenMSInMemory::lightClone() const
@@ -86,6 +86,25 @@ namespace OpenMS
     result.push_back(std::distance(spectra_meta_.begin(), spectrum));
     ++spectrum;
     while (spectrum->RT < RT + deltaRT && spectrum != spectra_meta_.end())
+    {
+      result.push_back(std::distance(spectra_meta_.begin(), spectrum));
+      ++spectrum;
+    }
+    return result;
+  }
+
+  std::vector<std::size_t> SpectrumAccessOpenMSInMemory::getSpectraRTRange(double rt_start, double rt_end) const
+  {
+
+    std::vector<std::size_t> result;
+    OpenSwath::SpectrumMeta s;
+    s.RT = rt_start;
+    auto spectrum = std::lower_bound(spectra_meta_.begin(), spectra_meta_.end(), s, OpenSwath::SpectrumMeta::RTLess());
+    if (spectrum == spectra_meta_.end()) return result;
+
+    result.push_back(std::distance(spectra_meta_.begin(), spectrum));
+    ++spectrum;
+    while ( spectrum != spectra_meta_.end() && spectrum->RT < rt_end)
     {
       result.push_back(std::distance(spectra_meta_.begin(), spectrum));
       ++spectrum;

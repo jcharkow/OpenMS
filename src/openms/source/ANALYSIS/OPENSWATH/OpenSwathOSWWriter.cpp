@@ -81,6 +81,7 @@ namespace OpenMS
       "EXP_IM REAL," \
       "DELTA_IM REAL," \
       "TOTAL_MI REAL NULL," \
+      "NUM_SPEC_ADD INT NULL," \
       "VAR_BSERIES_SCORE REAL NULL," \
       "VAR_DOTPROD_SCORE REAL NULL," \
       "VAR_INTENSITY_SCORE REAL NULL," \
@@ -258,7 +259,7 @@ namespace OpenMS
                   << feature_it.getMetaValue("rightWidth") << "); ";
 
       sql_feature_ms2 << "INSERT INTO FEATURE_MS2 " \
-        "(FEATURE_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, EXP_IM, DELTA_IM, TOTAL_MI, "\
+        "(FEATURE_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, EXP_IM, DELTA_IM, TOTAL_MI, NUM_SPEC_ADD," \
         "VAR_BSERIES_SCORE, VAR_DOTPROD_SCORE, VAR_INTENSITY_SCORE, " \
         "VAR_ISOTOPE_CORRELATION_SCORE, VAR_ISOTOPE_OVERLAP_SCORE, VAR_LIBRARY_CORR,  "\
         "VAR_LIBRARY_DOTPROD, VAR_LIBRARY_MANHATTAN, VAR_LIBRARY_RMSD, VAR_LIBRARY_ROOTMEANSQUARE, "\
@@ -276,6 +277,7 @@ namespace OpenMS
                       << getScore(feature_it, "im_drift") << ", "
                       << getScore(feature_it, "im_delta") << ", "
                       << getScore(feature_it, "total_mi") << ", "
+                      << getScore(feature_it, "num_spectra_add") << ", "
                       << getScore(feature_it, "var_bseries_score") << ", "
                       << getScore(feature_it, "var_dotprod_score") << ", "
                       << getScore(feature_it, "var_intensity_score") << ", "
