@@ -67,7 +67,7 @@ inputs:
     doc: For spectrum addition, either use simple concatenation or use peak resampling
     type: string?
   algorithm__add_up_spectra:
-    doc: Add up spectra around the peak apex (needs to be a non-even integer)
+    doc: Add up spectra around the peak apex (needs to be a non-even integer), if set to -1 all spectra across peak width are summed
     type: long?
   algorithm__spacing_for_spectra_resampling:
     doc: If spectra are to be added, use this spacing to add them up
