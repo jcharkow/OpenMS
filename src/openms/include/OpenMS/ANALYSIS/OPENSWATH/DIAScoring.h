@@ -1,31 +1,5 @@
-// --------------------------------------------------------------------------
-//                   OpenMS -- Open-Source Mass Spectrometry
-// --------------------------------------------------------------------------
-// Copyright The OpenMS Team -- Eberhard Karls University Tuebingen,
-// ETH Zurich, and Freie Universitaet Berlin 2002-2022.
-//
-// This software is released under a three-clause BSD license:
-//  * Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//  * Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//  * Neither the name of any author or any participating institution
-//    may be used to endorse or promote products derived from this software
-//    without specific prior written permission.
-// For a full list of authors, refer to the file AUTHORS.
-// --------------------------------------------------------------------------
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL ANY OF THE AUTHORS OR THE CONTRIBUTING
-// INSTITUTIONS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-// OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-// ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2002-2023, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
 // $Maintainer: Hannes Roest $
@@ -41,6 +15,8 @@
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/DataStructures.h>
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/ITransition.h>
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/TransitionExperiment.h>
+
+#include <OpenMS/KERNEL/RangeManager.h>
 
 namespace OpenMS
 {
@@ -108,15 +84,17 @@ public:
     //@{
     /// Isotope scores, see class description
     void dia_isotope_scores(const std::vector<TransitionType>& transitions,
-                            SpectrumPtrType spectrum,
+                            SpectrumSequence& spectrum,
                             OpenSwath::IMRMFeature* mrmfeature,
+                            const RangeMobility& im_range,
                             double& isotope_corr,
                             double& isotope_overlap) const;
 
     /// Massdiff scores, see class description
     void dia_massdiff_score(const std::vector<TransitionType>& transitions,
-                            const SpectrumPtrType& spectrum,
+                            const SpectrumSequence& spectrum,
                             const std::vector<double>& normalized_library_intensity,
+                            const RangeMobility& im_range,
                             double& ppm_score,
                             double& ppm_score_weighted,
                             std::vector<double>& diff_ppm) const;
@@ -129,23 +107,23 @@ public:
       @param ppm_score Resulting score
       @return False if no signal was found (and no sensible score calculated), true otherwise
     */
-    bool dia_ms1_massdiff_score(double precursor_mz, SpectrumPtrType spectrum,
+    bool dia_ms1_massdiff_score(double precursor_mz, const SpectrumSequence& spectrum, const RangeMobility& im_range,
                                 double& ppm_score) const;
 
     /// Precursor isotope scores for precursors (peptides and metabolites)
-    void dia_ms1_isotope_scores_averagine(double precursor_mz, const SpectrumPtrType& spectrum,
-                                          double& isotope_corr, double& isotope_overlap, int charge_state) const;
-    void dia_ms1_isotope_scores(double precursor_mz, const SpectrumPtrType& spectrum,
+    void dia_ms1_isotope_scores_averagine(double precursor_mz, const SpectrumSequence& spectrum, int charge_state, RangeMobility& im_range,
+                                          double& isotope_corr, double& isotope_overlap) const;
+    void dia_ms1_isotope_scores(double precursor_mz, const std::vector<SpectrumPtrType>& spectrum, RangeMobility& im_range,
                                 double& isotope_corr, double& isotope_overlap, const EmpiricalFormula& sum_formula) const;
 
-
     /// b/y ion scores
-    void dia_by_ion_score(const SpectrumPtrType& spectrum, AASequence& sequence,
-                          int charge, double& bseries_score, double& yseries_score) const;
+    void dia_by_ion_score(const SpectrumSequence& spectrum, AASequence& sequence,
+                          int charge, const RangeMobility& im_range, double& bseries_score, double& yseries_score) const;
 
     /// Dotproduct / Manhattan score with theoretical spectrum
-    void score_with_isotopes(SpectrumPtrType spectrum,
+    void score_with_isotopes(SpectrumSequence& spectrum,
                              const std::vector<TransitionType>& transitions,
+                             const RangeMobility& im_range,
                              double& dotprod,
                              double& manhattan) const;
     //@}
@@ -163,8 +141,9 @@ private:
 
     /// Subfunction of dia_isotope_scores
     void diaIsotopeScoresSub_(const std::vector<TransitionType>& transitions,
-                              const SpectrumPtrType& spectrum,
+                              const SpectrumSequence& spectrum,
                               std::map<std::string, double>& intensities,
+                              const RangeMobility& im_range,
                               double& isotope_corr,
                               double& isotope_overlap) const;
 
@@ -178,8 +157,8 @@ private:
 private:
 
     /**
-      @brief Determine whether the current m/z value is a monoisotopic peak 
-      
+      @brief Determine whether the current m/z value is a monoisotopic peak
+
       This function will try to determine whether the current peak is a
       monoisotopic peak or not. It will do so by searching for an intense peak
       at a lower m/z that could explain the current peak as part of a isotope
@@ -192,7 +171,7 @@ private:
       @param nr_occurrences Will contain the maximum ratio of a peaks intensity compared to the monoisotopic peak intensity how often a peak is found at lower m/z than mono_mz with an intensity higher than mono_int. Multiple charge states are tested, see class parameter dia_nr_charges_
 
     */
-    void largePeaksBeforeFirstIsotope_(const SpectrumPtrType& spectrum, double mono_mz, double mono_int, int& nr_occurrences, double& max_ratio) const;
+    void largePeaksBeforeFirstIsotope_(const SpectrumSequence& spectrum, double mono_mz, double mono_int, int& nr_occurrences, double& max_ratio, const RangeMobility& im_range) const;
 
     /**
       @brief Compare an experimental isotope pattern to a theoretical one
@@ -228,9 +207,8 @@ private:
 
     /// Get the intensities of isotopes around @p precursor_mz in experimental @p spectrum
     /// and fill @p isotopes_int.
-    void getIsotopeIntysFromExpSpec_(double precursor_mz, const SpectrumPtrType& spectrum,
-                                     std::vector<double>& isotopes_int,
-                                     int charge_state) const;
+    void getIsotopeIntysFromExpSpec_(double precursor_mz, const SpectrumSequence& spectrum, int charge_state, const RangeMobility& im_range,
+                                     std::vector<double>& isotopes_int) const;
 
     // Parameters
     double dia_extract_window_;
@@ -245,4 +223,3 @@ private:
     TheoreticalSpectrumGenerator * generator;
   };
 }
-
