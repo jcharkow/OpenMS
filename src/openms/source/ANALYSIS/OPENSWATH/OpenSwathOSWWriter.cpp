@@ -14,14 +14,15 @@
 
 namespace OpenMS
 {
-  OpenSwathOSWWriter::OpenSwathOSWWriter(const String& output_filename, const UInt64 run_id, const String& input_filename, bool ms1_scores, bool sonar, bool uis_scores) :
+  OpenSwathOSWWriter::OpenSwathOSWWriter(const String& output_filename, const UInt64 run_id, const String& input_filename, bool ms1_scores, bool sonar, bool uis_scores, bool compute_peak_shape_metrics):
     output_filename_(output_filename),
     input_filename_(input_filename),
     run_id_(Internal::SqliteHelper::clearSignBit(run_id)),
     doWrite_(!output_filename.empty()),
     use_ms1_traces_(ms1_scores),
     sonar_(sonar),
-    enable_uis_scoring_(uis_scores)
+    enable_uis_scoring_(uis_scores),
+    enable_compute_peak_shape_metrics_(compute_peak_shape_metrics)
   {}
 
   bool OpenSwathOSWWriter::isActive() const
@@ -142,7 +143,23 @@ namespace OpenMS
       "VAR_MI_SCORE REAL NULL," \
       "VAR_MI_RATIO_SCORE REAL NULL," \
       "VAR_ISOTOPE_CORRELATION_SCORE REAL NULL," \
-      "VAR_ISOTOPE_OVERLAP_SCORE REAL NULL);";
+      "VAR_ISOTOPE_OVERLAP_SCORE REAL NULL," \
+      "WIDTH_5 REAL NULL," \
+      "WIDTH_10 REAL NULL," \
+      "WIDTH_50 REAL NULL," \
+      "START_5 REAL NULL," \
+      "START_10 REAL NULL," \
+      "START_50 REAL NULL," \
+      "END_5 REAL NULL," \
+      "END_10 REAL NULL," \
+      "END_50 REAL NULL," \
+      "TOTAL_WIDTH REAL NULL," \
+      "TAILING_FACTOR REAL NULL," \
+      "ASYMMETRY_FACTOR REAL NULL," \
+      "BASELINE_SLOPE REAL NULL," \
+      "BASELINE_DELTA_2_HEIGHT REAL NULL," \
+      "POINTS_ACROSS_BASELINE REAL NULL," \
+      "POINTS_ACROSS_HALF_HEIGHT REAL NULL);";
 
     // Execute SQL create statement
     conn.executeStatement(create_sql);
@@ -221,13 +238,38 @@ namespace OpenMS
             total_mi = sub_it.getMetaValue("total_mi").toString();
           }
           sql_feature_ms2_transition  << "INSERT INTO FEATURE_TRANSITION "\
-            "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, TOTAL_MI) VALUES ("
+            "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, TOTAL_MI" 
+            << (enable_compute_peak_shape_metrics_ ? ", WIDTH_5, WIDTH_10, WIDTH_50, START_5, START_10, START_50, END_5, END_10, END_50, TOTAL_WIDTH, TAILING_FACTOR, ASYMMETRY_FACTOR, BASELINE_SLOPE, BASELINE_DELTA_2_HEIGHT, POINTS_ACROSS_BASELINE, POINTS_ACROSS_HALF_HEIGHT" : "") 
+            << ") VALUES ("
                                       << feature_id << ", "
                                       << sub_it.getMetaValue("native_id") << ", "
                                       << sub_it.getIntensity() << ", "
                                       << sub_it.getMetaValue("total_xic") << ", "
                                       << sub_it.getMetaValue("peak_apex_int") << ", "
-                                      << total_mi << "); ";
+                                      << total_mi; 
+
+                                      if (enable_compute_peak_shape_metrics_)
+                                      {
+                                        sql_feature_ms2_transition  << ", " 
+                                                                    << sub_it.getMetaValue("width_at_5") << ", "
+                                                                    << sub_it.getMetaValue("width_at_10") << ", "
+                                                                    << sub_it.getMetaValue("width_at_50") << ", "
+                                                                    << sub_it.getMetaValue("start_position_at_5") << ", "
+                                                                    << sub_it.getMetaValue("start_position_at_10") << ", "
+                                                                    << sub_it.getMetaValue("start_position_at_50") << ", "
+                                                                    << sub_it.getMetaValue("end_position_at_5") << ", "
+                                                                    << sub_it.getMetaValue("end_position_at_10") << ", "
+                                                                    << sub_it.getMetaValue("end_position_at_50") << ", "
+                                                                    << sub_it.getMetaValue("total_width") << ", "
+                                                                    << sub_it.getMetaValue("tailing_factor") << ", "
+                                                                    << sub_it.getMetaValue("asymmetry_factor") << ", "
+                                                                    << sub_it.getMetaValue("slope_of_baseline") << ", "
+                                                                    << sub_it.getMetaValue("baseline_delta_2_height") << ", "
+                                                                    << sub_it.getMetaValue("points_across_baseline") << ", "
+                                                                    << sub_it.getMetaValue("points_across_half_height");
+                                      }
+
+                                      sql_feature_ms2_transition << "); ";
         }
         else if (sub_it.metaValueExists("FeatureLevel") && sub_it.getMetaValue("FeatureLevel") == "MS1" && sub_it.getIntensity() > 0.0)
         {
