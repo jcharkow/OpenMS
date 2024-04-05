@@ -132,6 +132,7 @@ namespace OpenMS
       "AREA_INTENSITY REAL NOT NULL," \
       "TOTAL_AREA_INTENSITY REAL NOT NULL," \
       "APEX_INTENSITY REAL NOT NULL," \
+      "APEX_RT REAL NULL," \
       "TOTAL_MI REAL NULL," \
       "VAR_INTENSITY_SCORE REAL NULL," \
       "VAR_INTENSITY_RATIO_SCORE REAL NULL," \
@@ -238,7 +239,7 @@ namespace OpenMS
             total_mi = sub_it.getMetaValue("total_mi").toString();
           }
           sql_feature_ms2_transition  << "INSERT INTO FEATURE_TRANSITION "\
-            "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, TOTAL_MI" 
+            "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, APEX_RT, TOTAL_MI" 
             << (enable_compute_peak_shape_metrics_ ? ", WIDTH_5, WIDTH_10, WIDTH_50, START_5, START_10, START_50, END_5, END_10, END_50, TOTAL_WIDTH, TAILING_FACTOR, ASYMMETRY_FACTOR, BASELINE_SLOPE, BASELINE_DELTA_2_HEIGHT, POINTS_ACROSS_BASELINE, POINTS_ACROSS_HALF_HEIGHT" : "") 
             << ") VALUES ("
                                       << feature_id << ", "
@@ -246,6 +247,7 @@ namespace OpenMS
                                       << sub_it.getIntensity() << ", "
                                       << sub_it.getMetaValue("total_xic") << ", "
                                       << sub_it.getMetaValue("peak_apex_int") << ", "
+                                      << sub_it.getMetaValue("peak_apex_position") << ","
                                       << total_mi; 
 
                                       if (enable_compute_peak_shape_metrics_)
