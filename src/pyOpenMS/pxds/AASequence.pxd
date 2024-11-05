@@ -25,6 +25,9 @@ cdef extern from "<OpenMS/CHEMISTRY/AASequence.h>" namespace "OpenMS":
         AASequence operator+(AASequence) except + nogil 
         AASequence iadd(AASequence) except + nogil  # wrap-as:operator+=
 
+		bool operator==(AASequence &rhs) except + nogil 
+		bool operator!=(AASequence &rhs) except + nogil 
+
         # Note that this is a const-ref, so we cannot easily set residues
         Residue operator[](size_t) except + nogil  # wrap-upper-limit:size()
 
