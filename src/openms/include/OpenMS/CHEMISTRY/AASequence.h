@@ -607,9 +607,9 @@ protected:
 
     std::vector<const Residue*> peptide_;
 
-    const ResidueModification* n_term_mod_;
+    const ResidueModification* n_term_mod_ = nullptr;
 
-    const ResidueModification* c_term_mod_;
+    const ResidueModification* c_term_mod_ = nullptr;
 
     /**
       @brief Parses modifications in round brackets (an identifier)

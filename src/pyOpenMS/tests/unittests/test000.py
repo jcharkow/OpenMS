@@ -214,9 +214,9 @@ def testAASequence():
 
     # constructor from String
     seq2 = pyopenms.AASequence("PEPTIDESEKUEM(Oxidation)CER")
-    assert seq == seq2
     assert seq2.toString() == "PEPTIDESEKUEM(Oxidation)CER"
     assert seq2.toUnmodifiedString() == "PEPTIDESEKUEMCER"
+    assert seq == seq2
     assert seq2.toBracketString() == "PEPTIDESEKUEM[147]CER"
     assert seq2.toBracketString(True) == "PEPTIDESEKUEM[147]CER"
 

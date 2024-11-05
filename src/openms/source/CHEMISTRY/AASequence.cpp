@@ -1691,12 +1691,16 @@ namespace OpenMS
     return aas;
   }
 
-  AASequence::AASequence(const String& s)
+  AASequence::AASequence(const String& s) :  
+    n_term_mod_(nullptr),
+    c_term_mod_(nullptr)
   {
     parseString_(s, *this, true);
   }
 
-  AASequence::AASequence(const char* s)
+  AASequence::AASequence(const char* s) :
+    n_term_mod_(nullptr),
+    c_term_mod_(nullptr)
   {
     parseString_(s, *this, true);
   }
