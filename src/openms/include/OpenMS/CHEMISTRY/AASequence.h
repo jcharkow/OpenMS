@@ -597,12 +597,13 @@ protected:
     static AASequence fromString(const char* s,
                                  bool permissive = true);
 
-    /// constructor from String
+    /// @brief constructor from String
+    /// @param s A String representing the amino acid sequence
     explicit AASequence(const String& s);
 
-    /// constructor from C string
+    /// @brief constructor from C string
+    /// @param s A C-style string representing the amino acid sequence
     explicit AASequence(const char* s);
-
   protected:
 
     std::vector<const Residue*> peptide_;
