@@ -1691,4 +1691,15 @@ namespace OpenMS
     return aas;
   }
 
+  AASequence::AASequence(const String& s)
+  {
+    parseString_(s, *this, true);
+  }
+
+  AASequence::AASequence(const char* s)
+  {
+    parseString_(s, *this, true);
+  }
+
+
 }

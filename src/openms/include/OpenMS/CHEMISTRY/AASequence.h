@@ -350,7 +350,7 @@ protected:
     AASequence& operator=(const AASequence&) = default;
 
     /// Move assignment operator
-    AASequence& operator=(AASequence&&) = default; // TODO: add noexcept (gcc 4.8 bug)
+    AASequence& operator=(AASequence&&) noexcept = default;
 
     /// check if sequence is empty
     bool empty() const;
@@ -596,6 +596,12 @@ protected:
     */
     static AASequence fromString(const char* s,
                                  bool permissive = true);
+
+    /// constructor from String
+    explicit AASequence(const String& s);
+
+    /// constructor from C string
+    explicit AASequence(const char* s);
 
   protected:
 

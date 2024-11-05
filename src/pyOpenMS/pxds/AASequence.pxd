@@ -18,7 +18,9 @@ cdef extern from "<OpenMS/CHEMISTRY/AASequence.h>" namespace "OpenMS":
         #  instance primarily contains a sequence of residues. 
 
         AASequence() except + nogil 
-        AASequence(AASequence &) except + nogil 
+        AASequence(AASequence &) except + nogil
+    
+        AASequence(const String&) except + nogil # wrap-doc:Constructor from amino acid sequence (e.g. "PEPTM(Oxidatio)IDE")
 
         AASequence operator+(AASequence) except + nogil 
         AASequence iadd(AASequence) except + nogil  # wrap-as:operator+=
