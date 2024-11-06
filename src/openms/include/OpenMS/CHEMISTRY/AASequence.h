@@ -82,7 +82,7 @@ namespace OpenMS
 
       @ingroup Chemistry
   */
-  class OPENMS_DLLAPI AASequence
+  class OPENMS_DLLAPI AASequence final
   {
 public:
 
@@ -334,7 +334,7 @@ protected:
     //@{
 
     /// Default constructor
-    AASequence();
+    AASequence() = default;
 
     /// Copy constructor
     AASequence(const AASequence&) = default;
@@ -343,7 +343,7 @@ protected:
     AASequence(AASequence&&) noexcept = default;
 
     /// Destructor
-    virtual ~AASequence();
+    virtual ~AASequence() = default;
     //@}
 
     /// Assignment operator
