@@ -21,7 +21,7 @@ cdef extern from "<OpenMS/CHEMISTRY/AASequence.h>" namespace "OpenMS":
         AASequence(AASequence &) except + nogil
     
         AASequence(const String&) except + nogil # wrap-doc:Constructor from amino acid sequence (e.g. "PEPTM(Oxidatio)IDE")
-        AASequence(const String&, bool permissive) except + nogil # wrap-doc:Constructor from amino acid sequence (e.g. "PEPTM(Oxidatio)IDE")
+        AASequence(const String&, bool permissive) except + nogil # wrap-doc:Constructor from amino acid sequence (e.g. "PEPTM(Oxidatio)IDE"), permissive allows for '+', '*', and '#' in the sequence
 
         AASequence operator+(AASequence) except + nogil 
         AASequence iadd(AASequence) except + nogil  # wrap-as:operator+=
