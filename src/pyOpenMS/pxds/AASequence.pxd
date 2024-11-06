@@ -139,4 +139,4 @@ cdef extern from "<OpenMS/CHEMISTRY/AASequence.h>" namespace "OpenMS::AASequence
         AASequence fromString(String s, bool permissive) except + nogil   # wrap-attach:AASequence wrap-as:fromStringPermissive
         
         # static members
-        AASequence fromString(String s) except + nogil   # wrap-attach:AASequence
+        AASequence fromString(String s) except + nogil   # wrap-attach:AASequence wrap-doc: deprecated. Use AASequence(String) instead.
