@@ -117,6 +117,16 @@ namespace OpenMS
     parseString_(s, *this, true);
   }
 
+  AASequence::AASequence(const String& s, bool permissive)
+  {
+    parseString_(s, *this, permissive);
+  }
+
+  AASequence::AASequence(const char* s, bool permissive)
+  {
+    parseString_(s, *this, permissive);
+  }
+
   const Residue& AASequence::getResidue(Size index) const
   {
     if (index >= peptide_.size())

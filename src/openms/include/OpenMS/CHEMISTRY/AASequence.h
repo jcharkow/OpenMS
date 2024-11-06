@@ -604,6 +604,17 @@ protected:
     /// @brief constructor from C string
     /// @param s A C-style string representing the amino acid sequence
     explicit AASequence(const char* s);
+
+    /// @brief constructor from String
+    /// @param s A String representing the amino acid sequence
+    /// @param permissive If set, skip spaces and replace stop codon symbols ("*", "#", "+") by "X" (unknown amino acid) during parsing
+    explicit AASequence(const String& s, bool permissive);
+
+    /// @brief constructor from C string
+    /// @param s A C-style string representing the amino acid sequence
+    /// @param permissive If set, skip spaces and replace stop codon symbols ("*", "#", "+") by "X" (unknown amino acid) during parsing
+    explicit AASequence(const char* s, bool permissive);
+
   protected:
 
     std::vector<const Residue*> peptide_;
