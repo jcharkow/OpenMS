@@ -426,15 +426,11 @@ protected:
     registerStringOption_("enable_ipf", "<name>", "true", "Enable additional scoring of identification assays using IPF (see online documentation)", false, true);
     setValidStrings_("enable_ipf", ListUtils::create<String>("true,false"));
 
-    // one of the following two needs to be set
-    registerOutputFile_("out_features", "<file>", "", "output file", false);
-    setValidFormats_("out_features", ListUtils::create<String>("featureXML"));
+    registerOutputFile_("out", "<file>", "", "feature output file, either .osw (PyProphet-compatible SQLite file) or .featureXML", false);
+    setValidFormats_("out", ListUtils::create<String>("osw,featureXML"));
 
-    registerOutputFile_("out_tsv", "<file>", "", "TSV output file (mProphet-compatible TSV file)", false);
-    setValidFormats_("out_tsv", ListUtils::create<String>("tsv"));
-
-    registerOutputFile_("out_osw", "<file>", "", "OSW output file (PyProphet-compatible SQLite file)", false);
-    setValidFormats_("out_osw", ListUtils::create<String>("osw"));
+    registerStringOption_("out_type", "<type>", "", "input file type -- default: determined from file extension or content\n", false);
+    setValidStrings_("out_type", ListUtils::create<String>("osw,featureXML"));
 
     registerOutputFile_("out_chrom", "<file>", "", "Also output all computed chromatograms output in mzML (chrom.mzML) or sqMass (SQLite format)", false, true);
     setValidFormats_("out_chrom", ListUtils::create<String>("mzML,sqMass"));
@@ -623,6 +619,7 @@ protected:
     ///////////////////////////////////
     StringList file_list = getStringList_("in");
     String tr_file = getStringOption_("tr");
+    String out = getStringOption_("out");
 
     //tr_file input file type
     FileTypes::Type tr_type = FileTypes::nameToType(getStringOption_("tr_type"));
@@ -638,9 +635,19 @@ protected:
       return PARSE_ERROR;
     }
 
-    String out = getStringOption_("out_features");
-    String out_tsv = getStringOption_("out_tsv");
-    String out_osw = getStringOption_("out_osw");
+    //tr_file input file type
+    FileTypes::Type out_type = FileTypes::nameToType(getStringOption_("out_type"));
+    if (out_type == FileTypes::UNKNOWN)
+    {
+      out_type = FileHandler::getType(out);
+      writeDebug_(String("Input file type (-out): ") + FileTypes::typeToName(out_type), 2);
+    }
+
+    if (out_type == FileTypes::UNKNOWN)
+    {
+      writeLogError_("Error: Could not determine input file type for '-out' !");
+      return PARSE_ERROR;
+    }
 
     String out_qc = getStringOption_("out_qc");
 
@@ -701,16 +708,6 @@ protected:
     {
       std::cout << "Since neither rt_norm nor tr_irt is set, OpenSWATH will " <<
         "not use RT-transformation (rather a null transformation will be applied)" << std::endl;
-    }
-    if ( int(!out.empty()) + int(!out_tsv.empty()) + int(!out_osw.empty()) != 1 )
-    {
-      throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
-          "Either out_features, out_tsv or out_osw needs to be set (but not two or three at the same time)");
-    }
-    if (!out_osw.empty() && tr_type != FileTypes::PQP)
-    {
-      throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
-          "OSW output files can only be generated in combination with PQP input files (-tr).");
     }
 
     // Check swath window input
@@ -786,13 +783,24 @@ protected:
     OPENMS_LOG_INFO << "Loaded " << transition_exp.getProteins().size() << " proteins, " <<
       transition_exp.getCompounds().size() << " compounds with " << transition_exp.getTransitions().size() << " transitions." << std::endl;
 
-    if (tr_type == FileTypes::PQP)
+    if (!out.empty())
     {
-      if (!out_osw.empty())
-      { // copy the PQP file and name it OSW file
-        std::ifstream  src(tr_file.c_str(), std::ios::binary);
-        std::ofstream  dst(out_osw.c_str(), std::ios::binary | std::ios::trunc);
-        dst << src.rdbuf();
+      if (tr_type == FileTypes::PQP)
+      {
+         // copy the PQP file and name it OSW file
+          std::ifstream  src(tr_file.c_str(), std::ios::binary);
+          std::ofstream  dst(out.c_str(), std::ios::binary | std::ios::trunc);
+          dst << src.rdbuf();
+      }
+      else if (tr_type == FileTypes::TSV)
+      {
+        // convert TSV to PQP
+        TransitionTSVFile tsv_reader;
+        TargetedExperiment transition_exp_heavy;
+        tsv_reader.setParameters(tsv_reader_param);
+        tsv_reader.convertTSVToTargetedExperiment(tr_file.c_str(), tr_type, transition_exp_heavy);
+        // write out PQP file
+        TransitionPQPFile().convertTargetedExperimentToPQP(out.c_str(), transition_exp_heavy);
       }
     }
 
@@ -925,15 +933,15 @@ protected:
     // Set up peakgroup file output (.tsv or .osw file)
     ///////////////////////////////////
     FeatureMap out_featureFile;
-    OpenSwathTSVWriter tsvwriter(out_tsv, file_list[0], use_ms1_traces); // only active if filename not empty
-    OpenSwathOSWWriter oswwriter(out_osw, run_id, file_list[0], enable_uis_scoring); // only active if filename not empty
+    OpenSwathTSVWriter tsvwriter("", file_list[0], use_ms1_traces); // only active if filename not empty
+    OpenSwathOSWWriter oswwriter(out, run_id, file_list[0], enable_uis_scoring); // only active if filename not empty
 
     OpenSwathWorkflow wf(use_ms1_traces, use_ms1_im, prm, pasef, outer_loop_threads);
     wf.setLogType(log_type_);
     wf.performExtraction(swath_maps, trafo_rtnorm, cp, cp_ms1, feature_finder_param, transition_exp,
         out_featureFile, !out.empty(), tsvwriter, oswwriter, chromatogramConsumer, batchSize, ms1_isotopes, load_into_memory);
 
-    if (!out.empty())
+    if ( out_type == FileTypes::FEATUREXML )
     {
       addDataProcessing_(out_featureFile, getProcessingInfo_(DataProcessing::QUANTITATION));
       out_featureFile.ensureUniqueId();
