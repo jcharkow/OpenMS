@@ -636,7 +636,7 @@ protected:
     }
 
     //tr_file input file type
-    FileTypes::Type out_features_type = FileTypes::nameToType(getStringOption_("out_type"));
+    FileTypes::Type out_features_type = FileTypes::nameToType(getStringOption_("out_features_type"));
     if (out_features_type == FileTypes::UNKNOWN)
     {
       out_features_type = FileHandler::getType(out_features);
@@ -833,6 +833,13 @@ protected:
           }
         }
       }
+      else if (tr_type == FileTypes::TRAML)
+      {
+        if (out_features_type == FileTypes::OSW)
+        {
+          throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, String("Conversion from TraML to OSW is not supported."));
+        }
+      }
     }
 
     // If pasef flag is set, validate that IM is present
@@ -961,19 +968,19 @@ protected:
     prepareChromOutput(&chromatogramConsumer, exp_meta, transition_exp, out_chrom, run_id);
 
     ///////////////////////////////////
-    // Set up peakgroup file output (.tsv or .osw file)
+    // Set up peakgroup file output .osw file
     ///////////////////////////////////
-    FeatureMap out_featureFile;
-    OpenSwathTSVWriter tsvwriter("", file_list[0], use_ms1_traces); // only active if filename not empty
-    OpenSwathOSWWriter oswwriter(out_features, run_id, file_list[0], enable_uis_scoring); // only active if filename not empty
 
+    FeatureMap out_featureFile;
     // store features if not writing to .featureXML
     bool store_features = (out_features_type != FileTypes::FEATUREXML);
+    String osw_out_filename = store_features ? out_features : "";
+    OpenSwathOSWWriter oswwriter(osw_out_filename, run_id, file_list[0], enable_uis_scoring);
 
     OpenSwathWorkflow wf(use_ms1_traces, use_ms1_im, prm, pasef, outer_loop_threads);
     wf.setLogType(log_type_);
     wf.performExtraction(swath_maps, trafo_rtnorm, cp, cp_ms1, feature_finder_param, transition_exp,
-        out_featureFile, store_features, tsvwriter, oswwriter, chromatogramConsumer, batchSize, ms1_isotopes, load_into_memory);
+        out_featureFile, store_features, oswwriter, chromatogramConsumer, batchSize, ms1_isotopes, load_into_memory);
 
     if ( out_features_type == FileTypes::FEATUREXML )
     {
