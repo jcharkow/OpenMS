@@ -794,13 +794,44 @@ protected:
       }
       else if (tr_type == FileTypes::TSV)
       {
-        // convert TSV to PQP
+        // Convert TSV to .PQP 
         TransitionTSVFile tsv_reader;
         TargetedExperiment transition_exp_heavy;
         tsv_reader.setParameters(tsv_reader_param);
         tsv_reader.convertTSVToTargetedExperiment(tr_file.c_str(), tr_type, transition_exp_heavy);
-        // write out PQP file
         TransitionPQPFile().convertTargetedExperimentToPQP(out.c_str(), transition_exp_heavy);
+
+        // instead of reloading - edit the already loaded transition_exp to be compatible with .pqp format
+        // read the PQP to traMLID mapping
+        auto precursor_traml_to_pqp = TransitionPQPFile().getPQPIDToTraMLIDMap(out.c_str(), "PRECURSOR");
+        auto transition_traml_to_pqp = TransitionPQPFile().getPQPIDToTraMLIDMap(out.c_str(), "TRANSITION");
+
+        // convert tramlID in transitionExp to PQP ID
+        for (auto & prec : transition_exp.getCompounds())
+        {
+          auto id = precursor_traml_to_pqp.find(prec.id);
+          if (id != precursor_traml_to_pqp.end())
+          {
+            prec.id = id->second;
+          }
+        }
+
+        for (auto & tr : transition_exp.getTransitions())
+        {
+          // convert transition tramlID peptide reference in transitionExp to PQP ID 
+          auto pep = precursor_traml_to_pqp.find(tr.getPeptideRef());
+          if (pep != precursor_traml_to_pqp.end())
+          {
+            tr.peptide_ref = pep->second;
+          }
+
+          // Update transition id
+          auto id = transition_traml_to_pqp.find(tr.transition_name);
+          if (id != transition_traml_to_pqp.end())
+          {
+            tr.transition_name = id->second;
+          }
+        }
       }
     }
 
