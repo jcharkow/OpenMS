@@ -426,11 +426,11 @@ protected:
     registerStringOption_("enable_ipf", "<name>", "true", "Enable additional scoring of identification assays using IPF (see online documentation)", false, true);
     setValidStrings_("enable_ipf", ListUtils::create<String>("true,false"));
 
-    registerOutputFile_("out", "<file>", "", "feature output file, either .osw (PyProphet-compatible SQLite file) or .featureXML", false);
-    setValidFormats_("out", ListUtils::create<String>("osw,featureXML"));
+    registerOutputFile_("out_features", "<file>", "", "feature output file, either .osw (PyProphet-compatible SQLite file) or .featureXML", false);
+    setValidFormats_("out_features", ListUtils::create<String>("osw,featureXML"));
 
-    registerStringOption_("out_type", "<type>", "", "input file type -- default: determined from file extension or content\n", false);
-    setValidStrings_("out_type", ListUtils::create<String>("osw,featureXML"));
+    registerStringOption_("out_features_type", "<type>", "", "input file type -- default: determined from file extension or content\n", false);
+    setValidStrings_("out_features_type", ListUtils::create<String>("osw,featureXML"));
 
     registerOutputFile_("out_chrom", "<file>", "", "Also output all computed chromatograms output in mzML (chrom.mzML) or sqMass (SQLite format)", false, true);
     setValidFormats_("out_chrom", ListUtils::create<String>("mzML,sqMass"));
@@ -619,7 +619,7 @@ protected:
     ///////////////////////////////////
     StringList file_list = getStringList_("in");
     String tr_file = getStringOption_("tr");
-    String out = getStringOption_("out");
+    String out_features = getStringOption_("out_features");
 
     //tr_file input file type
     FileTypes::Type tr_type = FileTypes::nameToType(getStringOption_("tr_type"));
@@ -636,16 +636,16 @@ protected:
     }
 
     //tr_file input file type
-    FileTypes::Type out_type = FileTypes::nameToType(getStringOption_("out_type"));
-    if (out_type == FileTypes::UNKNOWN)
+    FileTypes::Type out_features_type = FileTypes::nameToType(getStringOption_("out_type"));
+    if (out_features_type == FileTypes::UNKNOWN)
     {
-      out_type = FileHandler::getType(out);
-      writeDebug_(String("Input file type (-out): ") + FileTypes::typeToName(out_type), 2);
+      out_features_type = FileHandler::getType(out_features);
+      writeDebug_(String("Input file type (-out): ") + FileTypes::typeToName(out_features_type), 2);
     }
 
-    if (out_type == FileTypes::UNKNOWN)
+    if (out_features_type == FileTypes::UNKNOWN)
     {
-      writeLogError_("Error: Could not determine input file type for '-out' !");
+      writeLogError_("Error: Could not determine input file type for '-out_features' !");
       return PARSE_ERROR;
     }
 
@@ -783,13 +783,13 @@ protected:
     OPENMS_LOG_INFO << "Loaded " << transition_exp.getProteins().size() << " proteins, " <<
       transition_exp.getCompounds().size() << " compounds with " << transition_exp.getTransitions().size() << " transitions." << std::endl;
 
-    if (!out.empty())
+    if (!out_features.empty())
     {
       if (tr_type == FileTypes::PQP)
       {
          // copy the PQP file and name it OSW file
           std::ifstream  src(tr_file.c_str(), std::ios::binary);
-          std::ofstream  dst(out.c_str(), std::ios::binary | std::ios::trunc);
+          std::ofstream  dst(out_features.c_str(), std::ios::binary | std::ios::trunc);
           dst << src.rdbuf();
       }
       else if (tr_type == FileTypes::TSV)
@@ -799,12 +799,12 @@ protected:
         TargetedExperiment transition_exp_heavy;
         tsv_reader.setParameters(tsv_reader_param);
         tsv_reader.convertTSVToTargetedExperiment(tr_file.c_str(), tr_type, transition_exp_heavy);
-        TransitionPQPFile().convertTargetedExperimentToPQP(out.c_str(), transition_exp_heavy);
+        TransitionPQPFile().convertTargetedExperimentToPQP(out_features.c_str(), transition_exp_heavy);
 
         // instead of reloading - edit the already loaded transition_exp to be compatible with .pqp format
         // read the PQP to traMLID mapping
-        auto precursor_traml_to_pqp = TransitionPQPFile().getPQPIDToTraMLIDMap(out.c_str(), "PRECURSOR");
-        auto transition_traml_to_pqp = TransitionPQPFile().getPQPIDToTraMLIDMap(out.c_str(), "TRANSITION");
+        auto precursor_traml_to_pqp = TransitionPQPFile().getPQPIDToTraMLIDMap(out_features.c_str(), "PRECURSOR");
+        auto transition_traml_to_pqp = TransitionPQPFile().getPQPIDToTraMLIDMap(out_features.c_str(), "TRANSITION");
 
         // convert tramlID in transitionExp to PQP ID
         for (auto & prec : transition_exp.getCompounds())
@@ -965,18 +965,21 @@ protected:
     ///////////////////////////////////
     FeatureMap out_featureFile;
     OpenSwathTSVWriter tsvwriter("", file_list[0], use_ms1_traces); // only active if filename not empty
-    OpenSwathOSWWriter oswwriter(out, run_id, file_list[0], enable_uis_scoring); // only active if filename not empty
+    OpenSwathOSWWriter oswwriter(out_features, run_id, file_list[0], enable_uis_scoring); // only active if filename not empty
+
+    // store features if not writing to .featureXML
+    bool store_features = (out_features_type != FileTypes::FEATUREXML);
 
     OpenSwathWorkflow wf(use_ms1_traces, use_ms1_im, prm, pasef, outer_loop_threads);
     wf.setLogType(log_type_);
     wf.performExtraction(swath_maps, trafo_rtnorm, cp, cp_ms1, feature_finder_param, transition_exp,
-        out_featureFile, !out.empty(), tsvwriter, oswwriter, chromatogramConsumer, batchSize, ms1_isotopes, load_into_memory);
+        out_featureFile, store_features, tsvwriter, oswwriter, chromatogramConsumer, batchSize, ms1_isotopes, load_into_memory);
 
-    if ( out_type == FileTypes::FEATUREXML )
+    if ( out_features_type == FileTypes::FEATUREXML )
     {
       addDataProcessing_(out_featureFile, getProcessingInfo_(DataProcessing::QUANTITATION));
       out_featureFile.ensureUniqueId();
-      FileHandler().storeFeatures(out, out_featureFile, {FileTypes::FEATUREXML});
+      FileHandler().storeFeatures(out_features, out_featureFile, {FileTypes::FEATUREXML});
     }
 
     delete chromatogramConsumer;
