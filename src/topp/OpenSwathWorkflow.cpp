@@ -783,7 +783,7 @@ protected:
     OPENMS_LOG_INFO << "Loaded " << transition_exp.getProteins().size() << " proteins, " <<
       transition_exp.getCompounds().size() << " compounds with " << transition_exp.getTransitions().size() << " transitions." << std::endl;
 
-    if (!out_features.empty())
+    if (out_features_type == FileTypes::OSW)
     {
       if (tr_type == FileTypes::PQP)
       {
@@ -980,10 +980,11 @@ protected:
     OpenSwathWorkflow wf(use_ms1_traces, use_ms1_im, prm, pasef, outer_loop_threads);
     wf.setLogType(log_type_);
     wf.performExtraction(swath_maps, trafo_rtnorm, cp, cp_ms1, feature_finder_param, transition_exp,
-        out_featureFile, store_features, oswwriter, chromatogramConsumer, batchSize, ms1_isotopes, load_into_memory);
+        out_featureFile, true, oswwriter, chromatogramConsumer, batchSize, ms1_isotopes, load_into_memory);
 
     if ( out_features_type == FileTypes::FEATUREXML )
     {
+      std::cout << "Writing features ..." << std::endl;
       addDataProcessing_(out_featureFile, getProcessingInfo_(DataProcessing::QUANTITATION));
       out_featureFile.ensureUniqueId();
       FileHandler().storeFeatures(out_features, out_featureFile, {FileTypes::FEATUREXML});
