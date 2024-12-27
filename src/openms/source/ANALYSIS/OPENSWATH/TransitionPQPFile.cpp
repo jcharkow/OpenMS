@@ -44,11 +44,39 @@ namespace OpenMS
       traml_id = "TRAML_ID";
     }
 
-    startProgress(0, 1, "reading PQP file (SQL warmup)");
+    startProgress(0, 1, "Opening database");
 
-    // Open database
-    SqliteConnector conn(filename);
+    SqliteConnector conn(filename, SqliteConnector::SqlOpenMode::READWRITE, false);
     db = conn.getDB();
+    endProgress();
+
+    startProgress(0, 1, "Creating Indicies");
+
+    String index_query = "CREATE INDEX IF NOT EXISTS idx_precursor_precursor_id ON PRECURSOR (ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_precursor_peptide_mapping_precursor_id ON PRECURSOR_PEPTIDE_MAPPING (PRECURSOR_ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_precursor_peptide_mapping_peptide_id ON PRECURSOR_PEPTIDE_MAPPING (PEPTIDE_ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_peptide_peptide_id ON PEPTIDE (ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_transition_transition_id ON TRANSITION (ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_transition_precursor_mapping_transition_id ON TRANSITION_PRECURSOR_MAPPING (TRANSITION_ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_transition_precursor_mapping_precursor_id ON TRANSITION_PRECURSOR_MAPPING (PRECURSOR_ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_protein_protein_id ON PROTEIN (ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_peptide_protein_mapping_peptide_id ON PEPTIDE_PROTEIN_MAPPING (PEPTIDE_ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_peptide_protein_mapping_protein_id ON PEPTIDE_PROTEIN_MAPPING (PROTEIN_ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_compound_compound_id ON COMPOUND (ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_precursor_compound_mapping_precursor_id ON PRECURSOR_COMPOUND_MAPPING (PRECURSOR_ID);" \
+                  "CREATE INDEX IF NOT EXISTS idx_precursor_compound_mapping_compound_id ON PRECURSOR_COMPOUND_MAPPING (COMPOUND_ID);";
+
+    bool gene_exists = SqliteConnector::tableExists(db, "GENE");
+    if (gene_exists)
+    {
+      index_query += "CREATE INDEX IF NOT EXISTS idx_gene_gene_id ON GENE (ID);" \
+                     "CREATE INDEX IF NOT EXISTS idx_peptide_gene_mapping_gene_id ON PEPTIDE_GENE_MAPPING (GENE_ID);" \
+                     "CREATE INDEX IF NOT EXISTS idx_peptide_gene_mapping_peptide_id ON PEPTIDE_GENE_MAPPING (PEPTIDE_ID);";
+    }
+    SqliteConnector::executeStatement(db, index_query);
+    endProgress();
+
+    startProgress(0, 1, "Preparing statement");
 
     // Count transitions
     SqliteConnector::prepareStatement(db, &cntstmt, "SELECT COUNT(*) FROM TRANSITION;");
@@ -66,7 +94,6 @@ namespace OpenMS
     String select_gene = "";
     String select_gene_null = "";
     String join_gene = "";
-    bool gene_exists = SqliteConnector::tableExists(db, "GENE");
     if (gene_exists)
     {
       select_gene = ", GENE_AGGREGATED.GENE_NAME AS gene_name ";
@@ -181,6 +208,8 @@ namespace OpenMS
 
 
     // Execute SQL select statement
+    endProgress();
+    startProgress(0, 1, "Executing SQL statement");
     SqliteConnector::prepareStatement(db, &stmt, select_sql);
     sqlite3_step(stmt);
     endProgress();
