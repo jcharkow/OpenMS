@@ -17,10 +17,22 @@
 
 namespace OpenMS
 {
-  SqliteConnector::SqliteConnector(const String& filename, const SqlOpenMode mode)
+  SqliteConnector::SqliteConnector(const String& filename, const SqlOpenMode mode, const bool in_memory)
   {
-    openDatabase_(filename, mode);
+    if (in_memory)
+    {
+      if (mode != SqlOpenMode::READONLY)
+      {
+        throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "In-memory databases can only be opened in read-only mode");
+      }
+      openDatabaseInMemory_(filename);
+    }
+    else
+    {
+      openDatabase_(filename, mode);
+    }
   }
+
   SqliteConnector::~SqliteConnector()
   {
     int rc = sqlite3_close_v2(db_);
@@ -51,6 +63,46 @@ namespace OpenMS
     {
       throw Exception::SqlOperationFailed(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Could not open sqlite db '" + filename + "' in mode " + String(int(mode)));
     }
+  }
+
+  void SqliteConnector::openDatabaseInMemory_(const String& filename)
+  {
+   // note only READONLY is supported
+   sqlite3* sourceDb = nullptr;
+
+    // Open database
+    int flags = SQLITE_OPEN_READONLY;
+
+    int rc = sqlite3_open_v2(filename.c_str(), &sourceDb, flags, nullptr);
+    if (rc)
+    {
+      throw Exception::SqlOperationFailed(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Could not open sqlite db '" + filename );
+    }
+
+    int rc_mem = sqlite3_open(":memory:", &db_);
+    if (rc_mem)
+    {
+      throw Exception::SqlOperationFailed(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Could not open empty db in memory");
+    }
+
+    sqlite3_backup* backup = sqlite3_backup_init(db_, "main", sourceDb, "main");
+
+    if (backup)
+    {
+      if (sqlite3_backup_step(backup, -1) != SQLITE_DONE)
+      {
+        throw Exception::SqlOperationFailed(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Could not copy sqlite db '" + filename + "' to memory");
+      }
+      sqlite3_backup_finish(backup);
+    }
+    else
+    {
+      throw Exception::SqlOperationFailed(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Failed to initialize copying sqlite db '" + filename + "' to memory");
+    }
+
+    // close the source db
+    sqlite3_close(sourceDb);
+
   }
 
   bool SqliteConnector::columnExists(sqlite3 *db, const String& tablename, const String& colname)

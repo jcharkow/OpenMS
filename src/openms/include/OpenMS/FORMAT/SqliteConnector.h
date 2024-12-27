@@ -44,7 +44,7 @@ namespace OpenMS
 
     /// Constructor which opens a connection to @p filename
     /// @throws Exception::SqlOperationFailed if the file does not exist/cannot be created (depending on @p mode)
-    explicit SqliteConnector(const String& filename, const SqlOpenMode mode = SqlOpenMode::READWRITE_OR_CREATE);
+    explicit SqliteConnector(const String& filename, const SqlOpenMode mode = SqlOpenMode::READWRITE_OR_CREATE, bool in_memory = false);
 
     /// Destructor
     ~SqliteConnector();
@@ -240,6 +240,15 @@ namespace OpenMS
       @note Call this only once!
     */
     void openDatabase_(const String& filename, const SqlOpenMode mode);
+
+    /**
+      @brief Opens a new SQLite database in memory
+
+      @param filename Filename of the database
+
+      @note Call this only once!
+    */
+    void openDatabaseInMemory_(const String& filename);
 
   protected:
     sqlite3* db_ = nullptr;
