@@ -46,7 +46,8 @@ namespace OpenMS
 
     startProgress(0, 1, "Opening database");
 
-    SqliteConnector conn(filename, SqliteConnector::SqlOpenMode::READWRITE, false);
+    // open database in memory
+    SqliteConnector conn(filename, SqliteConnector::SqlOpenMode::READONLY, true);
     db = conn.getDB();
     endProgress();
 
