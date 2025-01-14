@@ -19,7 +19,6 @@
 #include <OpenMS/ANALYSIS/OPENSWATH/SwathQC.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/TransitionTSVFile.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/TransitionPQPFile.h>
-#include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathTSVWriter.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathOSWWriter.h>
 #include <OpenMS/SYSTEM/File.h>
 

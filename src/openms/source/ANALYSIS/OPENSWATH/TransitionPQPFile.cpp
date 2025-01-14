@@ -685,7 +685,6 @@ namespace OpenMS
     // Count Precursors 
     SqliteConnector::prepareStatement(db, &cntstmt, "SELECT COUNT(*) FROM " + tableName + ";");
     sqlite3_step( cntstmt );
-    int num_transitions = sqlite3_column_int(cntstmt, 0);
     sqlite3_finalize(cntstmt);
 
     std::string query = "SELECT ID, TRAML_ID FROM " + tableName + ";"; 
