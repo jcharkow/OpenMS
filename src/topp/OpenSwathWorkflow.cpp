@@ -429,7 +429,7 @@ protected:
     setValidFormats_("out_features", ListUtils::create<String>("osw,featureXML"));
 
     registerStringOption_("out_features_type", "<type>", "", "input file type -- default: determined from file extension or content\n", false);
-    setValidStrings_("out_features_type", ListUtils::create<String>("osw,featureXML"));
+    setValidStrings_("out_features_type", {"osw","featureXML"});
 
     registerOutputFile_("out_chrom", "<file>", "", "Also output all computed chromatograms output in mzML (chrom.mzML) or sqMass (SQLite format)", false, true);
     setValidFormats_("out_chrom", ListUtils::create<String>("mzML,sqMass"));
@@ -808,8 +808,7 @@ protected:
         // convert tramlID in transitionExp to PQP ID
         for (auto & prec : transition_exp.getCompounds())
         {
-          auto id = precursor_traml_to_pqp.find(prec.id);
-          if (id != precursor_traml_to_pqp.end())
+          if (auto id = precursor_traml_to_pqp.find(prec.id); id != precursor_traml_to_pqp.end())
           {
             prec.id = id->second;
           }
