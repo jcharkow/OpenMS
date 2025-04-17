@@ -422,6 +422,9 @@ protected:
     registerStringOption_("enable_ms1", "<name>", "true", "Extract the precursor ion trace(s) and use for scoring if present", false, true);
     setValidStrings_("enable_ms1", ListUtils::create<String>("true,false"));
 
+    registerStringOption_("auto_transform", "<name>", "true", "Perform automatic RT, IM, and m/z calibration using a quality heuristic apporach", false, true);
+    setValidStrings_("auto_transform", ListUtils::create<String>("true,false"));
+
     registerStringOption_("enable_ipf", "<name>", "true", "Enable additional scoring of identification assays using IPF (see online documentation)", false, true);
     setValidStrings_("enable_ipf", ListUtils::create<String>("true,false"));
 
@@ -663,6 +666,7 @@ protected:
     bool pasef = getFlag_("pasef");
     bool sort_swath_maps = getFlag_("sort_swath_maps");
     bool use_ms1_traces = getStringOption_("enable_ms1") == "true";
+    bool auto_transform = getStringOption_("auto_transform") == "true";
     bool enable_uis_scoring = getStringOption_("enable_ipf") == "true";
     int batchSize = (int)getIntOption_("batchSize");
     int outer_loop_threads = (int)getIntOption_("outer_loop_threads");
@@ -904,6 +908,57 @@ protected:
     calibration_param.setValue("im_extraction_window", cp_irt.im_extraction_window);
     calibration_param.setValue("mz_correction_function", mz_correction_function);
     TransformationDescription trafo_rtnorm;
+    if (auto_transform)
+    {
+      OPENMS_LOG_DEBUG << "Performing automatic RT, IM and m/z calibration" << std::endl;
+
+      // Random subsample of the library to get a smaller set of peptides
+      auto shuffledCompounds = transition_exp.getCompounds();
+      Math::RandomShuffler shuffler_(1);
+      shuffler_.portable_random_shuffle(shuffledCompounds.begin(), shuffledCompounds.end());
+
+      // take the first 1000 peptides
+      OpenSwath::LightTargetedExperiment transition_exp_subsampled;
+
+      // copied from void OpenSwathWorkflow::selectCompoundsForBatch_(const OpenSwath::LightTargetedExperiment& transition_exp_used_all,
+      // creates a new LightTargetedExperiment from the subsample
+      // compute batch start/end
+      int batch_size = 10;
+
+      size_t end = batch_size;
+      if (end > transition_exp.compounds.size())
+      {
+        end = transition_exp.compounds.size();
+      }
+
+      // Create the new, batch-size transition experiment
+      transition_exp_subsampled.proteins = transition_exp.proteins;
+      transition_exp_subsampled.compounds.insert(transition_exp_subsampled.compounds.end(), shuffledCompounds.begin(), shuffledCompounds.begin() + end);
+
+      std::set<std::string> selected_compounds;
+      for (Size i = 0; i < transition_exp_subsampled.compounds.size(); i++)
+      {
+        selected_compounds.insert(transition_exp_subsampled.compounds[i].id);
+      }
+
+      for (Size i = 0; i < transition_exp.transitions.size(); i++)
+      {
+        if (selected_compounds.find(transition_exp.transitions[i].peptide_ref) != selected_compounds.end())
+        {
+          transition_exp_subsampled.transitions.push_back(transition_exp.transitions[i]);
+        }
+      }
+      for (Size i = 0; i < transition_exp_subsampled.getCompounds().size(); i++)
+      {
+        OPENMS_LOG_DEBUG << "Subsampled compound " << transition_exp_subsampled.getCompounds()[i].id << std::endl;
+      }
+
+      for (Size i = 0; i < transition_exp_subsampled.getTransitions().size(); i++)
+      {
+        OPENMS_LOG_DEBUG << "Subsampled transition " << transition_exp_subsampled.getTransitions()[i].getNativeID() << std::endl;
+      }
+  }
+
     if (nonlinear_irt_tr_file.empty())
     {
       trafo_rtnorm = performCalibration(trafo_in, irt_tr_file, swath_maps,
