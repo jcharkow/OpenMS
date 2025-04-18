@@ -209,8 +209,8 @@ namespace OpenMS
     OPENMS_LOG_DEBUG << "Performed outlier detection, left with features: " << pairs_corrected.size() << std::endl;
 
     // 6. Check whether the found peptides fulfill the binned coverage criteria
-    // set by the user.
-    if (estimateBestPeptides)
+    // set by the user. This is only done if not using a linear RT correction
+    if (estimateBestPeptides && irt_detection_param.getValue("alignmentMethod").toString() != "linear")
     {
       bool enoughPeptides = MRMRTNormalizer::computeBinnedCoverage(RTRange, pairs_corrected,
         irt_detection_param.getValue("NrRTBins"),
@@ -274,7 +274,39 @@ namespace OpenMS
     {
       OPENMS_LOG_DEBUG << pairs_corrected[i].first << " " <<  pairs_corrected[i].second << std::endl;
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // TODO incorperate this into transformation description function instead
+    /////////////////////////////////////////////////////////////
+
+    std::vector<double> predicted_values(pairs_corrected.size()); // these are the predicted values by applying the trafo on the values
+    std::vector<double> delta_true_predicted(pairs_corrected.size()); // these are the differences between the predicted and the true values
+    double sum_rt_differences = 0.0;
+    for (size_t i = 0; i < pairs_corrected.size(); ++i)
+    {
+      predicted_values[i] = trafo_out.apply(pairs_corrected[i].first);
+      delta_true_predicted[i] = pairs_corrected[i].second - predicted_values[i];
+      sum_rt_differences += delta_true_predicted[i]; // sum for computing the mean
+      OPENMS_LOG_DEBUG << "True - Predicted value: " << pairs_corrected[i].second << "  " << predicted_values[i] << std::endl;
+    }
+    double mean_rt_difference = sum_rt_differences / delta_true_predicted.size();
+
+    // compute the variance
+    double rt_variance = 0.0;
+    for (double delta: delta_true_predicted)
+    {
+      rt_variance += (delta - mean_rt_difference) * (delta - mean_rt_difference);
+    }
+    rt_variance /= delta_true_predicted.size();
+    double rt_stdev = sqrt(rt_variance);
+    double rt_extraction_window = rt_stdev * 3.0 * 2; // 3 times the standard deviation, doubled since the window is the full length (not half)
+    OPENMS_LOG_DEBUG << "RT variance: " << rt_stdev << std::endl;
+    OPENMS_LOG_DEBUG << "RT Extraction Window to Use: " << rt_extraction_window << std::endl;
+    
+
     OPENMS_LOG_DEBUG << "End of doDataNormalization_ method" << std::endl;
+
+    trafo_out.printSummary(std::cout);
 
     this->endProgress();
     return trafo_out;

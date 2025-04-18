@@ -957,6 +957,34 @@ protected:
       {
         OPENMS_LOG_DEBUG << "Subsampled transition " << transition_exp_subsampled.getTransitions()[i].getNativeID() << std::endl;
       }
+
+      ////////////////////////////////////
+      // Do A simple linear calibration from the subsampled library
+      ////////////////////////////////////////////
+      std::vector< OpenMS::MSChromatogram > chromatograms;
+      OpenSwathCalibrationWorkflow wf;
+      wf.setLogType(log_type_);
+      wf.simpleExtractChromatograms_(swath_maps, transition_exp_subsampled, chromatograms,
+                                    trafo_rtnorm, cp_irt, pasef, load_into_memory);
+
+      // always use estimateBestPeptides for the nonlinear approach
+      Param irt_lin = irt_detection_param;
+
+      irt_lin.setValue("alignmentMethod", "linear" );
+      irt_lin.setValue("estimateBestPeptides", "true");
+
+      TransformationDescription im_trafo; // exp -> theoretical
+      trafo_rtnorm = wf.doDataNormalization_(transition_exp_subsampled, chromatograms, im_trafo, swath_maps,
+                                             min_rsq, min_coverage,
+                                             feature_finder_param, irt_lin, calibration_param, pasef);
+      
+      ///////////////////////////////////////////////////////////
+      // Do a non linear calibration from the subsampled library
+      ///////////////////////////////////////////////////////////
+
+      Param irt_non_lin = irt_detection_param;
+      irt_lin.setValue("estimateBestPeptides", "true");
+
   }
 
     if (nonlinear_irt_tr_file.empty())
