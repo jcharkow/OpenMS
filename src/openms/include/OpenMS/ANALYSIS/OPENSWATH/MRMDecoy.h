@@ -10,6 +10,7 @@
 
 #include <OpenMS/ANALYSIS/OPENSWATH/MRMIonSeries.h>
 #include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
+#include <OpenMS/ANALYSIS/TARGETED/TargetedExperimentTwo.h>
 #include <OpenMS/CONCEPT/ProgressLogger.h>
 #include <OpenMS/DATASTRUCTURES/DefaultParamHandler.h>
 
@@ -102,6 +103,24 @@ public:
                         const bool enable_unspecific_losses,
                         const int round_decPow = -4) const;
 
+    void generateDecoys(const OpenMS::TargetedExperimentTwo& exp,
+                        OpenMS::TargetedExperimentTwo& dec,
+                        const String& method,
+                        const double aim_decoy_fraction,
+                        const bool switchKR,
+                        const String& decoy_tag,
+                        const int max_attempts,
+                        const double identity_threshold,
+                        const double precursor_mz_shift,
+                        const double product_mz_shift,
+                        const double product_mz_threshold,
+                        const std::vector<String>& fragment_types,
+                        const std::vector<size_t>& fragment_charges,
+                        const bool enable_specific_losses,
+                        const bool enable_unspecific_losses,
+                        const int round_decPow = -4) const;
+
+
     /**
        @brief Switch the final Amino Acid of a tryptic peptide.
        E.g. If the last Amino Acid is "K" switch to "R" (and vice versa).
@@ -113,8 +132,10 @@ public:
     typedef std::vector<OpenMS::TargetedExperiment::Protein> ProteinVectorType;
     typedef std::vector<OpenMS::TargetedExperiment::Peptide> PeptideVectorType;
     typedef std::vector<OpenMS::ReactionMonitoringTransition> TransitionVectorType;
+    typedef std::vector<OpenMS::ReactionMonitoringTransitionTwo> TransitionVectorTypeTwo;
 
     typedef std::map<String, std::vector<const ReactionMonitoringTransition*> > PeptideTransitionMapType;
+    typedef std::map<String, std::vector<const ReactionMonitoringTransitionTwo*> > PeptideTransitionMapTypeTwo;
 
     /**
       @brief Compute relative identity (relative number of matches of amino
