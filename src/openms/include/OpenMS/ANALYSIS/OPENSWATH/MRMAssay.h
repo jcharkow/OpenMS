@@ -9,6 +9,7 @@
 #pragma once
 
 #include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
+#include <OpenMS/ANALYSIS/TARGETED/TargetedExperimentTwo.h>
 #include <OpenMS/CONCEPT/ProgressLogger.h>
 #include <OpenMS/ANALYSIS/OPENSWATH/MRMIonSeries.h>
 #include <OpenMS/CHEMISTRY/ModificationsDB.h>
@@ -54,9 +55,13 @@ public:
     typedef std::vector<OpenMS::TargetedExperiment::Peptide> PeptideVectorType;
     typedef std::vector<OpenMS::TargetedExperiment::Compound> CompoundVectorType;
     typedef std::vector<OpenMS::ReactionMonitoringTransition> TransitionVectorType;
+    typedef std::vector<OpenMS::ReactionMonitoringTransitionTwo> TransitionVectorTypeTwo;
 
     typedef std::map<String, std::vector<const ReactionMonitoringTransition*> > PeptideTransitionMapType;
     typedef std::map<String, std::vector<const ReactionMonitoringTransition*> > CompoundTransitionMapType;
+
+    typedef std::map<String, std::vector<const ReactionMonitoringTransitionTwo*> > PeptideTransitionMapTypeTwo;
+    typedef std::map<String, std::vector<const ReactionMonitoringTransitionTwo*> > CompoundTransitionMapTypeTwo;
 
     typedef std::map<String, std::set<std::string> > ModifiedSequenceMap; ///< Maps an unmodified sequence to all its modified sequences
     typedef boost::unordered_map<size_t, ModifiedSequenceMap> SequenceMapT; ///< Stores the ModifiedSequenceMap for all SWATH windows
@@ -91,6 +96,16 @@ public:
                                bool enable_unspecific_losses,
                                int round_decPow = -4);
 
+    void reannotateTransitions(OpenMS::TargetedExperimentTwo& exp,
+                               double precursor_mz_threshold,
+                               double product_mz_threshold,
+                               const std::vector<String>& fragment_types,
+                               const std::vector<size_t>& fragment_charges,
+                               bool enable_specific_losses,
+                               bool enable_unspecific_losses,
+                               int round_decPow = -4);
+
+
     /**
       @brief Restrict and filter transitions in a TargetedExperiment
 
@@ -105,6 +120,10 @@ public:
         double lower_mz_limit, double upper_mz_limit,
         const std::vector<std::pair<double, double> >& swathes);
 
+    void restrictTransitions(OpenMS::TargetedExperimentTwo& exp,
+        double lower_mz_limit, double upper_mz_limit,
+        const std::vector<std::pair<double, double> >& swathes);
+
     /**
       @brief Select detecting fragment ions
 
@@ -114,6 +133,7 @@ public:
 
     */
     void detectingTransitions(OpenMS::TargetedExperiment& exp, int min_transitions, int max_transitions);
+    void detectingTransitions(OpenMS::TargetedExperimentTwo& exp, int min_transitions, int max_transitions);
 
     /**
       @brief Annotate UIS / site-specific transitions

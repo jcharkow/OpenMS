@@ -248,18 +248,20 @@ protected:
     }
 
     TargetedExperiment targeted_exp;
+    TargetedExperimentTwo targeted_expTwo;
 
     // Load data
     OPENMS_LOG_INFO << "Loading " << in << std::endl;
     if (in_type == FileTypes::TSV || in_type == FileTypes::MRM)
     {
+      // if .tsv file use targeted_expTwo as it is more memory efficient
       const char* tr_file = in.c_str();
       Param reader_parameters = getParam_().copy("algorithm:", true);
       TransitionTSVFile tsv_reader = TransitionTSVFile();
       tsv_reader.setLogType(log_type_);
       tsv_reader.setParameters(reader_parameters);
-      tsv_reader.convertTSVToTargetedExperiment(tr_file, in_type, targeted_exp, batch_size);
-      tsv_reader.validateTargetedExperiment(targeted_exp);
+      tsv_reader.convertTSVToTargetedExperiment(tr_file, in_type, targeted_expTwo, batch_size);
+      tsv_reader.validateTargetedExperiment(targeted_expTwo);
     }
     else if (in_type == FileTypes::PQP)
     {
@@ -280,33 +282,45 @@ protected:
     assays.setLogType(ProgressLogger::CMD);
 
     OPENMS_LOG_INFO << "Annotating transitions" << std::endl;
-    assays.reannotateTransitions(targeted_exp, precursor_mz_threshold, product_mz_threshold, allowed_fragment_types, allowed_fragment_charges, enable_detection_specific_losses, enable_detection_unspecific_losses);
 
-    OPENMS_LOG_INFO << "Annotating detecting transitions" << std::endl;
-    assays.restrictTransitions(targeted_exp, product_lower_mz_limit, product_upper_mz_limit, swathes);
-    assays.detectingTransitions(targeted_exp, min_transitions, max_transitions);
-
-    if (enable_ipf)
+    if (targeted_exp.getTransitions().empty())
     {
-      std::vector<std::pair<double, double> > uis_swathes;
+      // use targeted_expTwo if no transitions are available
+      assays.reannotateTransitions(targeted_expTwo, precursor_mz_threshold, product_mz_threshold, allowed_fragment_types, allowed_fragment_charges, enable_detection_specific_losses, enable_detection_unspecific_losses);
+      OPENMS_LOG_INFO << "Annotating detecting transitions" << std::endl;
+      assays.restrictTransitions(targeted_expTwo, product_lower_mz_limit, product_upper_mz_limit, swathes);
+      assays.detectingTransitions(targeted_expTwo, min_transitions, max_transitions);
+    }
+    else
+    {
+      assays.reannotateTransitions(targeted_exp, precursor_mz_threshold, product_mz_threshold, allowed_fragment_types, allowed_fragment_charges, enable_detection_specific_losses, enable_detection_unspecific_losses);
 
-      if (!enable_swath_specifity)
+      OPENMS_LOG_INFO << "Annotating detecting transitions" << std::endl;
+      assays.restrictTransitions(targeted_exp, product_lower_mz_limit, product_upper_mz_limit, swathes);
+      assays.detectingTransitions(targeted_exp, min_transitions, max_transitions);
+
+      if (enable_ipf)
       {
-        int num_precursor_windows = static_cast<int>(Math::round((precursor_upper_mz_limit - precursor_lower_mz_limit) / precursor_mz_threshold));
-        for (int i = 0; i < num_precursor_windows; i++)
+        std::vector<std::pair<double, double> > uis_swathes;
+
+        if (!enable_swath_specifity)
         {
-          uis_swathes.push_back(std::make_pair((precursor_lower_mz_limit+(i*precursor_mz_threshold)),(precursor_lower_mz_limit+((i+1)*precursor_mz_threshold))));
+          int num_precursor_windows = static_cast<int>(Math::round((precursor_upper_mz_limit - precursor_lower_mz_limit) / precursor_mz_threshold));
+          for (int i = 0; i < num_precursor_windows; i++)
+          {
+            uis_swathes.push_back(std::make_pair((precursor_lower_mz_limit+(i*precursor_mz_threshold)),(precursor_lower_mz_limit+((i+1)*precursor_mz_threshold))));
+          }
         }
+        else
+        {
+          uis_swathes = swathes;
+        }
+        
+        OPENMS_LOG_INFO << "Generating identifying transitions for IPF" << std::endl;
+        assays.uisTransitions(targeted_exp, allowed_fragment_types, allowed_fragment_charges, enable_identification_specific_losses, enable_identification_unspecific_losses, enable_identification_ms2_precursors, product_mz_threshold, uis_swathes, -4, max_num_alternative_localizations, uis_seed, disable_decoy_transitions);
+        std::vector<std::pair<double, double> > empty_swathes;
+        assays.restrictTransitions(targeted_exp, product_lower_mz_limit, product_upper_mz_limit, empty_swathes);
       }
-      else
-      {
-        uis_swathes = swathes;
-      }
-      
-      OPENMS_LOG_INFO << "Generating identifying transitions for IPF" << std::endl;
-      assays.uisTransitions(targeted_exp, allowed_fragment_types, allowed_fragment_charges, enable_identification_specific_losses, enable_identification_unspecific_losses, enable_identification_ms2_precursors, product_mz_threshold, uis_swathes, -4, max_num_alternative_localizations, uis_seed, disable_decoy_transitions);
-      std::vector<std::pair<double, double> > empty_swathes;
-      assays.restrictTransitions(targeted_exp, product_lower_mz_limit, product_upper_mz_limit, empty_swathes);
     }
 
     OPENMS_LOG_INFO << "Writing assays " << out << std::endl;
@@ -315,7 +329,7 @@ protected:
       const char* tr_file = out.c_str();
       TransitionTSVFile tsv_reader = TransitionTSVFile();
       tsv_reader.setLogType(log_type_);
-      tsv_reader.convertTargetedExperimentToTSV(tr_file, targeted_exp);
+      tsv_reader.convertTargetedExperimentToTSV(tr_file, targeted_expTwo);
     }
     if (out_type == FileTypes::PQP)
     {

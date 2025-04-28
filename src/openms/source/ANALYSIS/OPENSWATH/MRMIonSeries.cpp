@@ -191,6 +191,84 @@ namespace OpenMS
     annotationToCV_(tr);
   }
 
+  void MRMIonSeries::annotateTransitionCV(ReactionMonitoringTransitionTwo& tr, const String& annotation)
+  {
+    OpenMS::ReactionMonitoringTransitionTwo::Product p = tr.getProduct();
+
+    std::vector<String> best_annotation;
+    annotation.split("/", best_annotation);
+
+    String annotation_no_charge;
+    // label the charge state and separate out the annotation
+    if (best_annotation[0].find("^") != std::string::npos)
+    {
+      std::vector<String> best_annotation_charge;
+      best_annotation[0].split("^", best_annotation_charge);
+      p.setChargeState(String(best_annotation_charge[1]).toInt());
+      annotation_no_charge = best_annotation_charge[0];
+    }
+    else
+    {
+      p.setChargeState(1);
+      annotation_no_charge = best_annotation[0];
+    }
+
+    // NOTE: in this implementation fragment losses are not supported
+    String fragment_type;
+    int fragment_nr = -1;
+
+    if (annotation_no_charge.find("-") != std::string::npos)
+    {
+      throw Exception::NotImplemented(__FILE__, __LINE__, "Fragment losses are not supported in this low memory implementation");
+    }
+    else if (annotation_no_charge.find("+") != std::string::npos)
+    {
+      throw Exception::NotImplemented(__FILE__, __LINE__, "Fragment losses are not supported in this low memory implementation");
+    }
+    else
+    {
+      fragment_type = annotation_no_charge.substr(0, 1);
+      fragment_nr = annotation_no_charge.substr(1).toInt();
+    }
+
+    if (fragment_nr != -1)
+    {
+      p.setOrdinal(fragment_nr);
+    }
+
+    // figure out which fragment it is
+    if (fragment_type == "x")
+    {
+      p.setIonType(TargetedExperiment::IonType::XIon);
+    }
+    else if (fragment_type == "y")
+    {
+      p.setIonType(TargetedExperiment::IonType::YIon);
+    }
+    else if (fragment_type == "z")
+    {
+      p.setIonType(TargetedExperiment::IonType::ZIon);
+    }
+    else if (fragment_type == "a")
+    {
+      p.setIonType(TargetedExperiment::IonType::AIon);
+    }
+    else if (fragment_type == "b")
+    {
+      p.setIonType(TargetedExperiment::IonType::BIon);
+    }
+    else if (fragment_type == "c")
+    {
+      p.setIonType(TargetedExperiment::IonType::CIon);
+    }
+    else
+    {
+      p.setIonType(TargetedExperiment::IonType::NonIdentified);
+    }
+
+    tr.setProduct(p);
+  }
+
   void MRMIonSeries::annotateTransition(ReactionMonitoringTransition& tr, const TargetedExperiment::Peptide& peptide, const double precursor_mz_threshold, double product_mz_threshold, const bool enable_reannotation, const std::vector<String>& fragment_types, const std::vector<size_t>& fragment_charges, const bool enable_specific_losses, const bool enable_unspecific_losses, const int round_decPow)
   {
     OPENMS_PRECONDITION(peptide.hasCharge(), "Cannot annotate transition without a peptide charge state")

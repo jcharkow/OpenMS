@@ -9,6 +9,7 @@
 #pragma once
 
 #include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
+#include <OpenMS/ANALYSIS/TARGETED/TargetedExperimentTwo.h>
 #include <OpenMS/MATH/MathFunctions.h>
 #include <unordered_map>
 
@@ -87,6 +88,15 @@ public:
 
     */
     void annotateTransitionCV(ReactionMonitoringTransition& tr, const String& annotation);
+    
+    /**
+     * @brief Low memory implementation of annotateTransitionCV
+     * @throws NotImplementedException if fragment losses are not supported
+     * 
+     * @param tr the transition to annotate
+     * @param annotation the fragment ion annotation.
+     */
+    void annotateTransitionCV(ReactionMonitoringTransitionTwo& tr, const String& annotation);
 
     /**
       @brief Annotates transition
