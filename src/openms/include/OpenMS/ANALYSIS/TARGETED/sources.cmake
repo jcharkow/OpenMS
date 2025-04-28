@@ -8,6 +8,7 @@ MRMMapping.h
 MetaboTargetedAssay.h
 MetaboTargetedTargetDecoy.h
 TargetedExperiment.h
+TargetedExperimentTwo.h
 TargetedExperimentHelper.h
 )
 

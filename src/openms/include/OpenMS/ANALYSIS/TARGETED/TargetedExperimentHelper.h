@@ -541,6 +541,81 @@ protected:
       A product ion entry in the TraML file format
 
     */
+    struct OPENMS_DLLAPI TraMLProductTwo
+    {
+      typedef Residue::ResidueType IonType; ///< Interpretation IonType
+      TraMLProductTwo() = default;
+      bool operator==(const TraMLProductTwo & rhs) const
+      {
+        return charge_ == rhs.charge_ &&
+               charge_set_ == rhs.charge_set_ &&
+               mz_ == rhs.mz_ &&
+               ordinal_ == rhs.ordinal_ &&
+               iontype_ == rhs.iontype_;
+      }
+
+      void setChargeState(int charge)
+      {
+        charge_ = charge;
+        charge_set_ = true;
+      }
+
+      /// Whether product has set charge state
+      bool hasCharge() const
+      {
+        return charge_set_;
+      }
+
+      int getChargeState() const
+      {
+        OPENMS_PRECONDITION(charge_set_, "Cannot return charge which was never set")
+        return charge_;
+      }
+
+      double getMZ() const
+      {
+        return mz_;
+      }
+
+      void setMZ(double mz)
+      {
+        mz_ = mz;
+      }
+
+      unsigned char getOrdinal() const
+      {
+        return ordinal_;
+      }
+
+      void setOrdinal(unsigned char ordinal)
+      {
+        ordinal_ = ordinal;
+      }
+
+      IonType getIonType() const
+      {
+        return iontype_;
+      }
+
+      void setIonType(IonType iontype)
+      {
+        iontype_ = iontype;
+      }
+
+private:
+      int charge_{0}; ///< Product ion charge
+      bool charge_set_{false}; ///< Whether product ion charge is set or not
+      double mz_{0}; ///< Product ion m/z
+      unsigned char ordinal_{0}; ///< MS:1000903 : product ion series ordinal (e.g. 8 for a y8 ion)
+      IonType iontype_{Residue::Unannotated}; ///< which type of ion (b/y/z/ ...), see Residue::ResidueType
+    };
+
+    /**
+      @brief Represents a product ion
+
+      A product ion entry in the TraML file format
+
+    */
     struct OPENMS_DLLAPI TraMLProduct :
       public CVTermListInterface
     {

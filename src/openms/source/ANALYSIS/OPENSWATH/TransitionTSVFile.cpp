@@ -735,6 +735,195 @@ namespace OpenMS
     OPENMS_POSTCONDITION(exp.transitions.size() == transition_list.size(), "Input and output list need to have equal size.")
   }
 
+  void TransitionTSVFile::TSVToTargetedExperiment_(std::vector<TSVTransition>& transition_list, OpenMS::TargetedExperimentTwo& exp)
+  {
+    // For the CV terms, see
+    // http://psidev.cvs.sourceforge.net/viewvc/psidev/psi/psi-ms/mzML/controlledVocabulary/psi-ms.obo
+
+    typedef std::vector<OpenMS::TargetedExperiment::Compound> CompoundVectorType;
+
+    CompoundVectorType compounds;
+    PeptideVectorType peptides;
+    ProteinVectorType proteins;
+
+    std::map<String, int> peptide_map;
+    std::map<String, int> compound_map;
+    std::map<String, int> protein_map;
+
+    resolveMixedSequenceGroups_(transition_list);
+
+    Size progress = 0;
+    startProgress(0, transition_list.size(), "conversion to internal data representation");
+    for (auto tr_it = transition_list.begin(); tr_it != transition_list.end(); ++tr_it)
+    {
+      ReactionMonitoringTransitionTwo rm_trans;
+      createTransition_(tr_it, rm_trans);
+      exp.addTransition(rm_trans);
+
+      // check whether we need a new peptide
+      if (peptide_map.find(tr_it->group_id) == peptide_map.end() &&
+          compound_map.find(tr_it->group_id) == compound_map.end() )
+      {
+        // should we make a peptide or a compound ?
+        if (tr_it->isPeptide())
+        {
+          OpenMS::TargetedExperiment::Peptide peptide;
+          createPeptide_(tr_it, peptide);
+          peptides.push_back(peptide);
+          peptide_map[peptide.id] = 0;
+        }
+        else
+        {
+          OpenMS::TargetedExperiment::Compound compound;
+          createCompound_(tr_it, compound);
+          compounds.push_back(compound);
+          compound_map[compound.id] = 0;
+        }
+      }
+
+      // check whether we need new proteins
+      for (size_t i = 0; i < tr_it->ProteinName.size(); ++i)
+      {
+        if (tr_it->isPeptide() && protein_map.find(tr_it->ProteinName[i]) == protein_map.end())
+        {
+          OpenMS::TargetedExperiment::Protein protein;
+          String protein_name = tr_it->ProteinName[i];
+          String uniprot_id = "";
+          if (tr_it->uniprot_id.size() == tr_it->ProteinName.size())
+          {
+            uniprot_id = tr_it->uniprot_id[i];
+          }
+          createProtein_(protein_name, uniprot_id, protein);
+          proteins.push_back(protein);
+          protein_map[tr_it->ProteinName[i]] = 0;
+        }
+      }
+
+      setProgress(progress++);
+    }
+    endProgress();
+
+    exp.setCompounds(compounds);
+    exp.setPeptides(peptides);
+    exp.setProteins(proteins);
+
+    OPENMS_POSTCONDITION(exp.getTransitions().size() == transition_list.size(), "Input and output list need to have equal size.")
+  }
+
+  void TransitionTSVFile::createTransition_(std::vector<TSVTransition>::iterator& tr_it, OpenMS::ReactionMonitoringTransitionTwo& rm_trans)
+  {
+    // the following attributes will be stored as meta values (userParam):
+    // - annotation (as by SpectraST)
+    // the following attributes will be stored as CV values (CV):
+    // - collision energy
+    // - library intensity (product ion intensity)
+    // - decoy / target transition (binary MS:1002007 or MS:1002008)
+    // the following attributes will be stored as attributes:
+    // - id (native id)
+    // the following attributes will be stored in sub-tags:
+    // - Precursor:
+    //   * target precursor mass isolation window [Q1] (CV Param)
+    // - Product:
+    //   * charge state (CV Param)
+    //   * target product mass isolation window [Q3] (CV Param)
+    //   - Interpretation (only best)
+    //     * Fragment number (number in series) (CV Param)
+    //     * Fragment type (which series) (CV Param)
+
+    rm_trans.setNativeID(tr_it->transition_name);
+    rm_trans.setPrecursorMZ(tr_it->precursor);
+    rm_trans.setProductMZ(tr_it->product);
+    if (tr_it->isPeptide())
+    {
+      rm_trans.setPeptideRef(tr_it->group_id);
+    }
+    else
+    {
+      rm_trans.setCompoundRef(tr_it->group_id);
+    }
+
+    rm_trans.setLibraryIntensity(tr_it->library_intensity);
+    if (!tr_it->fragment_charge.empty() && tr_it->fragment_charge != "NA")
+    {
+      OpenMS::ReactionMonitoringTransitionTwo::Product p = rm_trans.getProduct();
+      p.setChargeState(tr_it->fragment_charge.toInt());
+      rm_trans.setProduct(p);
+    }
+
+    // add interpretation
+    OpenMS::ReactionMonitoringTransitionTwo::Product p = rm_trans.getProduct();
+
+    // check if we have any information about the interpretation
+    bool interpretation_set = false;
+    if (tr_it->fragment_nr != -1 ||
+        tr_it->fragment_mzdelta != -1 ||
+        tr_it->fragment_modification < 0 ||
+        !tr_it->fragment_type.empty() )
+    {
+      interpretation_set = true;
+    }
+
+    if (tr_it->fragment_nr != -1)
+    {
+      p.setOrdinal(tr_it->fragment_nr); 
+    }
+
+    if (tr_it->fragment_type == "x")
+    {
+      p.setIonType(TargetedExperimentTwo::IonType::XIon);
+    }
+    else if (tr_it->fragment_type == "y")
+    {
+      p.setIonType(TargetedExperimentTwo::IonType::YIon);
+    }
+    else if (tr_it->fragment_type == "z")
+    {
+      p.setIonType(TargetedExperimentTwo::IonType::ZIon);
+    }
+    else if (tr_it->fragment_type == "a")
+    {
+      p.setIonType(TargetedExperimentTwo::IonType::AIon);
+    }
+    else if (tr_it->fragment_type == "b")
+    {
+      p.setIonType(TargetedExperimentTwo::IonType::BIon);
+    }
+    else if (tr_it->fragment_type == "c")
+    {
+      p.setIonType(TargetedExperimentTwo::IonType::CIon);
+    }
+    else if (tr_it->fragment_type == "unknown")
+    {
+      // unknown means that we should write CV Term "1001240"
+      p.setIonType(TargetedExperiment::IonType::NonIdentified);
+    }
+    else if (tr_it->fragment_type.empty())
+    {
+      // empty means that we have no information whatsoever
+      p.setIonType(TargetedExperiment::IonType::Unannotated);
+    }
+    else
+    {
+      p.setIonType(TargetedExperiment::IonType::NonIdentified);
+    }
+
+    rm_trans.setProduct(p);
+
+    if (!tr_it->decoy)
+    {
+      rm_trans.setDecoyTransitionType(ReactionMonitoringTransitionTwo::TARGET);
+    }
+    else
+    {
+      rm_trans.setDecoyTransitionType(ReactionMonitoringTransitionTwo::DECOY);
+    }
+
+    rm_trans.setDetectingTransition(tr_it->detecting_transition);
+    rm_trans.setIdentifyingTransition(tr_it->identifying_transition);
+    rm_trans.setQuantifyingTransition(tr_it->quantifying_transition);
+
+  }
+
   void TransitionTSVFile::resolveMixedSequenceGroups_(std::vector<TransitionTSVFile::TSVTransition>& transition_list) const
   {
     // Create temporary map by group label
@@ -1200,6 +1389,216 @@ namespace OpenMS
     mods.push_back(mod);
   }
 
+  TransitionTSVFile::TSVTransition TransitionTSVFile::convertTransition_(const ReactionMonitoringTransitionTwo* it, OpenMS::TargetedExperimentTwo& targeted_exp)
+  {
+    TSVTransition mytransition;
+    mytransition.precursor = it->getPrecursorMZ();
+    mytransition.product = it->getProductMZ();
+    mytransition.rt_calibrated = -1;
+    mytransition.fragment_type = "";
+    mytransition.fragment_nr = -1;
+    mytransition.fragment_charge = "NA";
+
+    if (!it->getPeptideRef().empty())
+    {
+      const OpenMS::TargetedExperiment::Peptide& pep = targeted_exp.getPeptideByRef(it->getPeptideRef());
+      mytransition.group_id = it->getPeptideRef();
+
+#ifdef TRANSITIONTSVREADER_TESTING
+      OPENMS_LOG_DEBUG << "Peptide rts empty " <<
+      pep.rts.empty()  << " or no cv term " << pep.getRetentionTime() << std::endl;
+#endif
+
+      if (pep.hasRetentionTime())
+      {
+        mytransition.rt_calibrated = pep.getRetentionTime();
+      }
+
+      mytransition.PeptideSequence = pep.sequence;
+      mytransition.GeneName = "NA";
+      if (!pep.protein_refs.empty())
+      {
+        for (auto & prot_ref : pep.protein_refs)
+        {
+          const OpenMS::TargetedExperiment::Protein& prot = targeted_exp.getProteinByRef(prot_ref);
+          mytransition.ProteinName.push_back(prot.id);
+          if (prot.hasCVTerm("MS:1000885"))
+          {
+            mytransition.uniprot_id.push_back(prot.getCVTerms().at("MS:1000885")[0].getValue().toString());
+          }
+        }
+      }
+
+      mytransition.FullPeptideName = TargetedExperimentHelper::getAASequence(pep).toUniModString();
+
+      mytransition.drift_time = -1;
+      if (pep.getDriftTime() >= 0.0)
+      {
+        mytransition.drift_time = pep.getDriftTime();
+      }
+      mytransition.precursor_charge = "NA";
+      if (pep.hasCharge())
+      {
+        mytransition.precursor_charge = String(pep.getChargeState());
+      }
+      mytransition.peptide_group_label = "NA";
+      if (!pep.getPeptideGroupLabel().empty())
+      {
+        mytransition.peptide_group_label = pep.getPeptideGroupLabel();
+      }
+      /*
+      if (pep.metaValueExists("LabelType"))
+      {
+        mytransition.label_type = pep.getMetaValue("LabelType").toString();
+      }
+      if (pep.metaValueExists("GeneName"))
+      {
+        mytransition.GeneName = pep.getMetaValue("GeneName").toString();
+      }
+      */
+    }
+    else if (!it->getCompoundRef().empty())
+    {
+      const OpenMS::TargetedExperiment::Compound& compound = targeted_exp.getCompoundByRef(it->getCompoundRef());
+      mytransition.group_id = it->getCompoundRef();
+
+      if (compound.hasRetentionTime())
+      {
+        mytransition.rt_calibrated = compound.getRetentionTime();
+      }
+
+      mytransition.drift_time = -1;
+      if (compound.getDriftTime() >= 0.0)
+      {
+        mytransition.drift_time = compound.getDriftTime();
+      }
+      mytransition.precursor_charge = "NA";
+      if (compound.hasCharge())
+      {
+        mytransition.precursor_charge = String(compound.getChargeState());
+      }
+
+      // get metabolomics specific terms
+      mytransition.SumFormula = compound.molecular_formula;
+      mytransition.SMILES = compound.smiles_string;
+      if (compound.metaValueExists("CompoundName"))
+      {
+        mytransition.CompoundName = compound.getMetaValue("CompoundName");
+      }
+      if (compound.metaValueExists("Adducts"))
+      {
+        mytransition.Adducts = compound.getMetaValue("Adducts");
+      }
+    }
+    else
+    {
+      // Error?
+    }
+
+    if (it->isProductChargeStateSet())
+    {
+      mytransition.fragment_charge = String(it->getProductChargeState());
+    }
+
+    const auto & product = it->getProduct();
+    if (product.getOrdinal() != 0) mytransition.fragment_nr = product.getOrdinal();
+
+    switch (product.getIonType())
+    {
+      case Residue::AIon:
+        mytransition.fragment_type = "a";
+        break;
+      case Residue::BIon:
+        mytransition.fragment_type = "b";
+        break;
+      case Residue::CIon:
+        mytransition.fragment_type = "c";
+        break;
+      case Residue::XIon:
+        mytransition.fragment_type = "x";
+        break;
+      case Residue::YIon:
+        mytransition.fragment_type = "y";
+        break;
+      case Residue::ZIon:
+        mytransition.fragment_type = "z";
+        break;
+      case Residue::Zp1Ion: 
+        mytransition.fragment_type = "z.";
+        break;
+      case Residue::Zp2Ion: 
+        mytransition.fragment_type = "z'";
+        break;
+      case Residue::Precursor:
+        mytransition.fragment_type = "prec";
+        break;
+      case Residue::BIonMinusH20:
+        mytransition.fragment_type = "b-H20";
+        break;
+      case Residue::YIonMinusH20:
+        mytransition.fragment_type = "y-H20";
+        break;
+      case Residue::BIonMinusNH3:
+        mytransition.fragment_type = "b-NH3";
+        break;
+      case Residue::YIonMinusNH3:
+        mytransition.fragment_type = "y-NH3";
+        break;
+      case Residue::NonIdentified:
+        mytransition.fragment_type = "unknown";
+        break;
+      case Residue::Unannotated:
+        // means no annotation and no input cvParam - to write out a cvParam, use Residue::NonIdentified
+        mytransition.fragment_type = "";
+        break;
+
+      // invalid values
+      case Residue::Full: break;
+      case Residue::Internal: break;
+      case Residue::NTerminal: break;
+      case Residue::CTerminal: break;
+      case Residue::SizeOfResidueType: break;
+    }
+
+    mytransition.transition_name = it->getNativeID();
+    mytransition.CE = -1;
+    /*
+    if (it->hasCVTerm("MS:1000045"))
+    {
+      mytransition.CE = it->getCVTerms().at("MS:1000045")[0].getValue().toString().toDouble();
+    }
+    */
+    mytransition.library_intensity = -1;
+    if (it->getLibraryIntensity() > -100)
+    {
+      mytransition.library_intensity = it->getLibraryIntensity();
+    }
+    mytransition.decoy = false;
+    if (it->getDecoyTransitionType() == ReactionMonitoringTransitionTwo::TARGET)
+    {
+      mytransition.decoy = false;
+    }
+    else if (it->getDecoyTransitionType() == ReactionMonitoringTransitionTwo::DECOY)
+    {
+      mytransition.decoy = true;
+    }
+    /*
+    mytransition.Annotation = "NA";
+    if (it->metaValueExists("annotation"))
+    {
+      mytransition.Annotation = it->getMetaValue("annotation").toString();
+    }
+    if (it->metaValueExists("Peptidoforms"))
+    {
+      String(it->getMetaValue("Peptidoforms")).split('|', mytransition.peptidoforms);
+    }
+    */
+    mytransition.detecting_transition = it->isDetectingTransition();
+    mytransition.identifying_transition = it->isIdentifyingTransition();
+    mytransition.quantifying_transition = it->isQuantifyingTransition();
+
+    return mytransition;
+  }
   TransitionTSVFile::TSVTransition TransitionTSVFile::convertTransition_(const ReactionMonitoringTransition* it, OpenMS::TargetedExperiment& targeted_exp)
   {
     TSVTransition mytransition;
@@ -1412,6 +1811,70 @@ namespace OpenMS
     return mytransition;
   }
 
+  void TransitionTSVFile::writeTSVOutput_(const char* filename, OpenMS::TargetedExperimentTwo& targeted_exp)
+  {
+    // start writing
+    std::ofstream os(filename);
+    os.precision(writtenDigits(double()));
+    
+    // Write header
+    for (Size i = 0; i < header_names_.size(); i++)
+    {
+      os << header_names_[i];
+      if (i != header_names_.size() - 1) 
+      {
+        os << "\t";
+      }
+    }
+    os << std::endl;
+
+    Size progress = 0;
+    startProgress(0, targeted_exp.getTransitions().size(), "writing OpenSWATH Transition List TSV file");
+    
+    for (const auto& t : targeted_exp.getTransitions()) 
+    {
+      // Convert transition to TSV
+      TSVTransition mytransition = convertTransition_(&t, targeted_exp);
+      
+      // Write directly to file
+      os << mytransition.precursor << "\t"
+        << mytransition.product << "\t"
+        << mytransition.precursor_charge << "\t"
+        << mytransition.fragment_charge << "\t"
+        << mytransition.library_intensity << "\t"
+        << mytransition.rt_calibrated << "\t"
+        << mytransition.PeptideSequence << "\t"
+        << mytransition.FullPeptideName << "\t"
+        << mytransition.peptide_group_label << "\t"
+        << mytransition.label_type << "\t"
+        << mytransition.CompoundName << "\t"
+        << mytransition.SumFormula << "\t"
+        << mytransition.SMILES << "\t"
+        << mytransition.Adducts << "\t"
+        << ListUtils::concatenate(mytransition.ProteinName, ";") << "\t"
+        << ListUtils::concatenate(mytransition.uniprot_id, ";") << "\t"
+        << mytransition.GeneName << "\t"
+        << mytransition.fragment_type << "\t"
+        << mytransition.fragment_nr << "\t"
+        << mytransition.Annotation << "\t"
+        << mytransition.CE << "\t"
+        << mytransition.drift_time << "\t"
+        << mytransition.group_id << "\t"
+        << mytransition.transition_name << "\t"
+        << mytransition.decoy << "\t"
+        << mytransition.detecting_transition << "\t"
+        << mytransition.identifying_transition << "\t"
+        << mytransition.quantifying_transition << "\t"
+        << ListUtils::concatenate(mytransition.peptidoforms, "|")
+        << std::endl;
+      
+      setProgress(progress++);
+    }
+
+    endProgress();
+    os.close();
+  }
+
   void TransitionTSVFile::writeTSVOutput_(const char* filename, OpenMS::TargetedExperiment& targeted_exp)
   {
     // start writing
@@ -1487,6 +1950,16 @@ namespace OpenMS
     writeTSVOutput_(filename, targeted_exp);
   }
 
+  void TransitionTSVFile::convertTargetedExperimentToTSV(const char* filename, OpenMS::TargetedExperimentTwo& targeted_exp)
+  {
+    if (targeted_exp.containsInvalidReferences())
+    {
+      throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, 
+          "Your input file contains invalid references, cannot process file.");
+    }
+    writeTSVOutput_(filename, targeted_exp);
+  }
+
   void TransitionTSVFile::convertTSVToTargetedExperiment(const char* filename, FileTypes::Type filetype, OpenMS::TargetedExperiment& targeted_exp, int batch_size)
   {
       int offset = 0; // only used if reading in batches 
@@ -1503,11 +1976,39 @@ namespace OpenMS
       }
   }
 
+
+  void TransitionTSVFile::convertTSVToTargetedExperiment(const char* filename, FileTypes::Type filetype, OpenMS::TargetedExperimentTwo& targeted_exp, int batch_size)
+  {
+      int offset = 0; // only used if reading in batches 
+      bool moreLines = true; // do not have to check for more lines if reading everything into memory
+
+      OPENMS_LOG_DEBUG << "Using OpenMS::TargetedExperimentTwo for reading TSV file" << std::endl;
+      
+      while (moreLines)
+      {
+        std::vector<TSVTransition> transition_list;
+        OpenMS::TargetedExperimentTwo tmp_targeted_exp;
+        moreLines = readUnstructuredTSVInput_(filename, filetype, transition_list, batch_size, offset);
+        TSVToTargetedExperiment_(transition_list, tmp_targeted_exp);
+        targeted_exp.append(std::move(tmp_targeted_exp)); // this line is very memory intensive because actually storing the entire library in memory
+        offset += batch_size;
+      }
+  }
+
   void TransitionTSVFile::convertTSVToTargetedExperiment(const char* filename, FileTypes::Type filetype, OpenSwath::LightTargetedExperiment& targeted_exp)
   {
     std::vector<TSVTransition> transition_list;
     readUnstructuredTSVInput_(filename, filetype, transition_list);
     TSVToTargetedExperiment_(transition_list, targeted_exp);
+  }
+
+  void TransitionTSVFile::validateTargetedExperiment(const OpenMS::TargetedExperimentTwo& targeted_exp)
+  {
+    if (targeted_exp.containsInvalidReferences())
+    {
+      throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, 
+          "Invalid input, contains duplicate or invalid references");
+    }
   }
 
   void TransitionTSVFile::validateTargetedExperiment(const OpenMS::TargetedExperiment& targeted_exp)

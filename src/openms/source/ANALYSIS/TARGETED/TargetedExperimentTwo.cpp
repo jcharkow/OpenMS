@@ -6,11 +6,11 @@
 // $Authors: Andreas Bertsch $
 // --------------------------------------------------------------------------
 
-#include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
+#include <OpenMS/ANALYSIS/TARGETED/TargetedExperimentTwo.h>
 
 #include <OpenMS/CONCEPT/LogStream.h>
 
-#include <ostream> // for ostream& operator<<(ostream& os, const TargetedExperiment::SummaryStatistics& s);
+#include <ostream> // for ostream& operator<<(ostream& os, const TargetedExperimentTwo::SummaryStatistics& s);
 #include <map>
 #include <unordered_set>
 
@@ -47,14 +47,14 @@ typename std::vector<T>::iterator appendRVector(std::vector<T>&& src, std::vecto
 
 namespace OpenMS
 {
-  TargetedExperiment::TargetedExperiment() :
+  TargetedExperimentTwo::TargetedExperimentTwo() :
     protein_reference_map_dirty_(true),
     peptide_reference_map_dirty_(true),
     compound_reference_map_dirty_(true)
   {
   }
 
-  TargetedExperiment::TargetedExperiment(const TargetedExperiment & rhs) :
+  TargetedExperimentTwo::TargetedExperimentTwo(const TargetedExperimentTwo & rhs) :
     cvs_(rhs.cvs_),
     contacts_(rhs.contacts_),
     publications_(rhs.publications_),
@@ -74,7 +74,7 @@ namespace OpenMS
   {
   }
 
-  TargetedExperiment::TargetedExperiment(TargetedExperiment && rhs) noexcept :
+  TargetedExperimentTwo::TargetedExperimentTwo(TargetedExperimentTwo && rhs) noexcept :
     cvs_(std::move(rhs.cvs_)),
     contacts_(std::move(rhs.contacts_)),
     publications_(std::move(rhs.publications_)),
@@ -94,9 +94,9 @@ namespace OpenMS
   {
   }
 
-  TargetedExperiment::~TargetedExperiment() = default;
+  TargetedExperimentTwo::~TargetedExperimentTwo() = default;
 
-  TargetedExperiment& TargetedExperiment::operator=(const TargetedExperiment & rhs)
+  TargetedExperimentTwo& TargetedExperimentTwo::operator=(const TargetedExperimentTwo & rhs)
   {
     if (&rhs != this)
     {
@@ -120,7 +120,7 @@ namespace OpenMS
     return *this;
   }
 
-  TargetedExperiment& TargetedExperiment::operator=(TargetedExperiment && rhs) noexcept
+  TargetedExperimentTwo& TargetedExperimentTwo::operator=(TargetedExperimentTwo && rhs) noexcept
   {
     if (&rhs != this)
     {
@@ -144,14 +144,14 @@ namespace OpenMS
     return *this;
   }
 
-  TargetedExperiment TargetedExperiment::operator+(const TargetedExperiment & rhs) const
+  TargetedExperimentTwo TargetedExperimentTwo::operator+(const TargetedExperimentTwo & rhs) const
   {
-    TargetedExperiment tmp(*this);
+    TargetedExperimentTwo tmp(*this);
     tmp += rhs;
     return tmp;
   }
 
-  TargetedExperiment & TargetedExperiment::operator+=(const TargetedExperiment & rhs)
+  TargetedExperimentTwo & TargetedExperimentTwo::operator+=(const TargetedExperimentTwo & rhs)
   {
     protein_reference_map_dirty_ = true;
     peptide_reference_map_dirty_ = true;
@@ -230,7 +230,7 @@ namespace OpenMS
     return *this;
   }
 
-  TargetedExperiment & TargetedExperiment::operator+=(TargetedExperiment && rhs)
+  TargetedExperimentTwo & TargetedExperimentTwo::operator+=(TargetedExperimentTwo && rhs)
   {
     protein_reference_map_dirty_ = true;
     peptide_reference_map_dirty_ = true;
@@ -265,7 +265,7 @@ namespace OpenMS
     return *this;
   }
 
-  bool TargetedExperiment::operator==(const TargetedExperiment & rhs) const
+  bool TargetedExperimentTwo::operator==(const TargetedExperimentTwo & rhs) const
   {
     return cvs_ == rhs.cvs_ &&
            contacts_ == rhs.contacts_ &&
@@ -282,12 +282,12 @@ namespace OpenMS
            source_files_ == rhs.source_files_;
   }
 
-  bool TargetedExperiment::operator!=(const TargetedExperiment & rhs) const
+  bool TargetedExperimentTwo::operator!=(const TargetedExperimentTwo & rhs) const
   {
     return !(operator==(rhs));
   }
 
-  TargetedExperiment::SummaryStatistics TargetedExperiment::getSummary() const
+  TargetedExperimentTwo::SummaryStatistics TargetedExperimentTwo::getSummary() const
   {
     SummaryStatistics s;
     s.protein_count = proteins_.size();
@@ -302,7 +302,7 @@ namespace OpenMS
     return s;
   }
 
-  void TargetedExperiment::clear(bool clear_meta_data)
+  void TargetedExperimentTwo::clear(bool clear_meta_data)
   {
     transitions_.clear();
 
@@ -331,7 +331,7 @@ namespace OpenMS
     }
   }
 
-  TargetedExperiment & TargetedExperiment::append(TargetedExperiment && rhs)
+  TargetedExperimentTwo & TargetedExperimentTwo::append(TargetedExperimentTwo && rhs)
   {
     protein_reference_map_dirty_ = true;
     peptide_reference_map_dirty_ = true;
@@ -413,119 +413,119 @@ namespace OpenMS
 
     return *this;
   }
-  void TargetedExperiment::setCVs(const std::vector<CV> & cvs)
+  void TargetedExperimentTwo::setCVs(const std::vector<CV> & cvs)
   {
     cvs_ = cvs;
   }
 
-  const std::vector<TargetedExperiment::CV> & TargetedExperiment::getCVs() const
+  const std::vector<TargetedExperimentTwo::CV> & TargetedExperimentTwo::getCVs() const
   {
     return cvs_;
   }
 
-  void TargetedExperiment::addCV(const CV & cv)
+  void TargetedExperimentTwo::addCV(const CV & cv)
   {
     cvs_.push_back(cv);
   }
 
-  void TargetedExperiment::setContacts(const std::vector<Contact> & contacts)
+  void TargetedExperimentTwo::setContacts(const std::vector<Contact> & contacts)
   {
     contacts_ = contacts;
   }
 
-  const std::vector<TargetedExperiment::Contact> & TargetedExperiment::getContacts() const
+  const std::vector<TargetedExperimentTwo::Contact> & TargetedExperimentTwo::getContacts() const
   {
     return contacts_;
   }
 
-  void TargetedExperiment::addContact(const Contact & contact)
+  void TargetedExperimentTwo::addContact(const Contact & contact)
   {
     contacts_.push_back(contact);
   }
 
-  void TargetedExperiment::setPublications(const std::vector<Publication> & publications)
+  void TargetedExperimentTwo::setPublications(const std::vector<Publication> & publications)
   {
     publications_ = publications;
   }
 
-  const std::vector<TargetedExperiment::Publication> & TargetedExperiment::getPublications() const
+  const std::vector<TargetedExperimentTwo::Publication> & TargetedExperimentTwo::getPublications() const
   {
     return publications_;
   }
 
-  void TargetedExperiment::addPublication(const Publication & publication)
+  void TargetedExperimentTwo::addPublication(const Publication & publication)
   {
     publications_.push_back(publication);
   }
 
-  void TargetedExperiment::setTargetCVTerms(const CVTermList & cv_terms)
+  void TargetedExperimentTwo::setTargetCVTerms(const CVTermList & cv_terms)
   {
     targets_ = cv_terms;
   }
 
-  const CVTermList & TargetedExperiment::getTargetCVTerms() const
+  const CVTermList & TargetedExperimentTwo::getTargetCVTerms() const
   {
     return targets_;
   }
 
-  void TargetedExperiment::addTargetCVTerm(const CVTerm & cv_term)
+  void TargetedExperimentTwo::addTargetCVTerm(const CVTerm & cv_term)
   {
     targets_.addCVTerm(cv_term);
   }
 
-  void TargetedExperiment::setTargetMetaValue(const String & name, const DataValue & value)
+  void TargetedExperimentTwo::setTargetMetaValue(const String & name, const DataValue & value)
   {
     targets_.setMetaValue(name, value);
   }
 
-  void TargetedExperiment::setInstruments(const std::vector<Instrument> & instruments)
+  void TargetedExperimentTwo::setInstruments(const std::vector<Instrument> & instruments)
   {
     instruments_ = instruments;
   }
 
-  const std::vector<TargetedExperiment::Instrument> & TargetedExperiment::getInstruments() const
+  const std::vector<TargetedExperimentTwo::Instrument> & TargetedExperimentTwo::getInstruments() const
   {
     return instruments_;
   }
 
-  void TargetedExperiment::addInstrument(const Instrument & instrument)
+  void TargetedExperimentTwo::addInstrument(const Instrument & instrument)
   {
     instruments_.push_back(instrument);
   }
 
-  void TargetedExperiment::setSoftware(const std::vector<Software> & software)
+  void TargetedExperimentTwo::setSoftware(const std::vector<Software> & software)
   {
     software_ = software;
   }
 
-  const std::vector<Software> & TargetedExperiment::getSoftware() const
+  const std::vector<Software> & TargetedExperimentTwo::getSoftware() const
   {
     return software_;
   }
 
-  void TargetedExperiment::addSoftware(const Software & software)
+  void TargetedExperimentTwo::addSoftware(const Software & software)
   {
     software_.push_back(software);
   }
 
-  void TargetedExperiment::setProteins(const std::vector<Protein> & proteins)
+  void TargetedExperimentTwo::setProteins(const std::vector<Protein> & proteins)
   {
     protein_reference_map_dirty_ = true;
     proteins_ = proteins;
   }
 
-  void TargetedExperiment::setProteins(std::vector<Protein> && proteins)
+  void TargetedExperimentTwo::setProteins(std::vector<Protein> && proteins)
   {
     protein_reference_map_dirty_ = true;
     proteins_ = std::move(proteins);
   }
 
-  const std::vector<TargetedExperiment::Protein> & TargetedExperiment::getProteins() const
+  const std::vector<TargetedExperimentTwo::Protein> & TargetedExperimentTwo::getProteins() const
   {
     return proteins_;
   }
 
-  const TargetedExperiment::Protein & TargetedExperiment::getProteinByRef(const String & ref) const
+  const TargetedExperimentTwo::Protein & TargetedExperimentTwo::getProteinByRef(const String & ref) const
   {
     if (protein_reference_map_dirty_)
     {
@@ -535,7 +535,7 @@ namespace OpenMS
     return *(protein_reference_map_[ref]);
   }
 
-  bool TargetedExperiment::hasProtein(const String & ref) const
+  bool TargetedExperimentTwo::hasProtein(const String & ref) const
   {
     if (protein_reference_map_dirty_)
     {
@@ -544,45 +544,45 @@ namespace OpenMS
     return protein_reference_map_.find(ref) != protein_reference_map_.end();
   }
 
-  void TargetedExperiment::addProtein(const Protein & protein)
+  void TargetedExperimentTwo::addProtein(const Protein & protein)
   {
     protein_reference_map_dirty_ = true;
     proteins_.push_back(protein);
   }
 
-  void TargetedExperiment::setCompounds(const std::vector<Compound> & compounds)
+  void TargetedExperimentTwo::setCompounds(const std::vector<Compound> & compounds)
   {
     compounds_ = compounds;
   }
 
-  const std::vector<TargetedExperiment::Compound> & TargetedExperiment::getCompounds() const
+  const std::vector<TargetedExperimentTwo::Compound> & TargetedExperimentTwo::getCompounds() const
   {
     return compounds_;
   }
 
-  void TargetedExperiment::addCompound(const Compound & rhs)
+  void TargetedExperimentTwo::addCompound(const Compound & rhs)
   {
     compounds_.push_back(rhs);
   }
 
-  void TargetedExperiment::setPeptides(const std::vector<Peptide> & peptides)
+  void TargetedExperimentTwo::setPeptides(const std::vector<Peptide> & peptides)
   {
     peptide_reference_map_dirty_ = true;
     peptides_ = peptides;
   }
 
-  void TargetedExperiment::setPeptides(std::vector<Peptide> && peptides)
+  void TargetedExperimentTwo::setPeptides(std::vector<Peptide> && peptides)
   {
     peptide_reference_map_dirty_ = true;
     peptides_ = std::move(peptides);
   }
 
-  const std::vector<TargetedExperiment::Peptide> & TargetedExperiment::getPeptides() const
+  const std::vector<TargetedExperimentTwo::Peptide> & TargetedExperimentTwo::getPeptides() const
   {
     return peptides_;
   }
 
-  const TargetedExperiment::Peptide & TargetedExperiment::getPeptideByRef(const String & ref) const
+  const TargetedExperimentTwo::Peptide & TargetedExperimentTwo::getPeptideByRef(const String & ref) const
   {
     if (peptide_reference_map_dirty_)
     {
@@ -592,7 +592,7 @@ namespace OpenMS
     return *(peptide_reference_map_[ref]);
   }
 
-  const TargetedExperiment::Compound & TargetedExperiment::getCompoundByRef(const String & ref) const
+  const TargetedExperimentTwo::Compound & TargetedExperimentTwo::getCompoundByRef(const String & ref) const
   {
     if (compound_reference_map_dirty_)
     {
@@ -602,7 +602,7 @@ namespace OpenMS
     return *(compound_reference_map_[ref]);
   }
 
-  bool TargetedExperiment::hasPeptide(const String & ref) const
+  bool TargetedExperimentTwo::hasPeptide(const String & ref) const
   {
     if (peptide_reference_map_dirty_)
     {
@@ -611,7 +611,7 @@ namespace OpenMS
     return peptide_reference_map_.find(ref) != peptide_reference_map_.end();
   }
 
-  bool TargetedExperiment::hasCompound(const String & ref) const
+  bool TargetedExperimentTwo::hasCompound(const String & ref) const
   {
     if (compound_reference_map_dirty_)
     {
@@ -620,93 +620,93 @@ namespace OpenMS
     return compound_reference_map_.find(ref) != compound_reference_map_.end();
   }
 
-  void TargetedExperiment::addPeptide(const Peptide & rhs)
+  void TargetedExperimentTwo::addPeptide(const Peptide & rhs)
   {
     peptide_reference_map_dirty_ = true;
     peptides_.push_back(rhs);
   }
 
-  void TargetedExperiment::setTransitions(const std::vector<ReactionMonitoringTransition> & transitions)
+  void TargetedExperimentTwo::setTransitions(const std::vector<ReactionMonitoringTransitionTwo> & transitions)
   {
     transitions_ = transitions;
   }
 
-  void TargetedExperiment::setTransitions(std::vector<ReactionMonitoringTransition> && transitions)
+  void TargetedExperimentTwo::setTransitions(std::vector<ReactionMonitoringTransitionTwo> && transitions)
   {
     transitions_ = std::move(transitions);
   }
 
-  const std::vector<ReactionMonitoringTransition> & TargetedExperiment::getTransitions() const
+  const std::vector<ReactionMonitoringTransitionTwo> & TargetedExperimentTwo::getTransitions() const
   {
     return transitions_;
   }
 
-  void TargetedExperiment::addTransition(const ReactionMonitoringTransition & transition)
+  void TargetedExperimentTwo::addTransition(const ReactionMonitoringTransitionTwo & transition)
   {
     transitions_.push_back(transition);
   }
 
-  void TargetedExperiment::setIncludeTargets(const std::vector<IncludeExcludeTarget> & targets)
+  void TargetedExperimentTwo::setIncludeTargets(const std::vector<IncludeExcludeTarget> & targets)
   {
     include_targets_ = targets;
   }
 
-  const std::vector<IncludeExcludeTarget> & TargetedExperiment::getIncludeTargets() const
+  const std::vector<IncludeExcludeTarget> & TargetedExperimentTwo::getIncludeTargets() const
   {
     return include_targets_;
   }
 
-  void TargetedExperiment::addIncludeTarget(const IncludeExcludeTarget & target)
+  void TargetedExperimentTwo::addIncludeTarget(const IncludeExcludeTarget & target)
   {
     include_targets_.push_back(target);
   }
 
-  void TargetedExperiment::setExcludeTargets(const std::vector<IncludeExcludeTarget> & targets)
+  void TargetedExperimentTwo::setExcludeTargets(const std::vector<IncludeExcludeTarget> & targets)
   {
     exclude_targets_ = targets;
   }
 
-  const std::vector<IncludeExcludeTarget> & TargetedExperiment::getExcludeTargets() const
+  const std::vector<IncludeExcludeTarget> & TargetedExperimentTwo::getExcludeTargets() const
   {
     return exclude_targets_;
   }
 
-  void TargetedExperiment::addExcludeTarget(const IncludeExcludeTarget & target)
+  void TargetedExperimentTwo::addExcludeTarget(const IncludeExcludeTarget & target)
   {
     exclude_targets_.push_back(target);
   }
 
-  void TargetedExperiment::setSourceFiles(const std::vector<SourceFile> & source_files)
+  void TargetedExperimentTwo::setSourceFiles(const std::vector<SourceFile> & source_files)
   {
     source_files_ = source_files;
   }
 
-  const std::vector<SourceFile> & TargetedExperiment::getSourceFiles() const
+  const std::vector<SourceFile> & TargetedExperimentTwo::getSourceFiles() const
   {
     return source_files_;
   }
 
-  void TargetedExperiment::addSourceFile(const SourceFile & source_file)
+  void TargetedExperimentTwo::addSourceFile(const SourceFile & source_file)
   {
     source_files_.push_back(source_file);
   }
 
-  void TargetedExperiment::sortTransitionsByProductMZ()
+  void TargetedExperimentTwo::sortTransitionsByProductMZ()
   {
-    std::sort(transitions_.begin(), transitions_.end(), ReactionMonitoringTransition::ProductMZLess());
+    std::sort(transitions_.begin(), transitions_.end(), ReactionMonitoringTransitionTwo::ProductMZLess());
   }
 
-  void TargetedExperiment::sortTransitionsByName()
+  void TargetedExperimentTwo::sortTransitionsByName()
   {
-    std::sort(transitions_.begin(), transitions_.end(), ReactionMonitoringTransition::NameLess());
+    std::sort(transitions_.begin(), transitions_.end(), ReactionMonitoringTransitionTwo::NameLess());
   }
 
-  bool TargetedExperiment::containsInvalidReferences() const
+  bool TargetedExperimentTwo::containsInvalidReferences() const
   {
-    typedef std::vector<OpenMS::TargetedExperiment::Protein> ProteinVectorType;
-    typedef std::vector<OpenMS::TargetedExperiment::Peptide> PeptideVectorType;
-    typedef std::vector<OpenMS::TargetedExperiment::Compound> CompoundVectorType;
-    typedef std::vector<OpenMS::ReactionMonitoringTransition> TransitionVectorType;
+    typedef std::vector<OpenMS::TargetedExperimentTwo::Protein> ProteinVectorType;
+    typedef std::vector<OpenMS::TargetedExperimentTwo::Peptide> PeptideVectorType;
+    typedef std::vector<OpenMS::TargetedExperimentTwo::Compound> CompoundVectorType;
+    typedef std::vector<OpenMS::ReactionMonitoringTransitionTwo> TransitionVectorType;
 
     // check that all proteins ids are unique
     std::map<String, int> unique_protein_map;
@@ -776,7 +776,7 @@ namespace OpenMS
     // Check that each peptide has only valid references to peptides and compounds
     for (Size i = 0; i < getTransitions().size(); i++)
     {
-      const ReactionMonitoringTransition& tr = getTransitions()[i];
+      const ReactionMonitoringTransitionTwo& tr = getTransitions()[i];
       if (!tr.getPeptideRef().empty())
       {
         if (unique_peptide_map.find(tr.getPeptideRef()) == unique_peptide_map.end()) 
@@ -803,7 +803,7 @@ namespace OpenMS
     return false;
   }
 
-  void TargetedExperiment::createProteinReferenceMap_() const
+  void TargetedExperimentTwo::createProteinReferenceMap_() const
   {
     for (Size i = 0; i < getProteins().size(); i++)
     {
@@ -812,7 +812,7 @@ namespace OpenMS
     protein_reference_map_dirty_ = false;
   }
 
-  void TargetedExperiment::createPeptideReferenceMap_() const
+  void TargetedExperimentTwo::createPeptideReferenceMap_() const
   {
     for (Size i = 0; i < getPeptides().size(); i++)
     {
@@ -821,7 +821,7 @@ namespace OpenMS
     peptide_reference_map_dirty_ = false;
   }
 
-  void TargetedExperiment::createCompoundReferenceMap_() const
+  void TargetedExperimentTwo::createCompoundReferenceMap_() const
   {
     for (Size i = 0; i < getCompounds().size(); i++)
     {
@@ -837,9 +837,9 @@ namespace OpenMS
     return true;
   }
 
-  std::ostream& operator<<(std::ostream& os, const TargetedExperiment::SummaryStatistics& s)
+  std::ostream& operator<<(std::ostream& os, const TargetedExperimentTwo::SummaryStatistics& s)
   {
-    using TYPE = ReactionMonitoringTransition::DecoyTransitionType;
+    using TYPE = ReactionMonitoringTransitionTwo::DecoyTransitionType;
     auto count_copy = s.decoy_counts; // allow to default construct missing values with 0 counts
     size_t all = count_copy[TYPE::DECOY] +
                  count_copy[TYPE::TARGET] +

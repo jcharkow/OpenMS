@@ -9,6 +9,7 @@
 #pragma once
 
 #include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
+#include <OpenMS/ANALYSIS/TARGETED/TargetedExperimentTwo.h>
 #include <OpenMS/OPENSWATHALGO/DATAACCESS/TransitionExperiment.h>
 
 #include <OpenMS/FORMAT/FileTypes.h>
@@ -186,6 +187,15 @@ protected:
     */
     void TSVToTargetedExperiment_(std::vector<TSVTransition>& transition_list, OpenMS::TargetedExperiment& exp);
 
+    /** @brief Convert a list of TSVTransition to a TargetedExperiment
+     *
+     * Converts the list (read from csv/mrm) file into a object model using the
+     * TargetedExperiment with proper hierarchical structure from Transition to
+     * Peptide to Protein.
+     *
+    */
+    void TSVToTargetedExperiment_(std::vector<TSVTransition>& transition_list, OpenMS::TargetedExperimentTwo& exp);
+
     /** @brief Convert a list of TSVTransition to a LightTargetedExperiment
      *
      * Converts the list (read from csv/mrm) file into a object model using the
@@ -197,6 +207,7 @@ protected:
 
     /// Convert an OpenMS transition to a TSVTransition for output writing
     TransitionTSVFile::TSVTransition convertTransition_(const ReactionMonitoringTransition* it, OpenMS::TargetedExperiment& targeted_exp);
+    TransitionTSVFile::TSVTransition convertTransition_(const ReactionMonitoringTransitionTwo* it, OpenMS::TargetedExperimentTwo& targeted_exp);
     //@}
 
     /// Synchronize members with param class
@@ -277,6 +288,9 @@ private:
 
     /// Populate a new ReactionMonitoringTransition object from a row in the csv
     void createTransition_(std::vector<TSVTransition>::iterator& tr_it,
+                           OpenMS::ReactionMonitoringTransitionTwo& rm_trans);
+
+    void createTransition_(std::vector<TSVTransition>::iterator& tr_it,
                            OpenMS::ReactionMonitoringTransition& rm_trans);
 
     /// Populate a new TargetedExperiment::Protein object from a row in the csv
@@ -307,6 +321,7 @@ private:
      * @param targeted_exp The data structure to be written to the file
     */
     void writeTSVOutput_(const char* filename, OpenMS::TargetedExperiment& targeted_exp);
+    void writeTSVOutput_(const char* filename, OpenMS::TargetedExperimentTwo& targeted_exp);
 
 public:
 
@@ -325,6 +340,7 @@ public:
      *
     */
     void convertTargetedExperimentToTSV(const char* filename, OpenMS::TargetedExperiment& targeted_exp);
+    void convertTargetedExperimentToTSV(const char* filename, OpenMS::TargetedExperimentTwo& targeted_exp);
 
     /** @brief Read in a tsv/mrm file and construct a targeted experiment (TraML structure)
      *
@@ -335,6 +351,16 @@ public:
      *
     */
     void convertTSVToTargetedExperiment(const char* filename, FileTypes::Type filetype, OpenMS::TargetedExperiment& targeted_exp, int batch_size = -1);
+
+    /** @brief Read in a tsv/mrm file and construct a targeted experiment (TraML structure)
+     *
+     * @param filename The input file
+     * @param filetype The type of file ("mrm" or "tsv")
+     * @param targeted_exp The output targeted experiment
+     * @param batch_size The number of lines to read at once
+     *
+    */
+    void convertTSVToTargetedExperiment(const char* filename, FileTypes::Type filetype, OpenMS::TargetedExperimentTwo& targeted_exp, int batch_size = -1);
 
     /** @brief Read in a tsv file and construct a targeted experiment (Light transition structure)
      *
@@ -347,6 +373,7 @@ public:
 
     /// Validate a TargetedExperiment (check that all ids are unique)
     void validateTargetedExperiment(const OpenMS::TargetedExperiment& targeted_exp);
+    void validateTargetedExperiment(const OpenMS::TargetedExperimentTwo& targeted_exp);
 
   };
 }

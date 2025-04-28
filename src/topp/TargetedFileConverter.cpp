@@ -7,7 +7,7 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/ANALYSIS/OPENSWATH/TransitionTSVFile.h>
-#include <OpenMS/ANALYSIS/OPENSWATH/TransitionPQPFile.h>
+//#include <OpenMS/ANALYSIS/OPENSWATH/TransitionPQPFile.h>
 
 #include <OpenMS/APPLICATIONS/TOPPBase.h>
 #include <OpenMS/CONCEPT/Exception.h>
@@ -126,7 +126,7 @@ protected:
     //--------------------------------------------------------------------------- 
     // Start Conversion
     //--------------------------------------------------------------------------- 
-    TargetedExperiment targeted_exp;
+    TargetedExperimentTwo targeted_exp;
     if (in_type == FileTypes::TSV || in_type == FileTypes::MRM)
     {
       Param reader_parameters = getParam_().copy("algorithm:", true);
@@ -138,16 +138,18 @@ protected:
     }
     else if (in_type == FileTypes::PQP)
     {
+      /*
       TransitionPQPFile pqp_reader;
       Param reader_parameters = getParam_().copy("algorithm:", true);
       pqp_reader.setLogType(log_type_);
       pqp_reader.setParameters(reader_parameters);
       pqp_reader.convertPQPToTargetedExperiment(in.c_str(), targeted_exp, legacy_traml_id);
       pqp_reader.validateTargetedExperiment(targeted_exp);
+      */
     }
     else if (in_type == FileTypes::TRAML)
     {
-      FileHandler().loadTransitions(in, targeted_exp, {FileTypes::TRAML});
+      //FileHandler().loadTransitions(in, targeted_exp, {FileTypes::TRAML});
     }
 
     if (out_type == FileTypes::TSV)
@@ -158,13 +160,15 @@ protected:
     }
     if (out_type == FileTypes::PQP)
     {
+      /*
       TransitionPQPFile pqp_reader;
       pqp_reader.setLogType(log_type_);
       pqp_reader.convertTargetedExperimentToPQP(out.c_str(), targeted_exp);
+      */
     }
     else if (out_type == FileTypes::TRAML)
     {
-      FileHandler().storeTransitions(out, targeted_exp, {FileTypes::TRAML});
+      //FileHandler().storeTransitions(out, targeted_exp, {FileTypes::TRAML});
     }
 
     return EXECUTION_OK;

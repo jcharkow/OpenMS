@@ -8,6 +8,7 @@ MetaboTargetedTargetDecoy.cpp
 MRMMapping.cpp
 IncludeExcludeTarget.cpp
 TargetedExperiment.cpp
+TargetedExperimentTwo.cpp
 TargetedExperimentHelper.cpp
 )
 

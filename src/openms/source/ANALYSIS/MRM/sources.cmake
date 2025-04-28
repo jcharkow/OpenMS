@@ -4,6 +4,7 @@ set(directory source/ANALYSIS/MRM)
 ### list all filenames of the directory here
 set(sources_list
 ReactionMonitoringTransition.cpp
+ReactionMonitoringTransitionTwo.cpp
 )
 
 ### add path to the filenames
