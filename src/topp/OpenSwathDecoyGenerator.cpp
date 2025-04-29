@@ -317,7 +317,7 @@ protected:
       const char* tr_file = out.c_str();
       TransitionTSVFile tsv_reader = TransitionTSVFile();
       tsv_reader.setLogType(log_type_);
-      tsv_reader.convertTargetedExperimentToTSV(tr_file, targeted_merged);
+      tsv_reader.convertTargetedExperimentToTSV(tr_file, targeted_mergedTwo);
     }
     if (out_type == FileTypes::PQP)
     {
