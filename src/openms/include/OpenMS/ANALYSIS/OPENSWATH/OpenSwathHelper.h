@@ -198,6 +198,22 @@ public:
     static std::map<std::string, double> simpleFindBestFeature(const OpenMS::MRMFeatureFinderScoring::TransitionGroupMapType & transition_group_map, 
                                                                bool useQualCutoff = false,
                                                                double qualCutoff = 0.0);
+
+    /**
+     * @brief Subsample a library based on a given 
+     * 
+     * This method is used to subsample the library intelligently in order to ensure that the subsampled compounds are distributed across RT space.
+     * 
+     * @param nrBins Number of bins across RT 
+     * @param peptidesPerBin aim number of peptides per bin, if not reached a warning is issued
+     *
+     * @return LightTargetedExperiment with the subsampled library
+     */
+    OpenSwath::LightTargetedExperiment subsampleLibrary(OpenSwath::LightTargetedExperiment& library,
+      int nrBins,
+      int minPeptidesPerBin);
+
+
   };
 
 } // namespace OpenMS

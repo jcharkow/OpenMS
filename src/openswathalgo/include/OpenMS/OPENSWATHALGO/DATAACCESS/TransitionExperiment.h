@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 
 #include <OpenMS/OPENSWATHALGO/OpenSwathAlgoConfig.h>
 
@@ -239,7 +240,7 @@ namespace OpenSwath
     }
 
     // Creates a subsampled library from the specified light compounds
-    const LightTargetedExperiment selectCompounds(const std::vector<LightCompound>& selectedCompounds)
+    LightTargetedExperiment selectCompounds(const std::vector<LightCompound>& selectedCompounds)
     {
       LightTargetedExperiment subsampled;
       subsampled.proteins = proteins;

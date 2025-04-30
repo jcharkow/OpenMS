@@ -7,6 +7,7 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/ANALYSIS/OPENSWATH/OpenSwathHelper.h>
+#include <OpenMS/MATH/STATISTICS/Histogram.h>
 
 namespace OpenMS
 {
@@ -186,5 +187,59 @@ namespace OpenMS
     }
     return result;
   }
+
+  OpenSwath::LightTargetedExperiment OpenSwathHelper::subsampleLibrary(OpenSwath::LightTargetedExperiment& library,
+                                                               int nrBins, 
+                                                               int peptidesPerBin)
+  {
+    std::pair<double,double> RTRange = OpenSwathHelper::estimateRTRange(library);
+    OPENMS_LOG_DEBUG << "Detected retention time range from " << RTRange.first << " to " << RTRange.second << std::endl;
+
+    // Sort the LightTargetedExperiment Peptide precursors by their RT
+    auto peptide_precursors = library.getCompounds();
+    std::sort(peptide_precursors.begin(), peptide_precursors.end(),
+              [](const OpenSwath::LightCompound& a, const OpenSwath::LightCompound& b)
+              {
+                return a.rt < b.rt;
+              });
+
+    std::vector<OpenSwath::LightCompound> selected_compounds;
+
+    // Create a histogram bins with the desired number of bins
+    Math::Histogram<> hist(RTRange.first, RTRange.second, nrBins);
+
+    // Take the first `minPeptidesPerBin` peptides from each bin
+    for (size_t h = 0; h < hist.size(); h++)
+    {
+      int numPepsInBin = 0;
+      int i = 0;
+      bool doneWithBin = false;
+      while ((numPepsInBin < peptidesPerBin) && (!doneWithBin)) 
+      {
+        // Check if the peptide precursor is within the bin range
+        if (peptide_precursors[i].rt >= hist.leftBorderOfBin(h) && peptide_precursors[i].rt < hist.rightBorderOfBin(h))
+        {
+          numPepsInBin++;
+          i++;
+          selected_compounds.push_back(peptide_precursors[i]);
+        }
+        else
+        {
+          OPENMS_LOG_WARN << "RT Bin from" << hist.leftBorderOfBin(h) << " to " << hist.rightBorderOfBin(h + 1) << " has only" 
+          << numPepsInBin<< " peptides. This is less than the minumum number specified of " << peptidesPerBin << std::endl;
+
+          // Have the minumum number of peptides required, seek to the next bin
+          while (peptide_precursors[i].rt < hist.rightBorderOfBin(h))
+          {
+            i++;
+          }
+          doneWithBin = true;
+          numPepsInBin = 0; 
+        }
+      }
+    }
+    return library.selectCompounds(selected_compounds);
+  }
+
 
 }
