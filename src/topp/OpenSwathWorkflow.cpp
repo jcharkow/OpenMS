@@ -967,7 +967,7 @@ protected:
       wf.simpleExtractChromatograms_(swath_maps, transition_exp_subsampled, chromatograms,
                                     trafo_rtnorm, cp_irt, pasef, load_into_memory);
 
-      // always use estimateBestPeptides for the nonlinear approach
+
       Param irt_lin = irt_detection_param;
 
       irt_lin.setValue("alignmentMethod", "linear" );

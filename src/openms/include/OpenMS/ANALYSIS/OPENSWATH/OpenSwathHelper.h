@@ -209,7 +209,7 @@ public:
      *
      * @return LightTargetedExperiment with the subsampled library
      */
-    OpenSwath::LightTargetedExperiment subsampleLibrary(OpenSwath::LightTargetedExperiment& library,
+    static OpenSwath::LightTargetedExperiment subsampleLibrary(OpenSwath::LightTargetedExperiment& library,
       int nrBins,
       int minPeptidesPerBin);
 

@@ -280,6 +280,21 @@ protected:
       bool pasef = false,
       bool load_into_memory = false);
 
+    TransformationDescription performAutoRTNormalization(
+      OpenSwath::LightTargetedExperiment& irt_transitions,
+      std::vector< OpenSwath::SwathMap > & swath_maps,
+      TransformationDescription& im_trafo,
+      double min_rsq,
+      double min_coverage,
+      const Param& feature_finder_param,
+      const ChromExtractParams& cp_irt,
+      const Param& irt_detection_param,
+      const Param& calibration_param,
+      const String& irt_mzml_out,
+      Size debug_level,
+      bool pasef,
+      bool load_into_memory);
+
   public:
 
     /** @brief Perform retention time and m/z calibration
