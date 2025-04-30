@@ -238,6 +238,30 @@ namespace OpenSwath
       return *(compound_reference_map_[ref]);
     }
 
+    // Creates a subsampled library from the specified light compounds
+    const LightTargetedExperiment selectCompounds(const std::vector<LightCompound>& selectedCompounds)
+    {
+      LightTargetedExperiment subsampled;
+      subsampled.proteins = proteins;
+
+      subsampled.compounds.insert(subsampled.compounds.end(), selectedCompounds.begin(), selectedCompounds.end());
+
+      std::set<std::string> compound_ids;
+      for (size_t i = 0; i < subsampled.compounds.size(); i++)
+      {
+        compound_ids.insert(subsampled.compounds[i].id);
+      }
+
+      for (size_t i = 0; i < transitions.size(); i++)
+      {
+        if (compound_ids.find(transitions[i].peptide_ref) != compound_ids.end())
+        {
+          subsampled.transitions.push_back(subsampled.transitions[i]);
+        }
+      }
+      return subsampled;
+    }
+
   private:
 
     void createPeptideReferenceMap_()
