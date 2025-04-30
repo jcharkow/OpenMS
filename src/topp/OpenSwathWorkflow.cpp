@@ -910,83 +910,22 @@ protected:
     TransformationDescription trafo_rtnorm;
     if (auto_transform)
     {
-      OPENMS_LOG_DEBUG << "Performing automatic RT, IM and m/z calibration" << std::endl;
 
-      // Random subsample of the library to get a smaller set of peptides
-      auto shuffledCompounds = transition_exp.getCompounds();
-      Math::RandomShuffler shuffler_(1);
-      shuffler_.portable_random_shuffle(shuffledCompounds.begin(), shuffledCompounds.end());
-
-      // take the first 1000 peptides
-      OpenSwath::LightTargetedExperiment transition_exp_subsampled;
-
-      // copied from void OpenSwathWorkflow::selectCompoundsForBatch_(const OpenSwath::LightTargetedExperiment& transition_exp_used_all,
-      // creates a new LightTargetedExperiment from the subsample
-      // compute batch start/end
-      int batch_size = 10;
-
-      size_t end = batch_size;
-      if (end > transition_exp.compounds.size())
-      {
-        end = transition_exp.compounds.size();
-      }
-
-      // Create the new, batch-size transition experiment
-      transition_exp_subsampled.proteins = transition_exp.proteins;
-      transition_exp_subsampled.compounds.insert(transition_exp_subsampled.compounds.end(), shuffledCompounds.begin(), shuffledCompounds.begin() + end);
-
-      std::set<std::string> selected_compounds;
-      for (Size i = 0; i < transition_exp_subsampled.compounds.size(); i++)
-      {
-        selected_compounds.insert(transition_exp_subsampled.compounds[i].id);
-      }
-
-      for (Size i = 0; i < transition_exp.transitions.size(); i++)
-      {
-        if (selected_compounds.find(transition_exp.transitions[i].peptide_ref) != selected_compounds.end())
-        {
-          transition_exp_subsampled.transitions.push_back(transition_exp.transitions[i]);
-        }
-      }
-      for (Size i = 0; i < transition_exp_subsampled.getCompounds().size(); i++)
-      {
-        OPENMS_LOG_DEBUG << "Subsampled compound " << transition_exp_subsampled.getCompounds()[i].id << std::endl;
-      }
-
-      for (Size i = 0; i < transition_exp_subsampled.getTransitions().size(); i++)
-      {
-        OPENMS_LOG_DEBUG << "Subsampled transition " << transition_exp_subsampled.getTransitions()[i].getNativeID() << std::endl;
-      }
-
-      ////////////////////////////////////
-      // Do A simple linear calibration from the subsampled library
-      ////////////////////////////////////////////
-      std::vector< OpenMS::MSChromatogram > chromatograms;
       OpenSwathCalibrationWorkflow wf;
       wf.setLogType(log_type_);
-      wf.simpleExtractChromatograms_(swath_maps, transition_exp_subsampled, chromatograms,
-                                    trafo_rtnorm, cp_irt, pasef, load_into_memory);
+      Param linear_irt = irt_detection_param;
+      linear_irt.setValue("alignmentMethod", "linear");
+      Param no_calibration = calibration_param;
+      no_calibration.setValue("mz_correction_function", "none");
 
-
-      Param irt_lin = irt_detection_param;
-
-      irt_lin.setValue("alignmentMethod", "linear" );
-      irt_lin.setValue("estimateBestPeptides", "true");
+      std::vector< OpenMS::MSChromatogram > chromatograms;
 
       TransformationDescription im_trafo; // exp -> theoretical
-      trafo_rtnorm = wf.doDataNormalization_(transition_exp_subsampled, chromatograms, im_trafo, swath_maps,
-                                             min_rsq, min_coverage,
-                                             feature_finder_param, irt_lin, calibration_param, pasef);
-      
-      ///////////////////////////////////////////////////////////
-      // Do a non linear calibration from the subsampled library
-      ///////////////////////////////////////////////////////////
-
-      Param irt_non_lin = irt_detection_param;
-      irt_lin.setValue("estimateBestPeptides", "true");
-
-  }
-
+      trafo_rtnorm = wf.performAutoRTNormalization(transition_exp, swath_maps, im_trafo,
+                                              min_rsq, min_coverage, feature_finder_param,
+                                              cp_irt, linear_irt, no_calibration,
+                                              debug_level, pasef, load_into_memory);
+    }
     if (nonlinear_irt_tr_file.empty())
     {
       trafo_rtnorm = performCalibration(trafo_in, irt_tr_file, swath_maps,

@@ -240,7 +240,7 @@ namespace OpenSwath
     }
 
     // Creates a subsampled library from the specified light compounds
-    LightTargetedExperiment selectCompounds(const std::vector<LightCompound>& selectedCompounds)
+    const LightTargetedExperiment selectCompounds(const std::vector<LightCompound>& selectedCompounds)
     {
       LightTargetedExperiment subsampled;
       subsampled.proteins = proteins;
@@ -257,7 +257,7 @@ namespace OpenSwath
       {
         if (compound_ids.find(transitions[i].peptide_ref) != compound_ids.end())
         {
-          subsampled.transitions.push_back(subsampled.transitions[i]);
+          subsampled.transitions.push_back(transitions[i]);
         }
       }
       return subsampled;

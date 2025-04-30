@@ -207,37 +207,47 @@ namespace OpenMS
 
     // Create a histogram bins with the desired number of bins
     Math::Histogram<> hist(RTRange.first, RTRange.second, nrBins);
+    for (size_t h = 0; h < hist.size(); h++)
+    {
+      OPENMS_LOG_DEBUG << "Bin " << h << " has left border of " << hist.leftBorderOfBin(h) << " and right border of " << hist.rightBorderOfBin(h) << std::endl;
+    }
 
     // Take the first `minPeptidesPerBin` peptides from each bin
+    int i = 0; // index of the peptide precursor
     for (size_t h = 0; h < hist.size(); h++)
     {
       int numPepsInBin = 0;
-      int i = 0;
       bool doneWithBin = false;
       while ((numPepsInBin < peptidesPerBin) && (!doneWithBin)) 
       {
         // Check if the peptide precursor is within the bin range
+        OPENMS_LOG_DEBUG << "Checking peptide precursor with RT " << peptide_precursors[i].rt << " against bin with left border of " << hist.leftBorderOfBin(h) << std::endl;
         if (peptide_precursors[i].rt >= hist.leftBorderOfBin(h) && peptide_precursors[i].rt < hist.rightBorderOfBin(h))
         {
+          OPENMS_LOG_DEBUG << "Adding peptide precursor with RT " << peptide_precursors[i].rt << " to bin with left border of " << hist.leftBorderOfBin(h) << std::endl;
+          selected_compounds.push_back(peptide_precursors[i]);
           numPepsInBin++;
           i++;
-          selected_compounds.push_back(peptide_precursors[i]);
         }
         else
         {
-          OPENMS_LOG_WARN << "RT Bin from" << hist.leftBorderOfBin(h) << " to " << hist.rightBorderOfBin(h + 1) << " has only" 
-          << numPepsInBin<< " peptides. This is less than the minumum number specified of " << peptidesPerBin << std::endl;
+          // If we have less than the minimum number of peptides in the bin, warn the user
+          OPENMS_LOG_WARN << "RT Bin from " << hist.leftBorderOfBin(h) << " to " << hist.rightBorderOfBin(h) << " has only " 
+          << numPepsInBin << " peptides. This is less than the minumum number specified of " << peptidesPerBin << std::endl;
 
-          // Have the minumum number of peptides required, seek to the next bin
-          while (peptide_precursors[i].rt < hist.rightBorderOfBin(h))
-          {
-            i++;
-          }
           doneWithBin = true;
-          numPepsInBin = 0; 
         }
       }
+
+      // Have the minumum number of peptides required, seek to the next bin
+      while (peptide_precursors[i].rt < hist.rightBorderOfBin(h))
+      {
+        i++;
+      }
+      numPepsInBin = 0; 
     }
+
+    OPENMS_LOG_DEBUG << "Subsampled library has " << selected_compounds.size() << " precursors" << std::endl;
     return library.selectCompounds(selected_compounds);
   }
 

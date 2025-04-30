@@ -96,7 +96,6 @@ namespace OpenMS
     const ChromExtractParams& cp_irt,
     const Param& irt_detection_param,
     const Param& calibration_param,
-    const String& irt_mzml_out,
     Size debug_level,
     bool pasef,
     bool load_into_memory)
@@ -109,9 +108,10 @@ namespace OpenMS
 
     // ########## LINEAR CALIBRATION ##########
     // 1. Subsample the library to a number of bins
+    // TODO change param names NrRTBins and MinPeptidesPerBin to more descriptive names for new workflow (e.g. MinPeptidesPerBin is not actually bin peptides, NrRTBins is ok)
     OpenSwath::LightTargetedExperiment targeted_exp_subsampled = OpenSwathHelper::subsampleLibrary(targeted_exp, 
-                                                                                              irt_detection_param.getValue("numberOfBins"), 
-                                                                                              irt_detection_param.getValue("peptidesPerBin"));
+                                                                                              irt_detection_param.getValue("NrRTBins"),
+                                                                                              irt_detection_param.getValue("MinPeptidesPerBin"));
 
     // 2. Store the peptide retention times in an intermediate map
     std::map<OpenMS::String, double> PeptideRTMap;
@@ -147,6 +147,7 @@ namespace OpenMS
     feature_finder_param.setValue("TransitionGroupPicker:compute_peak_quality", "true");
     feature_finder_param.setValue("TransitionGroupPicker:minimal_quality", irt_detection_param.getValue("InitialQualityCutoff"));
     featureFinder.setParameters(feature_finder_param);
+    featureFinder.setStrictFlag(false); // Since we do not know if features are correct, we should not be strict
 
     FeatureMap featureFile; // for results
     OpenMS::MRMFeatureFinderScoring::TransitionGroupMapType transition_group_map; // for results
