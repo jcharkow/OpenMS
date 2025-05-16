@@ -925,6 +925,12 @@ protected:
                                               min_rsq, min_coverage, feature_finder_param,
                                               cp_irt, linear_irt, no_calibration,
                                               debug_level, pasef, load_into_memory);
+
+      if (!irt_trafo_out.empty())
+      {
+        FileHandler().storeTransformations(irt_trafo_out, trafo_rtnorm, {FileTypes::TRANSFORMATIONXML});
+      }
+
     }
     if (nonlinear_irt_tr_file.empty())
     {

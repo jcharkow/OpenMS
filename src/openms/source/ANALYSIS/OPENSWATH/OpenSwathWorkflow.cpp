@@ -93,208 +93,413 @@ namespace OpenMS
     double min_rsq,
     double min_coverage,
     const Param& default_ffparam,
-    const ChromExtractParams& cp_irt,
+    ChromExtractParams& cp_irt,
     const Param& irt_detection_param,
     const Param& calibration_param,
     Size debug_level,
     bool pasef,
     bool load_into_memory)
   {
-    OPENMS_LOG_DEBUG << "Start of performAutoRTNormalization method" << std::endl;
+    int rt_extraction_window;
+    TransformationDescription trafo_out;
 
     // 1. Estimate the retention time range of the iRT peptides over all assays
     std::pair<double,double> RTRange = OpenSwathHelper::estimateRTRange(targeted_exp);
     OPENMS_LOG_DEBUG << "Detected retention time range from " << RTRange.first << " to " << RTRange.second << std::endl;
 
-    // ########## LINEAR CALIBRATION ##########
-    // 1. Subsample the library to a number of bins
-    // TODO change param names NrRTBins and MinPeptidesPerBin to more descriptive names for new workflow (e.g. MinPeptidesPerBin is not actually bin peptides, NrRTBins is ok)
-    OpenSwath::LightTargetedExperiment targeted_exp_subsampled = OpenSwathHelper::subsampleLibrary(targeted_exp, 
-                                                                                              irt_detection_param.getValue("NrRTBins"),
-                                                                                              irt_detection_param.getValue("MinPeptidesPerBin"));
-
-    // 2. Store the peptide retention times in an intermediate map
-    std::map<OpenMS::String, double> PeptideRTMap;
-    for (Size i = 0; i < targeted_exp_subsampled.getCompounds().size(); i++)
     {
-      PeptideRTMap[targeted_exp_subsampled.getCompounds()[i].id] = targeted_exp_subsampled.getCompounds()[i].rt;
-    }
-    
-    // 2. Extract the chromatograms
-    std::vector< OpenMS::MSChromatogram > chromatograms;
-    TransformationDescription trafo; // dummy
-    this->simpleExtractChromatograms_(swath_maps, targeted_exp_subsampled, chromatograms, trafo, cp_irt, pasef, load_into_memory);
+      OPENMS_LOG_DEBUG << "Start of performAutoRTNormalization method" << std::endl;
 
-    OPENMS_LOG_DEBUG << "Extracted number of chromatograms from iRT files: " << chromatograms.size() <<  std::endl;
+      // ########## LINEAR CALIBRATION ##########
+      // 1. Subsample the library to a number of bins
+      // TODO change param names NrRTBins and MinPeptidesPerBin to more descriptive names for new workflow (e.g. MinPeptidesPerBin is not actually bin peptides, NrRTBins is ok)
+      OpenSwath::LightTargetedExperiment targeted_exp_subsampled = OpenSwathHelper::subsampleLibrary(targeted_exp, 
+                                                                                                irt_detection_param.getValue("NrRTBins"),
+                                                                                                irt_detection_param.getValue("MinPeptidesPerBin"));
 
-    // 2. For each peptide, extract and score chromatograms
-    const OpenSwath::LightTargetedExperiment& transition_exp_used = targeted_exp_subsampled;
-
-    // Change the feature finding parameters:
-    //  - no RT score (since we don't know the correct retention time)
-    //  - no RT window
-    //  - no elution model score
-    //  - no peak quality (use all peaks)
-    //  - if best peptides should be used, use peak quality
-    MRMFeatureFinderScoring featureFinder;
-    Param feature_finder_param(default_ffparam);
-    feature_finder_param.setValue("Scores:use_rt_score", "false");
-    feature_finder_param.setValue("Scores:use_elution_model_score", "false");
-    feature_finder_param.setValue("rt_extraction_window", -1.0);
-    feature_finder_param.setValue("stop_report_after_feature", 1);
-    feature_finder_param.setValue("TransitionGroupPicker:PeakPickerChromatogram:signal_to_noise", 1.0); // set to 1.0 in all cases
-    feature_finder_param.setValue("TransitionGroupPicker:compute_peak_quality", "false"); // no peak quality -> take all peaks!
-    feature_finder_param.setValue("TransitionGroupPicker:compute_peak_quality", "true");
-    feature_finder_param.setValue("TransitionGroupPicker:minimal_quality", irt_detection_param.getValue("InitialQualityCutoff"));
-    featureFinder.setParameters(feature_finder_param);
-    featureFinder.setStrictFlag(false); // Since we do not know if features are correct, we should not be strict
-
-    FeatureMap featureFile; // for results
-    OpenMS::MRMFeatureFinderScoring::TransitionGroupMapType transition_group_map; // for results
-    std::vector<OpenSwath::SwathMap> empty_swath_maps;
-    TransformationDescription empty_trafo; // empty transformation
-
-    // Prepare the data with the chromatograms
-    boost::shared_ptr<PeakMap > xic_map(new PeakMap);
-    xic_map->setChromatograms(chromatograms);
-    OpenSwath::SpectrumAccessPtr chromatogram_ptr = OpenSwath::SpectrumAccessPtr(new OpenMS::SpectrumAccessOpenMS(xic_map));
-
-    featureFinder.pickExperiment(chromatogram_ptr, featureFile, transition_exp_used, empty_trafo, empty_swath_maps, transition_group_map);
-
-    // 4. Find most likely correct feature for each compound and add it to the
-    // "pairs" vector by computing pairs of iRT and real RT.
-    //
-    // Note that the quality threshold will only be applied if
-    // estimateBestPeptides is true
-    std::vector<std::pair<double, double> > pairs; // store the RT pairs to write the output trafoXML
-    std::map<std::string, double> best_features = OpenSwathHelper::simpleFindBestFeature(transition_group_map,
-      true, irt_detection_param.getValue("OverallQualityCutoff"));
-    OPENMS_LOG_DEBUG << "Extracted best features: " << best_features.size() << std::endl;
-
-    // Create pairs vector and store peaks
-    std::map<String, OpenMS::MRMFeatureFinderScoring::MRMTransitionGroupType *> trgrmap_allpeaks; // store all peaks above cutoff
-    for (std::map<std::string, double>::iterator it = best_features.begin(); it != best_features.end(); ++it)
-    {
-      pairs.emplace_back(it->second, PeptideRTMap[it->first]); // pair<exp_rt, theor_rt>
-      if (transition_group_map.find(it->first) != transition_group_map.end())
+      // 2. Store the peptide retention times in an intermediate map
+      std::map<OpenMS::String, double> PeptideRTMap;
+      for (Size i = 0; i < targeted_exp_subsampled.getCompounds().size(); i++)
       {
-        trgrmap_allpeaks[ it->first ] = &transition_group_map[ it->first];
+        PeptideRTMap[targeted_exp_subsampled.getCompounds()[i].id] = targeted_exp_subsampled.getCompounds()[i].rt;
       }
-    }
+      
+      // 2. Extract the chromatograms
+      std::vector< OpenMS::MSChromatogram > chromatograms;
+      TransformationDescription trafo; // dummy
+      this->simpleExtractChromatograms_(swath_maps, targeted_exp_subsampled, chromatograms, trafo, cp_irt, pasef, load_into_memory);
 
-    // 5. Perform the outlier detection
-    std::vector<std::pair<double, double> > pairs_corrected;
-    String outlier_method = irt_detection_param.getValue("outlierMethod").toString();
-    if (outlier_method == "iter_residual" || outlier_method == "iter_jackknife")
-    {
-      pairs_corrected = MRMRTNormalizer::removeOutliersIterative(pairs, min_rsq, min_coverage,
-      irt_detection_param.getValue("useIterativeChauvenet").toBool(), outlier_method);
-    }
-    else if (outlier_method == "ransac")
-    {
-      // First, estimate of the maximum deviation from RT that is tolerated:
-      //   Because 120 min gradient can have around 4 min elution shift, we use
-      //   a default value of 3 % of the gradient to find upper RT threshold (3.6 min).
-      double pcnt_rt_threshold = irt_detection_param.getValue("RANSACMaxPercentRTThreshold");
-      double max_rt_threshold = (RTRange.second - RTRange.first) * pcnt_rt_threshold / 100.0;
+      OPENMS_LOG_DEBUG << "Extracted number of chromatograms from iRT files: " << chromatograms.size() <<  std::endl;
 
-      pairs_corrected = MRMRTNormalizer::removeOutliersRANSAC(pairs, min_rsq, min_coverage,
-        irt_detection_param.getValue("RANSACMaxIterations"), max_rt_threshold,
-        irt_detection_param.getValue("RANSACSamplingSize"));
-    }
-    else if (outlier_method == "none")
-    {
-      pairs_corrected = pairs;
-    }
-    else
-    {
-      throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
-        String("Illegal argument '") + outlier_method +
-        "' used for outlierMethod (valid: 'iter_residual', 'iter_jackknife', 'ransac', 'none').");
-    }
-    OPENMS_LOG_DEBUG << "Performed outlier detection, left with features: " << pairs_corrected.size() << std::endl;
+      // 2. For each peptide, extract and score chromatograms
+      const OpenSwath::LightTargetedExperiment& transition_exp_used = targeted_exp_subsampled;
 
-    // 7. Select the "correct" peaks for m/z (and IM) correction (e.g. remove those not
-    // part of the linear regression)
-    std::map<String, OpenMS::MRMFeatureFinderScoring::MRMTransitionGroupType *> trgrmap_final; // store all peaks above cutoff
-    for (const auto& it : trgrmap_allpeaks)
-    {
-      if (it.second->getFeatures().empty() ) {continue;}
-      const MRMFeature& feat = it.second->getBestFeature();
+      // Change the feature finding parameters:
+      //  - no RT score (since we don't know the correct retention time)
+      //  - no RT window
+      //  - no elution model score
+      //  - no peak quality (use all peaks)
+      //  - if best peptides should be used, use peak quality
+      MRMFeatureFinderScoring featureFinder;
+      Param feature_finder_param(default_ffparam);
+      feature_finder_param.setValue("Scores:use_rt_score", "false");
+      feature_finder_param.setValue("Scores:use_elution_model_score", "false");
+      feature_finder_param.setValue("rt_extraction_window", -1.0);
+      feature_finder_param.setValue("stop_report_after_feature", 1);
+      feature_finder_param.setValue("TransitionGroupPicker:PeakPickerChromatogram:signal_to_noise", 1.0); // set to 1.0 in all cases
+      feature_finder_param.setValue("TransitionGroupPicker:compute_peak_quality", "false"); // no peak quality -> take all peaks!
+      feature_finder_param.setValue("TransitionGroupPicker:compute_peak_quality", "true");
+      feature_finder_param.setValue("TransitionGroupPicker:minimal_quality", irt_detection_param.getValue("InitialQualityCutoff"));
+      featureFinder.setParameters(feature_finder_param);
+      featureFinder.setStrictFlag(false); // Since we do not know if features are correct, we should not be strict
 
-      // Check if the current feature is in the list of pairs used for the
-      // linear RT regression (using other features may result in wrong
-      // calibration values).
-      // Matching only by RT is not perfect but should work for most cases.
-      for (Size pit = 0; pit < pairs_corrected.size(); pit++)
+      FeatureMap featureFile; // for results
+      OpenMS::MRMFeatureFinderScoring::TransitionGroupMapType transition_group_map; // for results
+      std::vector<OpenSwath::SwathMap> empty_swath_maps;
+      TransformationDescription empty_trafo; // empty transformation
+
+      // Prepare the data with the chromatograms
+      boost::shared_ptr<PeakMap > xic_map(new PeakMap);
+      xic_map->setChromatograms(chromatograms);
+      OpenSwath::SpectrumAccessPtr chromatogram_ptr = OpenSwath::SpectrumAccessPtr(new OpenMS::SpectrumAccessOpenMS(xic_map));
+
+      featureFinder.pickExperiment(chromatogram_ptr, featureFile, transition_exp_used, empty_trafo, empty_swath_maps, transition_group_map);
+
+      // 4. Find most likely correct feature for each compound and add it to the
+      // "pairs" vector by computing pairs of iRT and real RT.
+      //
+      // Note that the quality threshold will only be applied if
+      // estimateBestPeptides is true
+      std::vector<std::pair<double, double> > pairs; // store the RT pairs to write the output trafoXML
+      std::map<std::string, double> best_features = OpenSwathHelper::simpleFindBestFeature(transition_group_map,
+        true, irt_detection_param.getValue("OverallQualityCutoff"));
+      OPENMS_LOG_DEBUG << "Extracted best features: " << best_features.size() << std::endl;
+
+      // Create pairs vector and store peaks
+      std::map<String, OpenMS::MRMFeatureFinderScoring::MRMTransitionGroupType *> trgrmap_allpeaks; // store all peaks above cutoff
+      for (std::map<std::string, double>::iterator it = best_features.begin(); it != best_features.end(); ++it)
       {
-        if (fabs(feat.getRT() - pairs_corrected[pit].first ) < 1e-2)
+        pairs.emplace_back(it->second, PeptideRTMap[it->first]); // pair<exp_rt, theor_rt>
+        if (transition_group_map.find(it->first) != transition_group_map.end())
         {
-          trgrmap_final[ it.first ] = it.second;
-          break;
+          trgrmap_allpeaks[ it->first ] = &transition_group_map[ it->first];
         }
       }
+
+      // 5. Perform the outlier detection
+      std::vector<std::pair<double, double> > pairs_corrected;
+      String outlier_method = irt_detection_param.getValue("outlierMethod").toString();
+      if (outlier_method == "iter_residual" || outlier_method == "iter_jackknife")
+      {
+        pairs_corrected = MRMRTNormalizer::removeOutliersIterative(pairs, min_rsq, min_coverage,
+        irt_detection_param.getValue("useIterativeChauvenet").toBool(), outlier_method);
+      }
+      else if (outlier_method == "ransac")
+      {
+        // First, estimate of the maximum deviation from RT that is tolerated:
+        //   Because 120 min gradient can have around 4 min elution shift, we use
+        //   a default value of 3 % of the gradient to find upper RT threshold (3.6 min).
+        double pcnt_rt_threshold = irt_detection_param.getValue("RANSACMaxPercentRTThreshold");
+        double max_rt_threshold = (RTRange.second - RTRange.first) * pcnt_rt_threshold / 100.0;
+
+        pairs_corrected = MRMRTNormalizer::removeOutliersRANSAC(pairs, min_rsq, min_coverage,
+          irt_detection_param.getValue("RANSACMaxIterations"), max_rt_threshold,
+          irt_detection_param.getValue("RANSACSamplingSize"));
+      }
+      else if (outlier_method == "none")
+      {
+        pairs_corrected = pairs;
+      }
+      else
+      {
+        throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+          String("Illegal argument '") + outlier_method +
+          "' used for outlierMethod (valid: 'iter_residual', 'iter_jackknife', 'ransac', 'none').");
+      }
+      OPENMS_LOG_DEBUG << "Performed outlier detection, left with features: " << pairs_corrected.size() << std::endl;
+
+      // 7. Select the "correct" peaks for m/z (and IM) correction (e.g. remove those not
+      // part of the linear regression)
+      std::map<String, OpenMS::MRMFeatureFinderScoring::MRMTransitionGroupType *> trgrmap_final; // store all peaks above cutoff
+      for (const auto& it : trgrmap_allpeaks)
+      {
+        if (it.second->getFeatures().empty() ) {continue;}
+        const MRMFeature& feat = it.second->getBestFeature();
+
+        // Check if the current feature is in the list of pairs used for the
+        // linear RT regression (using other features may result in wrong
+        // calibration values).
+        // Matching only by RT is not perfect but should work for most cases.
+        for (Size pit = 0; pit < pairs_corrected.size(); pit++)
+        {
+          if (fabs(feat.getRT() - pairs_corrected[pit].first ) < 1e-2)
+          {
+            trgrmap_final[ it.first ] = it.second;
+            break;
+          }
+        }
+      }
+
+      // 8. Correct m/z (and IM) deviations using SwathMapMassCorrection
+      // m/z correction is done with the -irt_im_extraction parameters
+      SwathMapMassCorrection mc;
+      mc.setParameters(calibration_param);
+
+      mc.correctMZ(trgrmap_final, targeted_exp, swath_maps, pasef);
+      mc.correctIM(trgrmap_final, targeted_exp, swath_maps, pasef, im_trafo);
+
+      // 9. store RT transformation, using the selected model
+      trafo_out.setDataPoints(pairs_corrected);
+      Param model_params;
+      model_params.setValue("symmetric_regression", "false");
+      model_params.setValue("span", irt_detection_param.getValue("lowess:span"));
+      model_params.setValue("num_nodes", irt_detection_param.getValue("b_spline:num_nodes"));
+      String model_type = irt_detection_param.getValue("alignmentMethod").toString();
+      trafo_out.fitModel(model_type, model_params);
+
+      OPENMS_LOG_DEBUG << "Final RT mapping:" << std::endl;
+      for (Size i = 0; i < pairs_corrected.size(); i++)
+      {
+        OPENMS_LOG_DEBUG << pairs_corrected[i].first << " " <<  pairs_corrected[i].second << std::endl;
+      }
+
+      ///////////////////////////////////////////////////////////////////////////
+      // TODO incorperate this into transformation description function instead
+      /////////////////////////////////////////////////////////////
+
+      std::vector<double> predicted_values(pairs_corrected.size()); // these are the predicted values by applying the trafo on the values
+      std::vector<double> delta_true_predicted(pairs_corrected.size()); // these are the differences between the predicted and the true values
+      double sum_rt_differences = 0.0;
+      TransformationDescription trafo_inverse = trafo_out;
+      trafo_inverse.invert();
+      for (size_t i = 0; i < pairs_corrected.size(); ++i)
+      {
+        predicted_values[i] = trafo_out.apply(pairs_corrected[i].first);
+        delta_true_predicted[i] = pairs_corrected[i].first - predicted_values[i];
+        sum_rt_differences += delta_true_predicted[i]; // sum for computing the mean
+        OPENMS_LOG_DEBUG << "True - Predicted value: " << pairs_corrected[i].second << "  " << predicted_values[i] << std::endl;
+      }
+      double mean_rt_difference = sum_rt_differences / delta_true_predicted.size();
+
+      // compute the variance
+      double rt_variance = 0.0;
+      for (double delta: delta_true_predicted)
+      {
+        rt_variance += (delta - mean_rt_difference) * (delta - mean_rt_difference);
+      }
+      rt_variance /= delta_true_predicted.size();
+      double rt_stdev = sqrt(rt_variance);
+      double rt_extraction_window = rt_stdev * 3.0 * 2; // 3 times the standard deviation, doubled since the window is the full length (not half)
+      std::cout << "RT variance: " << rt_stdev << std::endl;
+      std::cout << "RT Extraction Window to Use: " << rt_extraction_window << std::endl;
+      
+
+      std::cout << "End of doDataNormalization_ method" << std::endl;
+
+      trafo_out.printSummary(std::cout);
     }
-
-    // 8. Correct m/z (and IM) deviations using SwathMapMassCorrection
-    // m/z correction is done with the -irt_im_extraction parameters
-    SwathMapMassCorrection mc;
-    mc.setParameters(calibration_param);
-
-    mc.correctMZ(trgrmap_final, targeted_exp, swath_maps, pasef);
-    mc.correctIM(trgrmap_final, targeted_exp, swath_maps, pasef, im_trafo);
-
-    // 9. store RT transformation, using the selected model
-    TransformationDescription trafo_out;
-    trafo_out.setDataPoints(pairs_corrected);
-    Param model_params;
-    model_params.setValue("symmetric_regression", "false");
-    model_params.setValue("span", irt_detection_param.getValue("lowess:span"));
-    model_params.setValue("num_nodes", irt_detection_param.getValue("b_spline:num_nodes"));
-    String model_type = irt_detection_param.getValue("alignmentMethod").toString();
-    trafo_out.fitModel(model_type, model_params);
-
-    OPENMS_LOG_DEBUG << "Final RT mapping:" << std::endl;
-    for (Size i = 0; i < pairs_corrected.size(); i++)
     {
-      OPENMS_LOG_DEBUG << pairs_corrected[i].first << " " <<  pairs_corrected[i].second << std::endl;
+
+      //////////////////////////////////////////////////////////////////////////////////////
+      // PART 2: NONLINEAR CALIBRATION
+      //////////////////////////////////////////////////////////////////////////////////////
+      int nrRTBins = (int) irt_detection_param.getValue("NrRTBins") * 10.0; // have 10X number of precursors as linear
+      int minPeptidesPerBin = (int) irt_detection_param.getValue("MinPeptidesPerBin") * 10; // have 10X number of precursors as linear
+      OpenSwath::LightTargetedExperiment targeted_exp_subsampled = OpenSwathHelper::subsampleLibrary(targeted_exp,
+                                                                                                    nrRTBins, 
+                                                                                                    minPeptidesPerBin );
+
+
+      // 2. Store the peptide retention times in an intermediate map
+      std::map<OpenMS::String, double> PeptideRTMap;
+      for (Size i = 0; i < targeted_exp_subsampled.getCompounds().size(); i++)
+      {
+        PeptideRTMap[targeted_exp_subsampled.getCompounds()[i].id] = targeted_exp_subsampled.getCompounds()[i].rt;
+      }
+      
+
+      // 2. Extract the chromatograms
+      std::vector< OpenMS::MSChromatogram > chromatograms;
+      TransformationDescription trafo; // dummy
+      cp_irt.rt_extraction_window = rt_extraction_window;
+      this->simpleExtractChromatograms_(swath_maps, targeted_exp_subsampled, chromatograms, trafo_out, cp_irt, pasef, load_into_memory);
+
+
+      OPENMS_LOG_DEBUG << "Extracted number of chromatograms from iRT files: " << chromatograms.size() <<  std::endl;
+
+      // 2. For each peptide, extract and score chromatograms
+      const OpenSwath::LightTargetedExperiment& transition_exp_used = targeted_exp_subsampled;
+
+      // Change the feature finding parameters:
+      //  - no RT score (since we don't know the correct retention time)
+      //  - no RT window
+      //  - no elution model score
+      //  - no peak quality (use all peaks)
+      //  - if best peptides should be used, use peak quality
+      MRMFeatureFinderScoring featureFinder;
+      Param feature_finder_param(default_ffparam);
+      feature_finder_param.setValue("Scores:use_rt_score", "false");
+      feature_finder_param.setValue("Scores:use_elution_model_score", "false");
+      feature_finder_param.setValue("rt_extraction_window", -1.0);
+      feature_finder_param.setValue("stop_report_after_feature", 1);
+      feature_finder_param.setValue("TransitionGroupPicker:PeakPickerChromatogram:signal_to_noise", 1.0); // set to 1.0 in all cases
+      feature_finder_param.setValue("TransitionGroupPicker:compute_peak_quality", "false"); // no peak quality -> take all peaks!
+      feature_finder_param.setValue("TransitionGroupPicker:compute_peak_quality", "true");
+      feature_finder_param.setValue("TransitionGroupPicker:minimal_quality", irt_detection_param.getValue("InitialQualityCutoff"));
+      featureFinder.setParameters(feature_finder_param);
+      featureFinder.setStrictFlag(false); // Since we do not know if features are correct, we should not be strict
+
+      FeatureMap featureFile; // for results
+      OpenMS::MRMFeatureFinderScoring::TransitionGroupMapType transition_group_map; // for results
+      std::vector<OpenSwath::SwathMap> empty_swath_maps;
+      TransformationDescription empty_trafo; // empty transformation
+
+      // Prepare the data with the chromatograms
+      boost::shared_ptr<PeakMap > xic_map(new PeakMap);
+      xic_map->setChromatograms(chromatograms);
+      OpenSwath::SpectrumAccessPtr chromatogram_ptr = OpenSwath::SpectrumAccessPtr(new OpenMS::SpectrumAccessOpenMS(xic_map));
+
+      featureFinder.pickExperiment(chromatogram_ptr, featureFile, transition_exp_used, empty_trafo, empty_swath_maps, transition_group_map);
+
+      // 4. Find most likely correct feature for each compound and add it to the
+      // "pairs" vector by computing pairs of iRT and real RT.
+      //
+      // Note that the quality threshold will only be applied if
+      // estimateBestPeptides is true
+      std::vector<std::pair<double, double> > pairs; // store the RT pairs to write the output trafoXML
+      std::map<std::string, double> best_features = OpenSwathHelper::simpleFindBestFeature(transition_group_map,
+        true, irt_detection_param.getValue("OverallQualityCutoff"));
+      OPENMS_LOG_DEBUG << "Extracted best features: " << best_features.size() << std::endl;
+
+      // Create pairs vector and store peaks
+      std::map<String, OpenMS::MRMFeatureFinderScoring::MRMTransitionGroupType *> trgrmap_allpeaks; // store all peaks above cutoff
+      for (std::map<std::string, double>::iterator it = best_features.begin(); it != best_features.end(); ++it)
+      {
+        pairs.emplace_back(it->second, PeptideRTMap[it->first]); // pair<exp_rt, theor_rt>
+        if (transition_group_map.find(it->first) != transition_group_map.end())
+        {
+          trgrmap_allpeaks[ it->first ] = &transition_group_map[ it->first];
+        }
+      }
+
+      // 5. Perform the outlier detection
+      std::vector<std::pair<double, double> > pairs_corrected;
+      String outlier_method = irt_detection_param.getValue("outlierMethod").toString();
+      if (outlier_method == "iter_residual" || outlier_method == "iter_jackknife")
+      {
+        pairs_corrected = MRMRTNormalizer::removeOutliersIterative(pairs, min_rsq, min_coverage,
+        irt_detection_param.getValue("useIterativeChauvenet").toBool(), outlier_method);
+      }
+      else if (outlier_method == "ransac")
+      {
+        // First, estimate of the maximum deviation from RT that is tolerated:
+        //   Because 120 min gradient can have around 4 min elution shift, we use
+        //   a default value of 3 % of the gradient to find upper RT threshold (3.6 min).
+        double pcnt_rt_threshold = irt_detection_param.getValue("RANSACMaxPercentRTThreshold");
+        double max_rt_threshold = (RTRange.second - RTRange.first) * pcnt_rt_threshold / 100.0;
+
+        pairs_corrected = MRMRTNormalizer::removeOutliersRANSAC(pairs, min_rsq, min_coverage,
+          irt_detection_param.getValue("RANSACMaxIterations"), max_rt_threshold,
+          irt_detection_param.getValue("RANSACSamplingSize"));
+      }
+      else if (outlier_method == "none")
+      {
+        pairs_corrected = pairs;
+      }
+      else
+      {
+        throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+          String("Illegal argument '") + outlier_method +
+          "' used for outlierMethod (valid: 'iter_residual', 'iter_jackknife', 'ransac', 'none').");
+      }
+      OPENMS_LOG_DEBUG << "Performed outlier detection, left with features: " << pairs_corrected.size() << std::endl;
+
+      // 7. Select the "correct" peaks for m/z (and IM) correction (e.g. remove those not
+      // part of the linear regression)
+      std::map<String, OpenMS::MRMFeatureFinderScoring::MRMTransitionGroupType *> trgrmap_final; // store all peaks above cutoff
+      for (const auto& it : trgrmap_allpeaks)
+      {
+        if (it.second->getFeatures().empty() ) {continue;}
+        const MRMFeature& feat = it.second->getBestFeature();
+
+        // Check if the current feature is in the list of pairs used for the
+        // linear RT regression (using other features may result in wrong
+        // calibration values).
+        // Matching only by RT is not perfect but should work for most cases.
+        for (Size pit = 0; pit < pairs_corrected.size(); pit++)
+        {
+          if (fabs(feat.getRT() - pairs_corrected[pit].first ) < 1e-2)
+          {
+            trgrmap_final[ it.first ] = it.second;
+            break;
+          }
+        }
+      }
+
+      // 8. Correct m/z (and IM) deviations using SwathMapMassCorrection
+      // m/z correction is done with the -irt_im_extraction parameters
+      SwathMapMassCorrection mc;
+      mc.setParameters(calibration_param);
+
+      mc.correctMZ(trgrmap_final, targeted_exp, swath_maps, pasef);
+      mc.correctIM(trgrmap_final, targeted_exp, swath_maps, pasef, im_trafo);
+
+      // 9. store RT transformation, using the selected model
+      TransformationDescription trafo_out;
+      trafo_out.setDataPoints(pairs_corrected);
+      Param model_params;
+      model_params.setValue("symmetric_regression", "false");
+      model_params.setValue("span", irt_detection_param.getValue("lowess:span"));
+      model_params.setValue("num_nodes", irt_detection_param.getValue("b_spline:num_nodes"));
+      model_params.setValue("alignmentMethod", "lowess");
+      String model_type = irt_detection_param.getValue("alignmentMethod").toString();
+      trafo_out.fitModel(model_type, model_params);
+
+      OPENMS_LOG_DEBUG << "Final RT mapping:" << std::endl;
+      for (Size i = 0; i < pairs_corrected.size(); i++)
+      {
+        OPENMS_LOG_DEBUG << pairs_corrected[i].first << " " <<  pairs_corrected[i].second << std::endl;
+      }
+
+      ///////////////////////////////////////////////////////////////////////////
+      // TODO incorperate this into transformation description function instead
+      /////////////////////////////////////////////////////////////
+
+      std::vector<double> predicted_values(pairs_corrected.size()); // these are the predicted values by applying the trafo on the values
+      std::vector<double> delta_true_predicted(pairs_corrected.size()); // these are the differences between the predicted and the true values
+      double sum_rt_differences = 0.0;
+      TransformationDescription trafo_inverse = trafo_out;
+      trafo_inverse.invert();
+
+      // note pairs correct first is exp RT, pairs corrected second is iRT
+      for (size_t i = 0; i < pairs_corrected.size(); ++i)
+      {
+        predicted_values[i] = trafo_inverse.apply(pairs_corrected[i].second);
+        delta_true_predicted[i] = pairs_corrected[i].first - predicted_values[i];
+        sum_rt_differences += delta_true_predicted[i]; // sum for computing the mean
+        OPENMS_LOG_DEBUG << "True - Predicted value: " << pairs_corrected[i].second << "  " << predicted_values[i] << std::endl;
+      }
+      double mean_rt_difference = sum_rt_differences / delta_true_predicted.size();
+
+      // compute the variance
+      double rt_variance = 0.0;
+      for (double delta: delta_true_predicted)
+      {
+        rt_variance += (delta - mean_rt_difference) * (delta - mean_rt_difference);
+      }
+      rt_variance /= delta_true_predicted.size();
+      double rt_stdev = sqrt(rt_variance);
+      double rt_extraction_window = rt_stdev * 3.0 * 2; // 3 times the standard deviation, doubled since the window is the full length (not half)
+      std::cout << "RT variance: " << rt_stdev << std::endl;
+      std::cout << "RT Extraction Window to Use: " << rt_extraction_window << std::endl;
+      
+
+      OPENMS_LOG_DEBUG << "End of doDataNormalization_ method" << std::endl;
+
+      trafo_out.printSummary(std::cout);
+
+        return trafo_out;
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // TODO incorperate this into transformation description function instead
-    /////////////////////////////////////////////////////////////
-
-    std::vector<double> predicted_values(pairs_corrected.size()); // these are the predicted values by applying the trafo on the values
-    std::vector<double> delta_true_predicted(pairs_corrected.size()); // these are the differences between the predicted and the true values
-    double sum_rt_differences = 0.0;
-    for (size_t i = 0; i < pairs_corrected.size(); ++i)
-    {
-      predicted_values[i] = trafo_out.apply(pairs_corrected[i].first);
-      delta_true_predicted[i] = pairs_corrected[i].second - predicted_values[i];
-      sum_rt_differences += delta_true_predicted[i]; // sum for computing the mean
-      OPENMS_LOG_DEBUG << "True - Predicted value: " << pairs_corrected[i].second << "  " << predicted_values[i] << std::endl;
-    }
-    double mean_rt_difference = sum_rt_differences / delta_true_predicted.size();
-
-    // compute the variance
-    double rt_variance = 0.0;
-    for (double delta: delta_true_predicted)
-    {
-      rt_variance += (delta - mean_rt_difference) * (delta - mean_rt_difference);
-    }
-    rt_variance /= delta_true_predicted.size();
-    double rt_stdev = sqrt(rt_variance);
-    double rt_extraction_window = rt_stdev * 3.0 * 2; // 3 times the standard deviation, doubled since the window is the full length (not half)
-    OPENMS_LOG_DEBUG << "RT variance: " << rt_stdev << std::endl;
-    OPENMS_LOG_DEBUG << "RT Extraction Window to Use: " << rt_extraction_window << std::endl;
-    
-
-    OPENMS_LOG_DEBUG << "End of doDataNormalization_ method" << std::endl;
-
-    trafo_out.printSummary(std::cout);
-
-    this->endProgress();
-    return trafo_out;
   }
 
   TransformationDescription OpenSwathCalibrationWorkflow::doDataNormalization_(

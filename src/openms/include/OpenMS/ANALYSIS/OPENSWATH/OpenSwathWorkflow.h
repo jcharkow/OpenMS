@@ -287,7 +287,7 @@ protected:
       double min_rsq,
       double min_coverage,
       const Param& feature_finder_param,
-      const ChromExtractParams& cp_irt,
+      ChromExtractParams& cp_irt,
       const Param& irt_detection_param,
       const Param& calibration_param,
       Size debug_level,
