@@ -713,7 +713,7 @@ namespace OpenMS
 
     // sort for m/z and update ranges of newly loaded data
     peak_map_sptr->sortSpectra(true);
-    peak_map_sptr->updateRanges(1);
+    peak_map_sptr->updateRanges();
 
     // try to add the data
     if (caption == "")
@@ -1929,12 +1929,14 @@ namespace OpenMS
 
       PeakMap new_exp;
       new_exp.addSpectrum(spectrum);
+      new_exp.updateRanges();
       ExperimentSharedPtrType new_exp_sptr(new PeakMap(new_exp));
       FeatureMapSharedPtrType f_dummy(new FeatureMapType());
       ConsensusMapSharedPtrType c_dummy(new ConsensusMapType());
       ODExperimentSharedPtrType od_dummy(new OnDiscMSExperiment());
       vector<PeptideIdentification> p_dummy;
-      addData(f_dummy, c_dummy, p_dummy, new_exp_sptr, od_dummy, LayerDataBase::DT_PEAK, false, true, true, "", spec_gen_dialog_.getSequence() + " (theoretical)");
+      // open as 1D (since its a single spectrum); 3D view does not support MS2 (yet)
+      addData(f_dummy, c_dummy, p_dummy, new_exp_sptr, od_dummy, LayerDataBase::DT_PEAK, true, false, true, "", spec_gen_dialog_.getSequence() + " (theoretical)");
 
       // ensure spectrum is drawn as sticks
       draw_group_1d_->button(Plot1DCanvas::DM_PEAKS)->setChecked(true);
@@ -2548,7 +2550,7 @@ namespace OpenMS
         lp->getPeakDataMuteable()->clear(true);
       }
       lp->getPeakDataMuteable()->sortSpectra(true);
-      lp->getPeakDataMuteable()->updateRanges(1);
+      lp->getPeakDataMuteable()->updateRanges();
     }
     else if (auto* lp = dynamic_cast<LayerDataFeature*>(&layer)) // feature data
     {
@@ -2589,7 +2591,7 @@ namespace OpenMS
         lp->getChromatogramData()->clear(true);
       }
       lp->getChromatogramData()->sortChromatograms(true);
-      lp->getChromatogramData()->updateRanges(1);
+      lp->getChromatogramData()->updateRanges();
     }
 
     // update all layers that need an update
