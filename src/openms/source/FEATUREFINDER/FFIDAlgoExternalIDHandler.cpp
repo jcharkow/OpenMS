@@ -77,7 +77,7 @@ namespace Internal
                          << "; MZ: " << mz << std::endl;
   }
   
-  void FFIDAlgoExternalIDHandler::processExternalPeptides(std::vector<PeptideIdentification>& peptides_ext)
+  void FFIDAlgoExternalIDHandler::processExternalPeptides(PeptideIdentificationList& peptides_ext)
   {
     for (PeptideIdentification& pep : peptides_ext)
     {
@@ -89,8 +89,8 @@ namespace Internal
   }
   
   double FFIDAlgoExternalIDHandler::alignInternalAndExternalIDs(
-      const std::vector<PeptideIdentification>& peptides_internal,
-      const std::vector<PeptideIdentification>& peptides_external,
+      const PeptideIdentificationList& peptides_internal,
+      const PeptideIdentificationList& peptides_external,
       double rt_quantile)
   {
     // Reset the handler state
@@ -99,7 +99,7 @@ namespace Internal
     // Align internal and external IDs to estimate RT shifts:
     MapAlignmentAlgorithmIdentification aligner;
     aligner.setReference(peptides_external); // go from internal to external scale
-    std::vector<std::vector<PeptideIdentification>> aligner_peptides(1, peptides_internal);
+    std::vector<PeptideIdentificationList> aligner_peptides(1, peptides_internal);
     std::vector<TransformationDescription> aligner_trafos;
 
     OPENMS_LOG_INFO << "Realigning internal and external IDs...";
@@ -166,14 +166,19 @@ namespace Internal
   bool FFIDAlgoExternalIDHandler::fillExternalRTMap_(const AASequence& sequence, Int charge,
                          std::multimap<double, PeptideIdentification*>& rt_map)
   {
-    auto seq_it = external_peptide_map_.find(sequence);
-    if (seq_it == external_peptide_map_.end()) return false;
-    
-    auto charge_it = seq_it->second.find(charge);
-    if (charge_it == seq_it->second.end()) return false;
-    
-    rt_map.insert(charge_it->second.begin(), charge_it->second.end());
-    return true;
+    if (auto seq_it = external_peptide_map_.find(sequence); seq_it == external_peptide_map_.end()) 
+    {
+      return false;
+    }
+    else if (auto charge_it = seq_it->second.find(charge); charge_it == seq_it->second.end()) 
+    {
+      return false;
+    }
+    else
+    {
+      rt_map.insert(charge_it->second.begin(), charge_it->second.end());
+      return true;
+    }
   }
   
   void FFIDAlgoExternalIDHandler::annotateFeatureWithExternalIDs_(Feature& feature)

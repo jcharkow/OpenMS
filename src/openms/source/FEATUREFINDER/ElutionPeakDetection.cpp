@@ -116,6 +116,20 @@ namespace OpenMS
     chrom_maxes.clear();
     chrom_mins.clear();
 
+    // Handle empty traces to avoid crash
+    if (mt_length == 0)
+    {
+      return;
+    }
+
+    if (mt_length < 3)
+    {
+      // determine the index of maximum intensity
+      Size max_idx = tr.findMaxByIntPeak(true);
+      chrom_maxes.push_back(max_idx);
+      return;
+    }
+
     // Remember which indices we have already used
     boost::dynamic_bitset<> used_idx(mt_length);
 
@@ -128,10 +142,10 @@ namespace OpenMS
     }
 
     // Step 1: Identify maxima
-    for (std::multimap<double, Size>::const_iterator c_it = intensity_indices.begin(); c_it != intensity_indices.end(); ++c_it)
+    for (const auto& intensity_pair : intensity_indices)
     {
-      double ref_int = c_it->first;
-      Size ref_idx = c_it->second;
+      double ref_int = intensity_pair.first;
+      Size ref_idx = intensity_pair.second;
 
       if (!(used_idx[ref_idx]) && ref_int > 0.0) 
       { // only allow unused points as seeds (potential local maximum)
@@ -299,7 +313,6 @@ namespace OpenMS
   {
     // make sure that single_mtraces is empty
     single_mtraces.clear();
-
     detectElutionPeaks_(mt, single_mtraces);
     return;
   }
@@ -349,12 +362,12 @@ namespace OpenMS
     Size count_mt(0);
 
     // filter out mass traces below lower quartile and above upper quartile
-    for (std::multimap<double, Size>::const_iterator m_it = sorted_by_peakwidth.begin(); m_it != sorted_by_peakwidth.end(); ++m_it)
+    for (const auto& width_pair : sorted_by_peakwidth)
     {
       if (count_mt >= lower_quartile_idx && count_mt <= upper_quartile_idx)
       {
-        // std::cout << "pw added " << m_it->first << std::endl;
-        filt_mtraces.push_back(mt_vec[m_it->second]);
+        // std::cout << "pw added " << width_pair.first << std::endl;
+        filt_mtraces.push_back(mt_vec[width_pair.second]);
       }
       ++count_mt;
     }
@@ -383,9 +396,9 @@ namespace OpenMS
     std::cout << "   finding elution peaks in mass traces RT "  << mt.getCentroidRT()  << " / mz " << mt.getCentroidMZ() << std::endl;
     std::cout << "   used for smoothing: win_size "  << win_size << " FWHM scan num " /* << mt.getFWHMScansNum() */ << std::endl;
     std::cout << "*****" << std::endl;
-    for (MassTrace::const_iterator mt_it = mt.begin(); mt_it != mt.end(); ++mt_it)
+    for (const auto& peak : mt)
     {
-      // std::cout << mt_it->getIntensity() << " " << mt.getSmoothedIntensities()[i] << std::endl;
+      // std::cout << peak.getIntensity() << " " << mt.getSmoothedIntensities()[i] << std::endl;
       ++i;
     }
     std::cout << "*****" << std::endl;
@@ -483,6 +496,10 @@ namespace OpenMS
         // Create new mass trace, copy smoothed intensities
         MassTrace new_mt(tmp_mt);
         new_mt.setSmoothedIntensities(smoothed_tmp);
+        // copy ion mobility centroid and peak fwhm to split traces
+        new_mt.setCentroidIM(mt.getCentroidIM());
+        new_mt.fwhm_mz_avg = mt.fwhm_mz_avg;
+        new_mt.fwhm_im_avg = mt.fwhm_im_avg;
 
         // check filter criteria
         bool pw_ok = true;
@@ -532,7 +549,6 @@ namespace OpenMS
           }
         }
       }
-
     }
     return;
   }
@@ -542,6 +558,19 @@ namespace OpenMS
     // alternative smoothing using SavitzkyGolay
     // looking at the unit test, this method gives better fits than lowess smoothing
     // reference paper uses lowess smoothing
+
+    // Handle traces with fewer than 3 points - Savitzky-Golay requires minimum frame length of 3
+    if (mt.getSize() < 3)
+    {
+      std::vector<double> smoothed;
+      smoothed.reserve(mt.getSize());
+      for (Size i = 0; i < mt.getSize(); ++i)
+      {
+        smoothed.push_back(mt[i].getIntensity());
+      }
+      mt.setSmoothedIntensities(smoothed);
+      return;
+    }
 
     MSSpectrum spectrum;
     for (Size i = 0; i != mt.getSize(); ++i)

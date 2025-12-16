@@ -356,7 +356,7 @@ namespace OpenMS
     if (delta_masses_list_.empty())
     {
       // Even in the case of a singlet search, there should be one mass shift (zero mass shift) in the list.
-      throw OpenMS::Exception::InvalidSize(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, 0);
+      throw OpenMS::Exception::InvalidSize(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, 0, "delta_masses_list_ must not be empty");
     }
 
     unsigned n = delta_masses_list_[0].getDeltaMasses().size();    // n=1 for singlets, n=2 for doublets, n=3 for triplets, n=4 for quadruplets
@@ -503,13 +503,15 @@ namespace OpenMS
         MultiplexDeltaMasses::LabelSet label_set = delta_masses_list_[i].getDeltaMasses()[j].label_set;
 
         stream << mass_shift << " (";
-        for (std::multiset<String>::iterator it = label_set.begin(); it != label_set.end(); ++it)
+        bool first = true;
+        for (const auto& label : label_set)
         {
-          if (it != label_set.begin())
+          if (!first)
           {
             stream << ",";
           }
-          stream << *it;
+          stream << label;
+          first = false;
         }
         stream << ")    ";
       }

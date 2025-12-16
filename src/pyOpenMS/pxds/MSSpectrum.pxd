@@ -74,9 +74,8 @@ cdef extern from "<OpenMS/KERNEL/MSSpectrum.h>" namespace "OpenMS":
         #    MzMLFile().store("testfile.mzML", exp)
         #  
         #  
-
-        MSSpectrum() except + nogil 
-        MSSpectrum(MSSpectrum &) except + nogil 
+        MSSpectrum() except + nogil
+        MSSpectrum(MSSpectrum &) except + nogil
 
         double getRT() except + nogil  # wrap-doc:Returns the absolute retention time (in seconds)
         void setRT(double) except + nogil   # wrap-doc:Sets the absolute retention time (in seconds)
@@ -85,9 +84,12 @@ cdef extern from "<OpenMS/KERNEL/MSSpectrum.h>" namespace "OpenMS":
         void setDriftTime(double) except + nogil  # wrap-doc:Sets the drift time (-1 if not set)
         DriftTimeUnit getDriftTimeUnit() except + nogil 
         String getDriftTimeUnitAsString() except + nogil 
-        void setDriftTimeUnit(DriftTimeUnit dt) except + nogil 
+        void setDriftTimeUnit(DriftTimeUnit dt) except + nogil
 
-        bool containsIMData() except + nogil 
+        IMFormat getIMFormat() except + nogil  # wrap-doc:Returns the ion mobility format
+        void setIMFormat(IMFormat im_format) except + nogil  # wrap-doc:Sets the ion mobility format
+
+        bool containsIMData() except + nogil
         libcpp_pair[Size, DriftTimeUnit] getIMData() except + nogil  # wrap-ignore wrap-doc:Returns position of ion mobility float data array and drift time unit
 
         unsigned int getMSLevel() except + nogil  # wrap-doc:Returns the MS level
@@ -113,7 +115,7 @@ cdef extern from "<OpenMS/KERNEL/MSSpectrum.h>" namespace "OpenMS":
         int findNearest(double mz, double tolerance_left, double tolerance_right) except + nogil  # wrap-doc:Returns the index of the closest peak in the provided abs. m/z tolerance window to the left and right (-1 if none match)
         int findHighestInWindow(double mz, double tolerance_left, double tolerance_right) except + nogil  # wrap-doc:Returns the index of the highest peak in the provided abs. m/z tolerance window to the left and right (-1 if none match)
 
-        MSSpectrum select(libcpp_vector[ size_t ] & indices) except + nogil  # wrap-doc:Subset the spectrum by indices. Also applies to associated data arrays if present.
+        MSSpectrum select(const libcpp_vector[ size_t ] & indices) except + nogil  # wrap-doc:Subset the spectrum by indices. Also applies to associated data arrays if present.
 
         void assign(libcpp_vector[Peak1D].iterator, libcpp_vector[Peak1D].iterator) except + nogil  # wrap-ignore
         libcpp_vector[Peak1D].iterator begin() except + nogil   # wrap-iter-begin:__iter__(Peak1D)
@@ -134,5 +136,3 @@ cdef extern from "<OpenMS/KERNEL/MSSpectrum.h>" namespace "OpenMS":
         void setFloatDataArrays(libcpp_vector[FloatDataArray] fda) except + nogil  # wrap-doc:Sets the additional float data arrays to store e.g. meta data
         void setIntegerDataArrays(libcpp_vector[IntegerDataArray] ida) except + nogil  # wrap-doc:Sets the additional int data arrays to store e.g. meta data
         void setStringDataArrays(libcpp_vector[StringDataArray] sda) except + nogil  # wrap-doc:Sets the additional string data arrays to store e.g. meta data
-
-

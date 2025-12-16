@@ -60,6 +60,7 @@ set(OPENMS_DEP_LIBRARIES Evergreen LibSVM::LibSVM XercesC::XercesC Eigen3::Eigen
 ## setup the arguments to 'target_link_libraries(OpenMS PRIVATE ${OPENMS_DEP_PRIVATE_LIBRARIES})'
 set(OPENMS_DEP_PRIVATE_LIBRARIES
   $<$<BOOL:${WITH_HDF5}>:HDF5::HDF5>
+  $<$<BOOL:${WITH_PARQUET}>:${OPENMS_ARROW_TARGET} ${OPENMS_PARQUET_TARGET}>
   ${LPTARGET}
   BZip2::BZip2
   Boost::boost
@@ -121,6 +122,11 @@ endif()
 
 if (ENABLE_TDL)
     target_compile_definitions(OpenMS PUBLIC ENABLE_TDL)
+endif()
+
+# propagate Parquet support to the code (used to gate tools in ToolHandler, etc.)
+if (WITH_PARQUET)
+    target_compile_definitions(OpenMS PUBLIC WITH_PARQUET=1)
 endif()
 
 

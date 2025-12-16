@@ -584,7 +584,7 @@ namespace OpenMS
   }
 
   void ProteinIdentification::fillEvidenceMapping_(unordered_map<String, set<PeptideEvidence> >& map_acc_2_evidence,
-                                                   const std::vector<PeptideIdentification>& pep_ids) const
+                                                   const PeptideIdentificationList& pep_ids) const
   {
     //TODO check matching identifiers?
     for (const auto & peptide_id : pep_ids)
@@ -603,7 +603,7 @@ namespace OpenMS
     }
   }
 
-  void ProteinIdentification::computeCoverage(const std::vector<PeptideIdentification>& pep_ids)
+  void ProteinIdentification::computeCoverage(const PeptideIdentificationList& pep_ids)
   {
     // map protein accession to the corresponding peptide evidence
     unordered_map<String, set<PeptideEvidence> > map_acc_2_evidence;
@@ -672,7 +672,7 @@ namespace OpenMS
   }
 
   void ProteinIdentification::computeModifications(
-    const std::vector<PeptideIdentification>& pep_ids,
+    const PeptideIdentificationList& pep_ids,
     const StringList& skip_modifications)
   {
     // map protein accession to observed position,modifications pairs
@@ -714,7 +714,7 @@ namespace OpenMS
     }
   }
 
-  void ProteinIdentification::fillModMapping_(const vector<PeptideIdentification>& pep_ids, const StringList& skip_modifications,
+  void ProteinIdentification::fillModMapping_(const PeptideIdentificationList& pep_ids, const StringList& skip_modifications,
                                               unordered_map<String, set<pair<Size, ResidueModification>>>& prot2mod) const
   {
     for (const auto & peptide_id : pep_ids)
@@ -915,6 +915,17 @@ namespace OpenMS
     higher_score_better_ = p.higher_score_better_;
     protein_significance_threshold_ = p.protein_significance_threshold_;
     MetaInfoInterface::operator=(static_cast<MetaInfoInterface>(p));
+  }
+
+  StringList ProteinIdentification::getAllNamesOfPeakMassType()
+  {
+    StringList names;
+    names.reserve(SIZE_OF_PEAKMASSTYPE);
+    for (size_t i = 0; i < SIZE_OF_PEAKMASSTYPE; ++i)
+    {
+      names.push_back(NamesOfPeakMassType[i]);
+    }
+    return names;
   }
 
 } // namespace OpenMS

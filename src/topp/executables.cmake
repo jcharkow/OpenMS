@@ -7,6 +7,7 @@ AccurateMassSearch
 AssayGeneratorMetabo
 AssayGeneratorMetaboSirius
 BaselineFilter
+FeatureFinderLFQ
 ClusterMassTraces
 ClusterMassTracesByPrecursor
 CometAdapter
@@ -58,6 +59,7 @@ IDSplitter
 InternalCalibration
 IonMobilityBinning
 IsobaricAnalyzer
+IsobaricWorkflow
 JSONExporter
 LuciphorAdapter
 MapAlignerIdentification
@@ -87,8 +89,8 @@ NovorAdapter
 NucleicAcidSearchEngine
 OpenMSDatabasesInfo
 OpenMSInfo
+OpenNuXL
 OpenPepXL
-OpenPepXLLF
 OpenSwathAnalyzer
 OpenSwathAssayGenerator
 OpenSwathChromatogramExtractor
@@ -98,7 +100,9 @@ OpenSwathFeatureXMLToTSV
 OpenSwathRTNormalizer
 PeakPickerHiRes
 PeakPickerIterative
+PeakPickerIM
 PeptideIndexer
+PeptideDataBaseSearchFI
 PercolatorAdapter
 PhosphoScoring
 ProteinInference
@@ -148,6 +152,13 @@ if(NOT DISABLE_OPENSWATH)
     MRMTransitionGroupPicker
   )
 endif(NOT DISABLE_OPENSWATH)
+
+if(WITH_PARQUET)
+  set(TOPP_executables
+    ${TOPP_executables}
+    QuantmsIOConverter
+  )
+endif(WITH_PARQUET)
 
 ## all targets requiring OpenMS_GUI
 set(TOPP_executables_with_GUIlib

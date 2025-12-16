@@ -120,7 +120,7 @@ namespace OpenMS
   {
     String identifier;
     vector<ProteinIdentification> proteins;
-    vector<PeptideIdentification> peptides;
+    PeptideIdentificationList peptides;
   };
 
   /// Write SomeStatistics to a stream.
@@ -865,6 +865,22 @@ protected:
       SHashmap m_headers;
       SHashmap m_seqs;
 
+      // lambda to count ambiguous amino acids in frequency table
+      auto count_AAAs = [](const auto& aacids, std::string_view which) {
+        size_t count = 0;
+        for (char a : which)
+        {
+          auto it = aacids.find(a);
+          if (it != aacids.end()) { count += it->second; }
+        }
+        return count;
+      };
+
+      size_t protein_has_ambiguous_aas = 0;
+      
+      const std::string_view& AAA_BXZJ = "BZXbzxJj"; // ambiguous amino acids
+      const std::string_view& AAA_BXZ = "BZXbzx"; // ambiguous amino acids
+
       std::hash<string> s_hash;
       for (auto loopiter = entries.begin(); loopiter != entries.end(); ++loopiter)
       {
@@ -902,29 +918,38 @@ protected:
           m_seqs[id_seq] = { std::distance(entries.begin(), loopiter) };
         }
 
+        const auto count_AAA_before = count_AAAs(aacids, AAA_BXZJ);
+        // count AAs
         for (char a : loopiter->sequence)
         {
           ++aacids[a];
         }
+        // did this protein contain ambiguous amino acids?
+        if (count_AAA_before != count_AAAs(aacids, AAA_BXZJ))
+        {
+          ++protein_has_ambiguous_aas;
+        }
+
         number_of_aacids += loopiter->sequence.size();
       }
 
       os << '\n';
       os << "Number of sequences   : " << entries.size() << '\n';
-      os << "# duplicated headers  : " << dup_header << " (" << (entries.empty() ? 0 :
-                                                                 static_cast<Size>(dup_header * 1000 / entries.size()) / 10.0) << "%)\n";
-      os << "# duplicated sequences: " << dup_seq << " (" << (entries.empty() ? 0 : static_cast<Size>(dup_seq * 1000 / entries.size()) / 10.0) << "%) [by exact string matching]\n";
+      os << "Number of sequences with ambiguous amino acids: " << protein_has_ambiguous_aas << " ("
+         << Math::percentOf(protein_has_ambiguous_aas, entries.size(), 2) << "%)\n";
+      os << "# duplicated headers  : " << dup_header << " (" << Math::percentOf(dup_header, entries.size(), 2) << "%)\n";
+      os << "# duplicated sequences: " << dup_seq << " (" << Math::percentOf(dup_seq, entries.size(), 2) << "%) [by exact string matching]\n";
       os << "Total amino acids     : " << number_of_aacids << "\n\n";
       os << "Amino acid counts: \n";
 
-      for (auto it = aacids.begin(); it != aacids.end(); ++it)
+      for (const auto& [AA, count] : aacids)
       {
-        os << it->first << '\t' << it->second << '\n';
+        os << "  " << AA << ":\t" << count << '\n';
       }
-      size_t amb = aacids['B'] + aacids['Z'] + aacids['X'] + aacids['b'] + aacids['z'] + aacids['x'];
-      size_t amb_I = amb + aacids['I'] + aacids['i'];
-      os << "Ambiguous amino acids (B/Z/X)  : " << amb   << " (" << (amb > 0 ? (static_cast<Size>(amb * 10000 / number_of_aacids) / 100.0) : 0) << "%)\n";
-      os << "                      (B/Z/X/I): " << amb_I << " (" << (amb_I > 0 ? (static_cast<Size>(amb_I * 10000 / number_of_aacids) / 100.0) : 0) << "%)\n\n";
+      size_t amb = count_AAAs(aacids, AAA_BXZ);
+      size_t amb_J = count_AAAs(aacids, AAA_BXZJ);
+      os << "Ambiguous amino acids (B/Z/X)  : " << amb   << " (" << Math::percentOf(amb  , number_of_aacids, 2) << "%)\n";
+      os << "                      (B/Z/X/J): " << amb_J << " (" << Math::percentOf(amb_J, number_of_aacids, 2) << "%)\n\n";
     }
     else if (in_type == FileTypes::FEATUREXML) //features
     {
@@ -951,12 +976,14 @@ protected:
       std::map<Int, UInt> charges;
       std::map<size_t, UInt> numberofids;
       double tic = 0.0;
+      Size assigned_ids = 0;
       for (Size i = 0; i < feat.size(); ++i)
       {
         ++charges[feat[i].getCharge()];
         tic += feat[i].getIntensity();
-        const vector<PeptideIdentification> &peptide_ids = feat[i].getPeptideIdentifications();
+        const PeptideIdentificationList &peptide_ids = feat[i].getPeptideIdentifications();
         ++numberofids[peptide_ids.size()];
+        assigned_ids += peptide_ids.size();
       }
 
       os << "Total ion current in features: " << tic << '\n';
@@ -976,7 +1003,10 @@ protected:
       }
 
       os << '\n'
-         << "Unassigned peptide identifications: " << feat.getUnassignedPeptideIdentifications().size() << '\n';
+         << "Assigned peptide identifications: " << assigned_ids << '\n';
+      os_tsv << "general: assigned peptide identifications" << '\t'
+             << assigned_ids << '\n';
+      os << "Unassigned peptide identifications: " << feat.getUnassignedPeptideIdentifications().size() << '\n';
       os_tsv << "general: unassigned peptide identifications" << '\t'
              << feat.getUnassignedPeptideIdentifications().size() << '\n';
     }
@@ -992,12 +1022,14 @@ protected:
 
       map<Size, UInt> num_consfeat_of_size;
       map<Size, UInt> num_consfeat_of_size_with_id;
+      Size assigned_ids = 0;
 
       map<pair<String, UInt>, vector<int> > seq_charge2map_occurence;
       for (const ConsensusFeature& cm : cons)
       {
         ++num_consfeat_of_size[cm.size()];
         const auto& pids = cm.getPeptideIdentifications();
+        assigned_ids += pids.size();
         if (!pids.empty())
         {
           ++num_consfeat_of_size_with_id[cm.size()];
@@ -1120,6 +1152,13 @@ protected:
         }
         os << '\n';
       }
+
+      os << "Assigned peptide identifications: " << assigned_ids << '\n';
+      os_tsv << "general: assigned peptide identifications" << '\t'
+             << assigned_ids << '\n';
+      os << "Unassigned peptide identifications: " << cons.getUnassignedPeptideIdentifications().size() << '\n';
+      os_tsv << "general: unassigned peptide identifications" << '\t'
+             << cons.getUnassignedPeptideIdentifications().size() << '\n';
     }
     else if (in_type == FileTypes::IDXML || in_type == FileTypes::MZIDENTML) //identifications
     {
@@ -1206,6 +1245,7 @@ protected:
         // collect all search engines which generated the data
         search_engines.emplace(id_data.proteins[i].getSearchEngine(), id_data.proteins[i].getSearchEngineVersion());
       }
+
       if (peptide_length.empty())
       { // avoid invalid-range exception when computing mean()
         peptide_length.push_back(0);
@@ -1396,8 +1436,8 @@ protected:
       os << "Activation methods\n";
       for (const auto& am : act_method_counts)
       {
-        os << "    MS-Level " << am.first.mslevel << " & " << Precursor::NamesOfActivationMethodShort[am.first.am] << " (" << Precursor::NamesOfActivationMethod[am.first.am] << "): " << am.second << '\n';
-        os_tsv << "activation methods (mslevel, method, count)" << '\t' << am.first.mslevel << '\t' << Precursor::NamesOfActivationMethodShort[am.first.am] << '\t' << am.second << '\n';
+        os << "    MS-Level " << am.first.mslevel << " & " << Precursor::NamesOfActivationMethodShort[static_cast<size_t>(am.first.am)] << " (" << Precursor::NamesOfActivationMethod[static_cast<size_t>(am.first.am)] << "): " << am.second << '\n';
+        os_tsv << "activation methods (mslevel, method, count)" << '\t' << am.first.mslevel << '\t' << Precursor::NamesOfActivationMethodShort[static_cast<size_t>(am.first.am)] << '\t' << am.second << '\n';
       }
       os << '\n';
 
@@ -1551,7 +1591,7 @@ protected:
                << "  activation methods: \n";
             for (auto const& am : pc.getActivationMethods())
             {
-              os << "    " << Precursor::NamesOfActivationMethodShort[am] << " (" << Precursor::NamesOfActivationMethod[am] << ")\n";
+              os << "    " << Precursor::NamesOfActivationMethodShort[static_cast<size_t>(am)] << " (" << Precursor::NamesOfActivationMethod[static_cast<size_t>(am)] << ")\n";
             }
 
             os << '\n';

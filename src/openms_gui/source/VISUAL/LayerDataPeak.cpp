@@ -283,7 +283,7 @@ namespace OpenMS
     return make_unique<LayerStatisticsPeakMap>(peak_map_->getMSExperiment());
   }
 
-  bool LayerDataPeak::annotate(const vector<PeptideIdentification>& identifications, const vector<ProteinIdentification>& protein_identifications)
+  bool LayerDataPeak::annotate(const PeptideIdentificationList& identifications, const vector<ProteinIdentification>& protein_identifications)
   {
     IDMapper mapper;
     Param p = mapper.getDefaults();
@@ -298,7 +298,7 @@ namespace OpenMS
   
   const LayerDataBase::ConstExperimentSharedPtrType LayerDataPeak::getPeakData() const
   {
-    return boost::static_pointer_cast<const ExperimentType>(peak_map_);
+    return std::static_pointer_cast<const ExperimentType>(peak_map_);
   }
 
 } // namespace OpenMS

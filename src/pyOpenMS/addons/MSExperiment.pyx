@@ -112,7 +112,7 @@
 
     def getChromatogram(self, id_):
         """Cython signature: `MSChromatogram getChromatogram(size_t id_)`"""
-        assert isinstance(id_, (int, long)), 'arg id_ wrong type'
+        assert isinstance(id_, int), 'arg id_ wrong type'
         assert id_ < self.getNrChromatograms(), 'Requested chromatogram %s does not exist, there are only %s chromatograms' % (id_, self.getNrChromatograms() )
     
         cdef _MSChromatogram * _r = new _MSChromatogram(self.inst.get().getChromatogram((<size_t>id_)))
@@ -122,10 +122,52 @@
 
     def getSpectrum(self, id_):
         """Cython signature: `MSSpectrum getSpectrum(size_t id_)`"""
-        assert isinstance(id_, (int, long)), 'arg id_ wrong type'
+        assert isinstance(id_, int), 'arg id_ wrong type'
         assert id_ < self.getNrSpectra(), 'Requested spectrum %s does not exist, there are only %s spectra' % (id_, self.getNrSpectra() )
     
         cdef _MSSpectrum * _r = new _MSSpectrum(self.inst.get().getSpectrum((<size_t>id_)))
         cdef MSSpectrum py_result = MSSpectrum.__new__(MSSpectrum)
         py_result.inst = shared_ptr[_MSSpectrum](_r)
         return py_result
+
+    def __len__(self):
+        """Return the number of spectra in the experiment."""
+        return self.inst.get().size()
+
+    def __str__(self):
+        """
+        __str__(self: MSExperiment) -> str
+        
+        Return a string representation of the MSExperiment object.
+        Delegates to __repr__ for consistency.
+        """
+        return self.__repr__()
+
+    def __repr__(self):
+        """
+        __repr__(self: MSExperiment) -> str
+        
+        Return a string representation of the MSExperiment object.
+
+        Returns key properties in a readable format:
+        MSExperiment(num_spectra=1000, num_chromatograms=10, ms_levels=[1, 2], rt_range=[0.0, 3600.0])
+        """
+        cdef size_t num_spectra = self.getNrSpectra()
+        cdef size_t num_chromatograms = self.getNrChromatograms()
+
+        parts = []
+        parts.append(f"num_spectra={num_spectra}")
+        parts.append(f"num_chromatograms={num_chromatograms}")
+
+        # Add MS levels
+        ms_levels = self.getMSLevels()
+        if ms_levels:
+            parts.append(f"ms_levels={ms_levels}")
+
+        # Add RT range if there are spectra
+        if num_spectra > 0:
+            min_rt = self.getMinRT()
+            max_rt = self.getMaxRT()
+            parts.append(f"rt_range=[{min_rt:.2f}, {max_rt:.2f}]")
+
+        return f"MSExperiment({', '.join(parts)})"

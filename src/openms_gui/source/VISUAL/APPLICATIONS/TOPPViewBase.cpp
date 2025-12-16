@@ -532,7 +532,7 @@ namespace OpenMS
     ConsensusMapType* consensus_map = new ConsensusMapType();
     ConsensusMapSharedPtrType consensus_map_sptr(consensus_map);
 
-    vector<PeptideIdentification> peptides;
+    PeptideIdentificationList peptides;
     // not needed in data but for auto annotation
     vector<ProteinIdentification> proteins;
     String annotate_path;
@@ -567,8 +567,8 @@ namespace OpenMS
           throw Exception::MissingInformation(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "No peptide identifications found");
         }
         // check if RT (and sequence) information is present:
-        vector<PeptideIdentification> peptides_with_rt;
-        for (vector<PeptideIdentification>::const_iterator it =
+        PeptideIdentificationList peptides_with_rt;
+        for (PeptideIdentificationList::const_iterator it =
                peptides.begin(); it != peptides.end(); ++it)
         {
           if (!it->getHits().empty() && it->hasRT())
@@ -784,7 +784,7 @@ namespace OpenMS
 
   void TOPPViewBase::addData(const FeatureMapSharedPtrType& feature_map,
                              const ConsensusMapSharedPtrType& consensus_map,
-                             vector<PeptideIdentification>& peptides,
+                             PeptideIdentificationList& peptides,
                              const ExperimentSharedPtrType& peak_map,
                              const ODExperimentSharedPtrType& on_disc_peak_map,
                              LayerDataBase::DataType data_type,
@@ -1833,7 +1833,19 @@ namespace OpenMS
       }
       else
       {
-        addDataFile(topp_.file_name_out, true, false, topp_.layer_name + " (" + topp_.tool + ")", topp_.window_id, topp_.spectrum_id);
+        auto l = getCurrentLayer();
+        if (l)
+        {
+          auto annotator = LayerAnnotatorBase::getAnnotatorWhichSupports(topp_.file_name + "_in");
+          if (annotator.get() == nullptr)
+          { // no suitable annotator? open new layer/window
+            addDataFile(topp_.file_name + "_out", true, false, topp_.layer_name + " (" + topp_.tool + ")", topp_.window_id, topp_.spectrum_id);
+          }
+          else
+          { // we have an annotator ... let's annotate the current layer
+            annotator->annotateWithFilename(*l, *log_, topp_.out + "_out"); // ID tabs are automatically enabled
+          }
+        }
       }
     }
 
@@ -1934,14 +1946,14 @@ namespace OpenMS
       // spectrum is generated in the dialog, so just receive it here
       PeakSpectrum spectrum = spec_gen_dialog_.getSpectrum();
 
-      ExperimentSharedPtrType new_exp_sptr = boost::make_shared<AnnotatedMSRun>();
+      ExperimentSharedPtrType new_exp_sptr = std::make_shared<AnnotatedMSRun>();
       new_exp_sptr->getMSExperiment().addSpectrum(spectrum);
       new_exp_sptr->getMSExperiment().updateRanges();
             
       FeatureMapSharedPtrType f_dummy(new FeatureMapType());
       ConsensusMapSharedPtrType c_dummy(new ConsensusMapType());
       ODExperimentSharedPtrType od_dummy(new OnDiscMSExperiment());
-      vector<PeptideIdentification> p_dummy;
+      PeptideIdentificationList p_dummy;
       // open as 1D (since its a single spectrum); 3D view does not support MS2 (yet)
       addData(f_dummy, c_dummy, p_dummy, new_exp_sptr, od_dummy, LayerDataBase::DT_PEAK, true, false, true, "", spec_gen_dialog_.getSequence() + " (theoretical)");
 
@@ -2015,7 +2027,7 @@ namespace OpenMS
   {
     const LayerDataBase& layer = getActiveCanvas()->getCurrentLayer();
     
-    ExperimentSharedPtrType exp = boost::make_shared<AnnotatedMSRun>();
+    ExperimentSharedPtrType exp = std::make_shared<AnnotatedMSRun>();
     exp.get()->getMSExperiment() = std::move(IMDataConverter::reshapeIMFrameToMany(spec));
     // hack, but currently not avoidable, because 2D widget does not support IM natively yet...
     // for (auto& spec : exp->getSpectra()) spec.setRT(spec.getDriftTime());
@@ -2046,7 +2058,7 @@ namespace OpenMS
     }
 
     // Add spectra into a MSExperiment, sort and prepare it for display
-    ExperimentSharedPtrType tmpe = boost::make_shared<AnnotatedMSRun>();
+    ExperimentSharedPtrType tmpe = std::make_shared<AnnotatedMSRun>();
 
     // Collect all MS2 spectra with the same precursor as the current spectrum
     // (they are in the same SWATH window)
@@ -2407,7 +2419,7 @@ namespace OpenMS
           on_disc_peaks = lp->getOnDiscPeakData();
         }
         // if the layer provides identification data -> retrieve it
-        vector<PeptideIdentification> peptides;
+        PeptideIdentificationList peptides;
         if (auto p = dynamic_cast<IPeptideIds*>(&layer); p != nullptr)
         {
           peptides = p->getPeptideIds();
@@ -2424,7 +2436,7 @@ namespace OpenMS
           ODExperimentSharedPtrType od_dummy(new OnDiscMSExperiment());
           FeatureMapSharedPtrType f_dummy(new FeatureMapType());
           ConsensusMapSharedPtrType c_dummy(new ConsensusMapType());
-          vector<PeptideIdentification> p_dummy;
+          PeptideIdentificationList p_dummy;
           const LayerDataBase& layer = getActiveCanvas()->getCurrentLayer();
           addData(f_dummy, c_dummy, p_dummy, new_exp_sptr, od_dummy, current_type, false, false, true, layer.filename, layer.getName(), new_id);
         }

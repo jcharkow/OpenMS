@@ -450,7 +450,7 @@ START_SECTION((void sort()))
 END_SECTION
 
 
-START_SECTION((Size computeCoverage(const std::vector<PeptideIdentification>& pep_ids)))
+START_SECTION((Size computeCoverage(const PeptideIdentificationList& pep_ids)))
 	ProteinIdentification id;
 
   // prep hit
@@ -465,7 +465,7 @@ START_SECTION((Size computeCoverage(const std::vector<PeptideIdentification>& pe
   id.insertHit(hit);
 
   // prep peptides
-  std::vector<PeptideIdentification> pep_ids;
+  PeptideIdentificationList pep_ids;
   PeptideIdentification pid;
   PeptideHit phit(0, 0, 1, AASequence::fromString(""));
   PeptideEvidence pe;
@@ -735,6 +735,13 @@ START_SECTION((vector<ProteinHit>::iterator findHit(const String& accession)))
 	TEST_EQUAL(protein.findHit("test2")->getAccession(), "test2");
 	TEST_EQUAL(protein.findHit("test3") == protein.getHits().end(), true);
 }
+END_SECTION
+
+START_SECTION((static StringList getAllNamesOfPeakMassType()))
+  StringList names = ProteinIdentification::getAllNamesOfPeakMassType();
+  TEST_EQUAL(names.size(), ProteinIdentification::SIZE_OF_PEAKMASSTYPE);
+  TEST_EQUAL(names[ProteinIdentification::MONOISOTOPIC], "Monoisotopic");
+  TEST_EQUAL(names[ProteinIdentification::AVERAGE], "Average");
 END_SECTION
 
 

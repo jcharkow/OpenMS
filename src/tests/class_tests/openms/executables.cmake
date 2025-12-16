@@ -5,6 +5,7 @@ set(concept_executables_list
   FuzzyStringComparator_test
   #GlobalExceptionHandler_test
   StreamHandler_test
+  Types_test
   VersionInfo_test
   LogConfigHandler_test
   LogStream_test
@@ -84,6 +85,7 @@ set(metadata_executables_list
   CVTerm_test
   ChromatogramSettings_test
   ContactPerson_test
+  DataArrays_test
   DataProcessing_test
   DocumentIdentifier_test
   ExperimentalDesign_test
@@ -105,6 +107,7 @@ set(metadata_executables_list
   PeptideEvidence_test
   PeptideHit_test
   PeptideIdentification_test
+  PeptideIdentificationList_test
   Precursor_test
   Product_test
   ProteinHit_test
@@ -179,6 +182,9 @@ set(format_executables_list
   FASTAFile_test
   FeatureFileOptions_test
   FeatureXMLFile_test
+  FLASHDeconvFeatureFile_test
+  FLASHDeconvSpectrumFile_test
+  FLASHHelperClasses_test
   FileHandler_test
   FileTypes_test
   GzipIfstream_test
@@ -252,6 +258,7 @@ set(format_executables_list
   UnimodXMLFile_test
   XMassFile_test
   XMLFile_test
+  XMLHandler_test
   XMLValidator_test
   XQuestResultXMLFile_test
   XTandemInfile_test
@@ -272,6 +279,10 @@ if(WITH_HDF5)
   list(APPEND format_executables_list HDF5_test)
 endif()
 
+if(WITH_PARQUET)
+  list(APPEND format_executables_list Arrow_test QuantmsIO_test)
+endif()
+
 set(math_executables_list
   BasicStatistics_test
   BilinearInterpolation_test
@@ -282,6 +293,7 @@ set(math_executables_list
   GaussFitter_test
   GumbelDistributionFitter_test
   GridSearch_test
+  CrossValidation_test
   Histogram_test
   LinearInterpolation_test
   LinearRegression_test
@@ -300,6 +312,7 @@ set(math_executables_list
 )
 
 set(filtering_executables_list
+  Biosaur2Algorithm_test
   DataFilters_test
   Deisotoper_test
   ElutionPeakDetection_test
@@ -438,7 +451,7 @@ set(analysis_executables_list
   ConsensusMapNormalizerAlgorithmQuantile_test
   ConsensusMapMergerAlgorithm_test
   #DataAccessHelper_test
-  DeconvolvedSpectrum_test
+  # DeconvolvedSpectrum_test
   FalseDiscoveryRate_test
   FeatureDeconvolution_test
   FeatureDistance_test
@@ -449,7 +462,6 @@ set(analysis_executables_list
   FeatureGroupingAlgorithm_test
   FeatureHandle_test
   FIAMSDataProcessor_test
-  #FIAMSScheduler_test sometimes failing
   FLASHDeconvAlgorithm_test
   FLASHDeconvHelperStructs_test
   IDBoostGraph_test
@@ -506,7 +518,6 @@ set(analysis_executables_list
   HyperScore_test
   MorpheusScore_test
   OpenPepXLAlgorithm_test
-  OpenPepXLLFAlgorithm_test
   OPXLHelper_test
   OPXLSpectrumProcessingAlgorithms_test
   PoseClusteringAffineSuperimposer_test
@@ -514,8 +525,11 @@ set(analysis_executables_list
   PrecursorPurity_test
   QTClusterFinder_test
   ReactionMonitoringTransition_test
+  NuXLModificationsGenerator_test
+  NuXLParameterParsing_test
   SimpleSearchEngineAlgorithm_test
   SimpleSVM_test
+  SpectralDeconvolution_test
   StablePairFinder_test
   PercolatorFeatureSetHelper_test
   TransformationDescription_test
@@ -565,6 +579,7 @@ set(transformations_executables_list
   ModelDescription_test
   PeakPickerHiRes_test
   PeakPickerIterative_test
+  PeakPickerIM_test
   PeakWidthEstimator_test
   SeedListGenerator_test
   TraceFitter_test

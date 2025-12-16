@@ -23,8 +23,10 @@
 using namespace std;
 
 // TODO fix all the shadowed "String s"
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wshadow"
+#ifdef __clang__
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wshadow"
+#endif
 
 namespace OpenMS
 {
@@ -2878,7 +2880,7 @@ namespace OpenMS
   void MzTabFile::store(
         const String& filename,
         const std::vector<ProteinIdentification>& protein_identifications,
-        const std::vector<PeptideIdentification>& peptide_identifications,
+        const PeptideIdentificationList& peptide_identifications,
         bool first_run_inference_only,
         bool export_empty_pep_ids,
         bool export_all_psms,
@@ -3332,4 +3334,6 @@ namespace OpenMS
 
 }
 
-#pragma clang diagnostic pop
+#ifdef __clang__
+  #pragma clang diagnostic pop
+#endif

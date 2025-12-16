@@ -14,12 +14,15 @@
 
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/FORMAT/InspectOutfile.h>
+#include <OpenMS/SYSTEM/File.h>
 #include <QtCore/QRegularExpression>
 
 #include <fstream>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunreachable-code"
+#ifdef __clang__
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wunreachable-code"
+#endif
 
 using namespace std;
 
@@ -49,7 +52,7 @@ namespace OpenMS
     return true;
   }
 
-  vector<Size> InspectOutfile::load(const String& result_filename, vector<PeptideIdentification>& peptide_identifications,
+  vector<Size> InspectOutfile::load(const String& result_filename, PeptideIdentificationList& peptide_identifications,
                                     ProteinIdentification& protein_identification, const double p_value_threshold, const String& database_filename)
   {
     // check whether the p_value is correct
@@ -61,7 +64,18 @@ namespace OpenMS
     ifstream result_file(result_filename.c_str());
     if (!result_file)
     {
-      throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, result_filename);
+      if (!File::exists(result_filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, result_filename);
+      }
+      else if (!File::readable(result_filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, result_filename);
+      }
+      else
+      {
+        throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, result_filename);
+      }
     }
 
     String
@@ -305,7 +319,18 @@ namespace OpenMS
     ifstream database(database_filename.c_str());
     if (!database)
     {
-      throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, database_filename);
+      if (!File::exists(database_filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, database_filename);
+      }
+      else if (!File::readable(database_filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, database_filename);
+      }
+      else
+      {
+        throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, database_filename);
+      }
     }
 
     vector<Size> not_found;
@@ -536,7 +561,7 @@ namespace OpenMS
   void
   InspectOutfile::getPrecursorRTandMZ(
     const vector<pair<String, vector<pair<Size, Size> > > >& files_and_peptide_identification_with_scan_number,
-    vector<PeptideIdentification>& ids)
+    PeptideIdentificationList& ids)
   {
     PeakMap experiment;
     String type;
@@ -578,7 +603,18 @@ namespace OpenMS
     ifstream database(database_filename.c_str());
     if (!database)
     {
-      throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, database_filename);
+      if (!File::exists(database_filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, database_filename);
+      }
+      else if (!File::readable(database_filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, database_filename);
+      }
+      else
+      {
+        throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, database_filename);
+      }
     }
 
     ifstream index(index_filename.c_str(), ios::in | ios::binary);
@@ -586,7 +622,18 @@ namespace OpenMS
     {
       database.close();
       database.clear();
-      throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, index_filename);
+      if (!File::exists(index_filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, index_filename);
+      }
+      else if (!File::readable(index_filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, index_filename);
+      }
+      else
+      {
+        throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, index_filename);
+      }
     }
 
     // determine the length of the index file
@@ -737,7 +784,18 @@ namespace OpenMS
     ifstream source_database(source_database_filename.c_str());
     if (!source_database)
     {
-      throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, source_database_filename);
+      if (!File::exists(source_database_filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, source_database_filename);
+      }
+      else if (!File::readable(source_database_filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, source_database_filename);
+      }
+      else
+      {
+        throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, source_database_filename);
+      }
     }
 
     // get the labels
@@ -983,7 +1041,18 @@ namespace OpenMS
     ifstream source_database(source_database_filename.c_str());
     if (!source_database)
     {
-      throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, source_database_filename);
+      if (!File::exists(source_database_filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, source_database_filename);
+      }
+      else if (!File::readable(source_database_filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, source_database_filename);
+      }
+      else
+      {
+        throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, source_database_filename);
+      }
     }
 
     String line;
@@ -1035,7 +1104,18 @@ namespace OpenMS
     ifstream result_file(result_filename.c_str());
     if (!result_file)
     {
-      throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, result_filename);
+      if (!File::exists(result_filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, result_filename);
+      }
+      else if (!File::readable(result_filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, result_filename);
+      }
+      else
+      {
+        throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, result_filename);
+      }
     }
 
     String line;
@@ -1219,5 +1299,7 @@ namespace OpenMS
 
 } //namespace OpenMS
 
-#pragma clang diagnostic pop
+#ifdef __clang__
+  #pragma clang diagnostic pop
+#endif
 

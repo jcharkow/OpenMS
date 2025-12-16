@@ -460,7 +460,7 @@ namespace OpenMS
 
         @return If a new layer was created
     */
-    bool addLayer(std::vector<PeptideIdentification>& peptides, const String& filename = "", const String& caption = "");
+    bool addLayer(PeptideIdentificationList& peptides, const String& filename = "", const String& caption = "");
 
     /// Returns the minimum intensity of the active layer
     inline float getCurrentMinIntensity() const
@@ -914,7 +914,7 @@ protected:
       std::set<DataProcessing::ProcessingAction> actions;
       actions.insert(action);
 
-      DataProcessingPtr p = boost::shared_ptr<DataProcessing>(new DataProcessing);
+      DataProcessingPtr p = std::shared_ptr<DataProcessing>(new DataProcessing);
       //actions
       p->setProcessingActions(actions);
       //software
