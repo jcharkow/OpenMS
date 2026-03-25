@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -9,7 +9,7 @@
 #include <OpenMS/APPLICATIONS/INIUpdater.h>
 #include <OpenMS/APPLICATIONS/ToolHandler.h>
 
-#include <QtCore/QString>
+#include <algorithm>
 
 namespace OpenMS
 {
@@ -29,7 +29,7 @@ namespace OpenMS
     for (Param::ParamIterator it = ini.begin(); it != ini.end(); ++it)
     {
       String name = it.getName();
-      if (name.toQString().count(':') == 1 && name.hasSuffix(":version"))
+      if (std::count(name.begin(), name.end(), ':') == 1 && name.hasSuffix(":version"))
       {
         tool_names.push_back(name.prefix(':'));
       }
@@ -85,7 +85,7 @@ namespace OpenMS
     }
 
     // default to ToolHandler
-    const auto& topp = ToolHandler::getTOPPToolList(true);
+    const auto& topp = ToolHandler::getTOPPToolList();
     if (topp.find(old_name) != topp.end())
     {
       new_name = old_name;

@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -10,10 +10,10 @@
 
 #include <OpenMS/DATASTRUCTURES/ToolDescription.h>
 #include <OpenMS/DATASTRUCTURES/String.h>
+#include <OpenMS/DATASTRUCTURES/StringListUtils.h>
 
 #include <map>
 
-class QStringList;
 
 namespace OpenMS
 {
@@ -52,7 +52,7 @@ namespace OpenMS
 public:
 
     /// Returns the list of official TOPP tools contained in the OpenMS/TOPP release.
-    static ToolListType getTOPPToolList(const bool includeGenericWrapper = false);
+    static ToolListType getTOPPToolList();
 
     /// get all types of a tool (empty if none)
     static StringList getTypes(const String& toolname);
@@ -69,18 +69,11 @@ public:
 
 private:
 
-    static Internal::ToolDescription getExternalTools_();
-    static QStringList getExternalToolConfigFiles_();
-    static void loadExternalToolConfig_();
-    static Internal::ToolDescription tools_external_;
-    static bool tools_external_loaded_;
-
     static std::vector<Internal::ToolDescription> getInternalTools_();
-    static QStringList getInternalToolConfigFiles_();
+    static StringList getInternalToolConfigFiles_();
     static void loadInternalToolConfig_();
     static std::vector<Internal::ToolDescription> tools_internal_;
     static bool tools_internal_loaded_;
   };
 
 } // namespace OpenMS
-

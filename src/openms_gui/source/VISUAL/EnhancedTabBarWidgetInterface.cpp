@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -9,6 +9,7 @@
 #include <OpenMS/VISUAL/EnhancedTabBarWidgetInterface.h>
 
 #include <OpenMS/VISUAL/EnhancedTabBar.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QObject>
 
@@ -31,7 +32,7 @@ namespace OpenMS
   {
     // use signal/slot to communicate, since directly storing the parent pointer for later access is dangerous (it may already be destroyed during program exit)
     QObject::connect(&this->sp_, &SignalProvider::aboutToBeDestroyed, parent, &EnhancedTabBar::removeId);
-    parent->addTab(caption.toQString(), window_id_);
+    parent->addTab(caption, window_id_);
     if (make_active_tab)
     {
       parent->show(window_id_);

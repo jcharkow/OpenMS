@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -6,17 +6,22 @@
 // $Authors: Lukas Zimmermann, Leon Bichmann $
 // --------------------------------------------------------------------------
 
+#include <OpenMS/ANALYSIS/ID/PercolatorFeatureSetHelper.h>
 #include <OpenMS/ANALYSIS/ID/PeptideIndexing.h>
 #include <OpenMS/APPLICATIONS/SearchEngineBase.h>
 #include <OpenMS/APPLICATIONS/TOPPBase.h>
 #include <OpenMS/DATASTRUCTURES/DefaultParamHandler.h>
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/CONCEPT/LogStream.h>
+#include <OpenMS/METADATA/PeptideIdentificationList.h>
+#include <OpenMS/METADATA/ProteinIdentification.h>
 #include <OpenMS/FORMAT/PepXMLFile.h>
 #include <OpenMS/CHEMISTRY/ProteaseDB.h>
+#include <OpenMS/SYSTEM/File.h>
 #include <OpenMS/CHEMISTRY/ModifiedPeptideGenerator.h>
 #include <OpenMS/SYSTEM/JavaInfo.h>
-#include <QtCore/QDir>
-#include <QtCore/QProcess>
+
+
 #include <iostream>
 
 using namespace OpenMS;
@@ -398,27 +403,29 @@ protected:
 
       if (!JavaInfo::canRun(this->java_exe, true))
       {
-        _fatalError("Java executable cannot be run!");
+        return ExitCodes::EXTERNAL_PROGRAM_NOTFOUND;
       }
 
-      // executable
+      // executable — resolve to absolute path since working dir changes to TMP
       this->exe = this->getStringOption_(TOPPMSFraggerAdapter::executable);
 
       if (this->exe.empty())
       {
         // looks for MSFRAGGER_PATH in the environment
-        QString qmsfragger_path = QProcessEnvironment::systemEnvironment().value("MSFRAGGER_PATH");
-        if (qmsfragger_path.isEmpty())
+        const char* msfragger_path_env = getenv("MSFRAGGER_PATH");
+        if (msfragger_path_env == nullptr || strlen(msfragger_path_env) == 0)
         {
-          _fatalError("No executable for MSFragger could be found!");
+          std::cerr << "No executable for MSFragger could be found (also not in MSFRAGGER_PATH)!";
+          return ExitCodes::EXTERNAL_PROGRAM_NOTFOUND;
         }
-        this->exe = qmsfragger_path;
+        this->exe = msfragger_path_env;
       }
+      this->exe = File::absolutePath(this->exe);
 
-      // input, output, database name
-      const String database = File::absolutePath(this->getStringOption_(TOPPMSFraggerAdapter::database)); // the working dir will be a TMP-dir, so we need absolute paths
-      input_file = (this->getStringOption_(TOPPMSFraggerAdapter::in)).toQString();
-      output_file = this->getStringOption_(TOPPMSFraggerAdapter::out);
+      // input, output, database name — the working dir will be a TMP-dir, so we need absolute paths
+      const String database = File::absolutePath(this->getStringOption_(TOPPMSFraggerAdapter::database));
+      input_file = File::absolutePath(this->getStringOption_(TOPPMSFraggerAdapter::in));
+      output_file = File::absolutePath(this->getStringOption_(TOPPMSFraggerAdapter::out));
       optional_output_file = this->getStringOption_(TOPPMSFraggerAdapter::opt_out);
 
       // tolerance
@@ -540,8 +547,7 @@ protected:
       std::vector< String > arg_fixmod_unimod = this->getStringList_(TOPPMSFraggerAdapter::fixed_modifications_unimod);
 
       // parameters have been read in and verified, they are now going to be written into the fragger.params file in a temporary directory
-      const QFileInfo tmp_param_file(working_directory.getPath().toQString(), "fragger.params");
-      this->parameter_file_path = String(tmp_param_file.absoluteFilePath());
+      this->parameter_file_path = File::getTemporaryFile();
 
       writeDebug_("Parameter file for MSFragger: '" + this->parameter_file_path + "'", TOPPMSFraggerAdapter::LOG_LEVEL_VERBOSE);
       writeDebug_("Working Directory: '" + working_directory.getPath() + "'", TOPPMSFraggerAdapter::LOG_LEVEL_VERBOSE);
@@ -835,14 +841,7 @@ protected:
       return ILLEGAL_PARAMETERS;
     }
 
-    QStringList process_params; // the actual process is Java, not MSFragger
-    process_params << "-Xmx" + QString::number(this->getIntOption_(java_heapmemory)) + "m"
-        << "-jar" << this->exe.toQString()
-        << this->parameter_file_path.toQString()
-        << input_file;
-
-    QProcess process_msfragger;
-    process_msfragger.setWorkingDirectory(working_directory.getPath().toQString());
+    std::vector<String> process_params = {"-Xmx" + String(this->getIntOption_(java_heapmemory)) + "m", "-jar", this->exe, this->parameter_file_path, input_file};
 
     if (this->debug_level_ >= TOPPMSFraggerAdapter::LOG_LEVEL_VERBOSE)
     {
@@ -855,22 +854,15 @@ protected:
       writeDebug_(command_line, TOPPMSFraggerAdapter::LOG_LEVEL_VERBOSE);
     }
 
-    process_msfragger.start(this->java_exe.toQString(), process_params);
-
-    if (!process_msfragger.waitForFinished(-1) || process_msfragger.exitCode() != 0)
+    TOPPBase::ExitCodes exit_code = runExternalProcess_(java_exe, process_params, working_directory.getPath());
+    if (exit_code != EXECUTION_OK)
     {
-      OPENMS_LOG_FATAL_ERROR << "FATAL: Invocation of MSFraggerAdapter has failed. Error code was: " << process_msfragger.exitCode() << std::endl;
-      const QString msfragger_stdout(process_msfragger.readAllStandardOutput());
-      const QString msfragger_stderr(process_msfragger.readAllStandardError());
-      writeLogError_(msfragger_stdout);
-      writeLogError_(msfragger_stderr);
-      writeLogError_(String(process_msfragger.exitCode()));
-      return EXTERNAL_PROGRAM_ERROR;
+      return exit_code;
     }
 
     // convert from pepXML to idXML
     String pepxmlfile = FileHandler::swapExtension(input_file, FileTypes::PEPXML);
-    std::vector<PeptideIdentification> peptide_identifications;
+    PeptideIdentificationList peptide_identifications;
     std::vector<ProteinIdentification> protein_identifications;
     PepXMLFile().load(pepxmlfile, protein_identifications, peptide_identifications);
     for (auto it = protein_identifications.begin(); it != protein_identifications.end(); it++)
@@ -889,18 +881,20 @@ protected:
     // if "reindex" parameter is set to true will perform reindexing
     if (auto ret = reindex_(protein_identifications, peptide_identifications); ret != EXECUTION_OK) return ret;
 
+    // add percolator features
+    StringList feature_set;
+    PercolatorFeatureSetHelper::addMSFRAGGERFeatures(feature_set);
+    protein_identifications.front().getSearchParameters().setMetaValue("extra_features", ListUtils::concatenate(feature_set, ","));
     FileHandler().storeIdentifications(output_file, protein_identifications, peptide_identifications, {FileTypes::IDXML});
 
     // remove the msfragger pepXML output from the user location
-
     if (optional_output_file.empty())
     {
       File::remove(pepxmlfile);
     }
     else
-    {
-      // rename the pepXML file to the opt_out
-      QFile::rename(pepxmlfile.toQString(), optional_output_file.toQString()); 
+    { // rename the pepXML file to the opt_out
+      File::rename(pepxmlfile, optional_output_file); 
     }
 
     // remove ".pepindex" database file
@@ -917,7 +911,7 @@ private:
   String exe;
 
   String parameter_file_path;
-  QString input_file;
+  String input_file;
   String output_file;
   String optional_output_file;
 

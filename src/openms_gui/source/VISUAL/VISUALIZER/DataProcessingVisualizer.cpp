@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -7,6 +7,7 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/VISUAL/VISUALIZER/DataProcessingVisualizer.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 //QT
 #include <QtWidgets/QLineEdit>
@@ -68,7 +69,7 @@ namespace OpenMS
     DateTime date;
     try
     {
-      date.set(completion_time_->text());
+      date.set(fromQString(completion_time_->text()));
       ptr_->setCompletionTime(date);
     }
     catch (exception & /*e*/)

@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -15,6 +15,7 @@
 #include <OpenMS/VISUAL/TOPPASToolVertex.h>
 #include <OpenMS/VISUAL/DIALOGS/TOPPASInputFilesDialog.h>
 #include <OpenMS/VISUAL/MISC/GUIHelpers.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QDir>
@@ -24,6 +25,11 @@ namespace OpenMS
   TOPPASInputFileListVertex::TOPPASInputFileListVertex(const QStringList& files)
   {
     setFilenames(files);
+  }
+
+  std::unique_ptr<TOPPASVertex> TOPPASInputFileListVertex::clone() const
+  {
+    return std::make_unique<TOPPASInputFileListVertex>(*this);
   }
 
   String TOPPASInputFileListVertex::getName() const
@@ -71,7 +77,7 @@ namespace OpenMS
     QStringList text_l = TOPPASVertex::TOPPASFilenames(getFileNames()).getSuffixCounts();
     text = text_l.join(" | ");
     // might get very long, especially if node was not reached yet, so trim
-    text = text.left(15) + " ...";
+    if (text.length() > 19) text = text.left(15) + " ...";
     text_boundings = painter->boundingRect(QRectF(0, 0, 0, 0), Qt::AlignCenter, text);
     painter->drawText(-(int)(text_boundings.width() / 2.0), 35 - (int)(text_boundings.height() / 4.0), text);
   }
@@ -85,9 +91,9 @@ namespace OpenMS
   {
     QStringList fl = getFileNames();
     std::set<std::string> unique_names;
-    foreach(const QString& file, fl)
+    for (const QString& file : fl)
     {
-      if (!File::exists(file))
+      if (!File::exists(fromQString(file)))
       {
         return false;
       }
@@ -110,13 +116,13 @@ namespace OpenMS
     for (int i = 0; i < fl.size(); ++i) // collect unique directories
     {
       QFileInfo fi(fl[i]);
-      directories.insert(String(QFileInfo(fi.canonicalFilePath()).path()));
+      directories.insert(fromQString(QFileInfo(fi.canonicalFilePath()).path()));
     }
 
     // open them
     for (std::set<String>::const_iterator it = directories.begin(); it != directories.end(); ++it)
     {
-      QString path = QDir::toNativeSeparators(it->toQString());
+      QString path = QDir::toNativeSeparators(toQString(*it));
       GUIHelpers::openFolder(path);
     }
   }
@@ -167,7 +173,7 @@ namespace OpenMS
     setToolTip(files.join("\n"));
 
     // set current working dir when opening files to the last file
-    cwd_ = File::path(files.back()).toQString();
+    cwd_ = toQString(File::path(fromQString(files.back())));
   }
 
   void TOPPASInputFileListVertex::outEdgeHasChanged()

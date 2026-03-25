@@ -714,7 +714,6 @@ OSWPeptidePrecursor's
 OSWPeptidePrecursors
 OnDiskExperiment
 OpenBoxes
-OpenPepXLLF
 OpenSwathAlgoConfig
 OpenXQuest
 OutputFile
@@ -3291,7 +3290,7 @@ humanE
 humanF
 humanG
 iRprop
-includedoc
+include
 incrementing
 indexListOffset
 indexedmzML

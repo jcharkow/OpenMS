@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -7,6 +7,7 @@
 // --------------------------------------------------------------------------s
 
 #include <OpenMS/VISUAL/VISUALIZER/SoftwareVisualizer.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 //QT
 #include <QtWidgets/QTextEdit>
@@ -39,8 +40,8 @@ namespace OpenMS
 
   void SoftwareVisualizer::store()
   {
-    ptr_->setName(software_name_->text());
-    ptr_->setVersion(software_version_->text());
+    ptr_->setName(fromQString(software_name_->text()));
+    ptr_->setVersion(fromQString(software_version_->text()));
 
     temp_ = (*ptr_);
   }

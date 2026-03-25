@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -6,14 +6,13 @@
 // $Authors: Lars Nilse $
 // --------------------------------------------------------------------------
 
+#pragma once
+
 #include <vector>
 
 #include <OpenMS/KERNEL/StandardTypes.h>
 #include <OpenMS/DATASTRUCTURES/DPosition.h>
 #include <OpenMS/DATASTRUCTURES/DBoundingBox.h>
-
-#ifndef OPENMS_COMPARISON_CLUSTERING_GRIDBASEDCLUSTER_H
-#define OPENMS_COMPARISON_CLUSTERING_GRIDBASEDCLUSTER_H
 
 namespace OpenMS
 {
@@ -107,4 +106,3 @@ class OPENMS_DLLAPI GridBasedCluster
 
 }
 
-#endif /* OPENMS_COMPARISON_CLUSTERING_GRIDBASEDCLUSTER_H */

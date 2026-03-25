@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -12,6 +12,7 @@
 
 #include <OpenMS/VISUAL/PlotWidget.h>
 #include <OpenMS/VISUAL/VISITORS/LayerStatistics.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QtWidgets/QPushButton>
 
@@ -52,7 +53,7 @@ namespace OpenMS
     }
     else
     {
-      qobject_cast<PlotWidget*>(lsd->parent())->showMetaDistribution(String(text), hist);
+      qobject_cast<PlotWidget*>(lsd->parent())->showMetaDistribution(fromQString(text), hist);
     }
   }
 

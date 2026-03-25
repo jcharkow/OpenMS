@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -33,10 +33,7 @@
 #include <OpenMS/VISUAL/APPLICATIONS/TOPPViewBase.h>
 #include <OpenMS/VISUAL/APPLICATIONS/MISC/QApplicationTOPP.h>
 #include <OpenMS/SYSTEM/StopWatch.h>
-
-
-using namespace OpenMS;
-using namespace std;
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 //STL
 #include <iostream>
@@ -49,6 +46,10 @@ using namespace std;
 #   endif
 #   include <Windows.h>
 #endif
+
+
+using namespace OpenMS;
+using namespace std;
 
 //-------------------------------------------------------------
 // command line name of this tool
@@ -87,6 +88,10 @@ void print_usage()
 
 int main(int argc, const char** argv)
 {
+ #ifdef OPENMS_WINDOWSPLATFORM
+  qputenv("QT_QPA_PLATFORM", "windows:darkmode=0"); // disable dark mode on Windows, since our buttons etc are not designed for it
+#endif
+
   //list of all the valid options
   std::map<std::string, std::string> valid_options, valid_flags, option_lists;
   valid_flags["--help"] = "help";
@@ -153,18 +158,19 @@ int main(int argc, const char** argv)
     }
 
     TOPPViewBase tb(mode, verbosity);
-    a.connect(&a, &QApplicationTOPP::fileOpen, &tb, &TOPPViewBase::openFile);
+    a.connect(&a, &QApplicationTOPP::fileOpen, &tb, [&tb](const QString& file) { tb.openFile(fromQString(file)); });
     tb.show();
 
     // Create the splashscreen that is displayed while the application loads (version is drawn dynamically)
     QPixmap qpm(":/TOPPView_Splashscreen.png");
     QPainter pt_ver(&qpm);
     pt_ver.setFont(QFont("Helvetica [Cronyx]", 15, 2, true));
-    pt_ver.setPen(QColor(44, 50, 152));
-    pt_ver.drawText(490, 94, VersionInfo::getVersion().toQString());
+    pt_ver.setPen(Qt::black);
+    // draw version number dynamcially on top left corner
+    pt_ver.drawText(5, 5 + 15, toQString(VersionInfo::getVersion()));
     QSplashScreen splash_screen(qpm);
     splash_screen.show();
-
+    
     QApplication::processEvents();
     StopWatch stop_watch;
     stop_watch.start();
@@ -181,8 +187,8 @@ int main(int argc, const char** argv)
     }
 
     // We are about to show the application.
-    // Proper time to remove the splashscreen, if at least 1.5 seconds have passed...
-    while (stop_watch.getClockTime() < 1.5) /*wait*/
+    // Proper time to remove the splashscreen, if at least 3 seconds have passed...
+    while (stop_watch.getClockTime() < 3.0) /*wait*/
     {
     }
     stop_watch.stop();

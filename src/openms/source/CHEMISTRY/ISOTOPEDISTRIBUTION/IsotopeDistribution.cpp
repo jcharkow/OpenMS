@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -32,7 +32,7 @@ namespace OpenMS
   
   IsotopeDistribution::IsotopeDistribution()
   {
-    distribution_.push_back(Peak1D(0, 1));
+    distribution_.emplace_back(0, 1);
   }
 
   IsotopeDistribution& IsotopeDistribution::operator=(const IsotopeDistribution & iso)

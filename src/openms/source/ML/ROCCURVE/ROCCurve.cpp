@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -51,7 +51,7 @@ namespace OpenMS::Math
 
     void ROCCurve::insertPair(double score, bool clas)
     {
-      score_clas_pairs_.emplace_back(std::make_pair(score, clas));
+      score_clas_pairs_.emplace_back(score, clas);
       if (clas)
       {
         ++pos_;
@@ -121,7 +121,7 @@ namespace OpenMS::Math
       {
         if (fabs(cit->first - prevsim) > 1e-8)
         {
-          polygon.emplace_back(DPosition<2>((double)falsePos / neg_, (double)truePos / pos_));
+          polygon.emplace_back((double)falsePos / neg_, (double)truePos / pos_);
         }
         if (cit->second)
         {
@@ -132,7 +132,7 @@ namespace OpenMS::Math
           ++falsePos;
         }
       }
-      polygon.emplace_back(DPosition<2>(1, 1));
+      polygon.emplace_back(1, 1);
       std::sort(polygon.begin(), polygon.end());
       DPosition<2> last(0, 0);
       double area(0);
@@ -163,7 +163,7 @@ namespace OpenMS::Math
         pair.second ? ++truePos : ++falsePos;
         if (((double)++position / score_clas_pairs_.size()) * resolution > result.size())
         {
-          result.emplace_back(std::make_pair((double)falsePos / neg_, (double)truePos / pos_));
+          result.emplace_back((double)falsePos / neg_, (double)truePos / pos_);
         }
       }
       return result;

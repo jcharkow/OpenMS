@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -12,6 +12,7 @@
 
 
 #include <OpenMS/VISUAL/Plot1DWidget.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 // QT includes
 #include <QtWidgets/QButtonGroup>
@@ -38,12 +39,12 @@ namespace OpenMS
       const auto& layer = cc->getLayer(i);
       if (layer.flipped)
       {
-        ui_->layer_list_2->addItem(layer.getName().toQString());
+        ui_->layer_list_2->addItem(toQString(layer.getName()));
         layer_indices_2_.push_back(i);
       }
       else
       {
-        ui_->layer_list_1->addItem(layer.getName().toQString());
+        ui_->layer_list_1->addItem(toQString(layer.getName()));
         layer_indices_1_.push_back(i);
       }
     }

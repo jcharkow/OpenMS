@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -25,6 +25,7 @@ namespace OpenMS
     MILLISECOND,               ///< milliseconds
     VSSC,                      ///< volt-second per square centimeter (i.e. 1/K_0)
     FAIMS_COMPENSATION_VOLTAGE,///< compensation voltage
+    CCS,                       ///< collisional cross section (square angstrom)
     SIZE_OF_DRIFTTIMEUNIT
   };
 
@@ -37,15 +38,21 @@ namespace OpenMS
 
   /// convert a DriftTimeUnit enum to String
   /// @throws Exception::InvalidValue if @p value is SIZE_OF_DRIFTTIMEUNIT
-  OPENMS_DLLAPI const std::string& toString(const DriftTimeUnit value);
+  OPENMS_DLLAPI const std::string& driftTimeUnitToString(const DriftTimeUnit value);
 
   /// Different ways to represent ion mobility data in a spectrum
+  /// Note: 
+  /// 1. MIXED is only used for MSExperiment, not for MSSpectrum
+  /// 2. UNKNOWN should be used if the format is not yet determined. 
+  /// FileHandler or e.g. IM peak picker should ideally set the format a known value.
   enum class IMFormat
   {
     NONE,            ///< no ion mobility
-    CONCATENATED,    ///< ion mobility frame is stacked in a single spectrum (i.e. has an IM float data array)
-    MULTIPLE_SPECTRA,///< ion mobility is recorded as multiple spectra per frame (i.e. has one IM annotation per spectrum)
-    MIXED,           ///< an MSExperiment contains both CONCATENATED and MULTIPLE_SPECTRA
+    IM_PEAK,         ///< full TIMS frame / per-scan IM-resolved data: ion mobility is annotated per peak in a float data array
+    IM_SPECTRUM,     ///< conventional spectrum with one precursor IM value (i.e. has one IM annotation per spectrum via getDriftTime())
+    MIXED,           ///< an MSExperiment contains both IM_PEAK and IM_SPECTRUM
+    CENTROIDED,      ///< ion mobility of peaks after centroiding in IM dimension. Ion mobility is annotated in a single float data array (i.e., each peak might have a different IM value in the data array); identical to IM_PEAK in terms of data layout.
+    UNKNOWN,         ///< ion mobility format not yet determined. 
     SIZE_OF_IMFORMAT
   };
   /// Names of IMFormat
@@ -56,7 +63,7 @@ namespace OpenMS
   OPENMS_DLLAPI IMFormat toIMFormat(const std::string& IM_format);
   /// convert an IMFormat enum to String
   /// @throws Exception::InvalidValue if @p value is SIZE_OF_IMFORMAT
-  OPENMS_DLLAPI const std::string& toString(const IMFormat value);
+  OPENMS_DLLAPI const std::string& imFormatToString(const IMFormat value);
 
   class OPENMS_DLLAPI IMTypes
   {
@@ -65,7 +72,7 @@ namespace OpenMS
     inline static constexpr double DRIFTTIME_NOT_SET = -1.0;
 
     /// Checks the all spectra for their type (see overload)
-    /// and returns the common type (or IMFormat::MIXED if both CONCATENATED and MULTIPLE_SPECTRA are present)
+    /// and returns the common type (or IMFormat::MIXED if both IM_PEAK and IM_SPECTRUM are present)
     /// If @p exp is empty or contains no IM spectra at all, IMFormat::NONE is returned
     /// @throws Exception::InvalidValue if IM values are annotated as single drift time and float array for any single spectrum
     static IMFormat determineIMFormat(const MSExperiment& exp);
@@ -74,7 +81,7 @@ namespace OpenMS
         @brief Checks for existence of a single driftTime (using spec.getDriftTime()) or an ion-mobility float data array (using spec.hasIMData()) 
         
         If neither is found, IMFormat::NONE is returned.
-        If a single drift time (== IMFormat::MULTIPLE_SPECTRA) is found, but no unit, a warning is issued.
+        If a single drift time (== IMFormat::IM_SPECTRUM) is found, but no unit, a warning is issued.
 
         @throws Exception::InvalidValue if IM values are annotated as single drift time and float array in the given spectrum
     */

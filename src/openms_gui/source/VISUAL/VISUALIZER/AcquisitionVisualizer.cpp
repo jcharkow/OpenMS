@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -8,6 +8,7 @@
 
 //OpenMS
 #include <OpenMS/VISUAL/VISUALIZER/AcquisitionVisualizer.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 //QT
 #include <QtWidgets/QLineEdit>
@@ -36,12 +37,12 @@ namespace OpenMS
 
   void AcquisitionVisualizer::update_()
   {
-    acquisitionnumber_->setText(temp_.getIdentifier().toQString());
+    acquisitionnumber_->setText(toQString(temp_.getIdentifier()));
   }
 
   void AcquisitionVisualizer::store()
   {
-    ptr_->setIdentifier(acquisitionnumber_->text());
+    ptr_->setIdentifier(fromQString(acquisitionnumber_->text()));
 
     temp_ = (*ptr_);
   }

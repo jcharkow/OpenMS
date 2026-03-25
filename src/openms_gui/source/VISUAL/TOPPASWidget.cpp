@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -12,6 +12,7 @@
 #include <OpenMS/VISUAL/TOPPASVertex.h>
 #include <OpenMS/VISUAL/TOPPASEdge.h>
 #include <OpenMS/CONCEPT/Types.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 
 // Qt
@@ -28,7 +29,7 @@ namespace OpenMS
   TOPPASWidget::TOPPASWidget(const Param & /*preferences*/, QWidget * parent, const String & tmp_path) :
     QGraphicsView(parent),
     EnhancedTabBarWidgetInterface(),
-    scene_(new TOPPASScene(this, tmp_path.toQString()))
+    scene_(new TOPPASScene(this, toQString(tmp_path)))
   {
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_AlwaysShowToolTips);
@@ -92,14 +93,14 @@ namespace OpenMS
 
     if (event->mimeData()->hasUrls())
     {
-      String filename = String(event->mimeData()->urls().front().toLocalFile());
+      String filename = fromQString(event->mimeData()->urls().front().toLocalFile());
       emit sendStatusMessage("loading drop file '" + filename + "' (press CRTL while dropping to insert into current window)", 0);
       // open pipeline in new window (or in current if CTRL is pressed)
-      emit pipelineDroppedOnWidget(filename, event->keyboardModifiers() != Qt::ControlModifier);
+      emit pipelineDroppedOnWidget(filename, event->modifiers() != Qt::ControlModifier);
     }
     else
     {
-      QPointF scene_pos = mapToScene(event->pos());
+      QPointF scene_pos = mapToScene(event->position().toPoint());
       emit toolDroppedOnWidget(scene_pos.x(), scene_pos.y());
     }
     event->acceptProposedAction();
@@ -175,7 +176,7 @@ namespace OpenMS
 
   }
 
-  void TOPPASWidget::enterEvent(QEvent * /*e*/)
+  void TOPPASWidget::enterEvent(QEnterEvent* /*e*/)
   {
 #ifndef Q_WS_MAC
     setFocus();

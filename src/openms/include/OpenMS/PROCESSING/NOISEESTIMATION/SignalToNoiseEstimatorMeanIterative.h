@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -11,6 +11,7 @@
 
 #include <OpenMS/PROCESSING/NOISEESTIMATION/SignalToNoiseEstimator.h>
 #include <OpenMS/CONCEPT/Exception.h>
+#include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/DATASTRUCTURES/ListUtils.h>
 #include <vector>
 #include <algorithm> //for std::max_element
@@ -136,7 +137,7 @@ protected:
 
 
     /** calculate StN values for all datapoints given, by using a sliding window approach
-                  @param c raw data
+                  @param[in] c raw data
                   @exception Throws Exception::InvalidValue
            */
     void computeSTN_(const Container& c) override
@@ -218,7 +219,7 @@ protected:
 
       if (max_intensity_ < 0)
       {
-        std::cerr << "TODO SignalToNoiseEstimatorMedian: the max_intensity_ value should be positive! " << max_intensity_ << std::endl;
+        OPENMS_LOG_WARN << "SignalToNoiseEstimatorMeanIterative: the max_intensity_ value should be positive! " << max_intensity_ << std::endl;
         return;
       }
 
@@ -349,12 +350,12 @@ protected:
       // warn if percentage of sparse windows is above 20%
       if (sparse_window_percent > 20)
       {
-        std::cerr << "WARNING in SignalToNoiseEstimatorMeanIterative: "
-                  << sparse_window_percent
-                  << "% of all windows were sparse. You should consider increasing 'win_len' or increasing 'min_required_elements'"
-                  << " You should also check the MaximalIntensity value (or the parameters for its heuristic estimation)"
-                  << " If it is too low, then too many high intensity peaks will be discarded, which leads to a sparse window!"
-                  << std::endl;
+        OPENMS_LOG_WARN << "WARNING in SignalToNoiseEstimatorMeanIterative: "
+                        << sparse_window_percent
+                        << "% of all windows were sparse. You should consider increasing 'win_len' or increasing 'min_required_elements'"
+                        << " You should also check the MaximalIntensity value (or the parameters for its heuristic estimation)"
+                        << " If it is too low, then too many high intensity peaks will be discarded, which leads to a sparse window!"
+                        << std::endl;
       }
 
       return;

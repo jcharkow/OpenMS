@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -13,13 +13,16 @@
 #include <OpenMS/PROCESSING/ID/IDFilter.h>
 #include <OpenMS/FORMAT/CsvFile.h>
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/CONCEPT/LogStream.h>
+#include <OpenMS/KERNEL/MSExperiment.h>
+#include <OpenMS/METADATA/PeptideIdentificationList.h>
+#include <OpenMS/METADATA/ProteinIdentification.h>
 #include <OpenMS/FORMAT/FileTypes.h>
 #include <OpenMS/FORMAT/PepXMLFile.h>
 #include <OpenMS/KERNEL/StandardTypes.h>
 #include <OpenMS/SYSTEM/File.h>
 #include <OpenMS/SYSTEM/JavaInfo.h>
-
-#include <QProcessEnvironment>
+#include <OpenMS/ANALYSIS/ID/IDScoreSwitcherAlgorithm.h>
 
 #include <cstddef>
 #include <fstream>
@@ -475,7 +478,7 @@ protected:
     FileHandler fh;
     FileTypes::Type in_type = fh.getType(id);
 
-    vector<PeptideIdentification> pep_ids;
+    PeptideIdentificationList pep_ids;
     vector<ProteinIdentification> prot_ids;
 
     PeakMap exp;
@@ -493,6 +496,18 @@ protected:
       if (!pep_ids.empty())
       {
         IDFilter::keepNBestHits(pep_ids, 1); // LuciPHOR2 only calculates the best hit
+        
+        // Switch to PEP score type similar to BayesianProteinInferenceAlgorithm
+        IDScoreSwitcherAlgorithm switcher;
+        Size counter(0);
+        try
+        {
+          switcher.switchToGeneralScoreType(pep_ids, IDScoreSwitcherAlgorithm::ScoreType::PEP, counter);
+        }
+        catch (OpenMS::Exception::MissingInformation& /*e*/)
+        {
+          OPENMS_LOG_WARN << "Warning: Could not switch to PEP score type. Continuing with current score type." << std::endl;
+        }
       }
       else
       {
@@ -531,25 +546,25 @@ protected:
     writeConfigurationFile_(conf_file, config_map);
 
     // memory for JVM
-    QString java_memory = "-Xmx" + QString::number(getIntOption_("java_memory")) + "m";
+    String java_memory = "-Xmx" + String(getIntOption_("java_memory")) + "m";
     int java_permgen = getIntOption_("java_permgen");
 
-    QString executable = getStringOption_("executable").toQString();
+    String executable = getStringOption_("executable");
 
-    QStringList process_params; // the actual process is Java, not LuciPHOr2!
-    process_params << java_memory;
-    
+    std::vector<String> process_params; // the actual process is Java, not LuciPHOr2!
+    process_params.push_back(java_memory);
+
     if (java_permgen > 0)
     {
-      process_params << "-XX:MaxPermSize=" + QString::number(java_permgen);
+      process_params.push_back("-XX:MaxPermSize=" + String(java_permgen));
     }
 
-    process_params << "-jar" << executable << conf_file.toQString();
+    process_params.push_back("-jar"); process_params.push_back(executable); process_params.push_back(conf_file);
 
     //-------------------------------------------------------------
     // LuciPHOr2
     //-------------------------------------------------------------
-    TOPPBase::ExitCodes exit_code = runExternalProcess_(java_executable.toQString(), process_params);
+    TOPPBase::ExitCodes exit_code = runExternalProcess_(java_executable, process_params);
     if (exit_code != EXECUTION_OK)
     {
       return exit_code;
@@ -573,7 +588,7 @@ protected:
     //-------------------------------------------------------------
     // writing output - merge LuciPHOr2 result to idXML
     //-------------------------------------------------------------
-    vector<PeptideIdentification> pep_out;
+    PeptideIdentificationList pep_out;
     map<String, String> target_mods_conv;
     ret = convertTargetModification_(target_mods, target_mods_conv);
     if (ret != EXECUTION_OK)
@@ -637,7 +652,7 @@ protected:
       new_pep_id.setScoreType("Luciphor_delta_score");
       new_pep_id.setHigherScoreBetter(true);
       new_pep_id.setHits(scored_peptides);
-      new_pep_id.assignRanks();
+      new_pep_id.sort();
       pep_out.push_back(new_pep_id);
     }
 

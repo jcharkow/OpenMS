@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -9,6 +9,7 @@
 #include <OpenMS/VISUAL/VISUALIZER/PeptideIdentificationVisualizer.h>
 #include <OpenMS/DATASTRUCTURES/DateTime.h>
 #include <OpenMS/VISUAL/MetaDataBrowser.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 //QT
 #include <QtWidgets/QLineEdit>
@@ -53,9 +54,9 @@ namespace OpenMS
     // id of the item in the tree
     tree_id_ = tree_item_id;
 
-    identifier_->setText(temp_.getIdentifier().toQString());
+    identifier_->setText(toQString(temp_.getIdentifier()));
     identification_threshold_->setText(QString::number(temp_.getSignificanceThreshold()));
-    score_type_->setText(temp_.getScoreType().toQString());
+    score_type_->setText(toQString(temp_.getScoreType()));
     higher_better_->setCurrentIndex(temp_.isHigherScoreBetter());
   }
 
@@ -73,9 +74,9 @@ namespace OpenMS
 
   void PeptideIdentificationVisualizer::store()
   {
-    ptr_->setIdentifier(identifier_->text());
+    ptr_->setIdentifier(fromQString(identifier_->text()));
     ptr_->setSignificanceThreshold(identification_threshold_->text().toFloat());
-    ptr_->setScoreType(score_type_->text());
+    ptr_->setScoreType(fromQString(score_type_->text()));
     ptr_->setHigherScoreBetter(higher_better_->currentIndex());
 
     temp_ = (*ptr_);

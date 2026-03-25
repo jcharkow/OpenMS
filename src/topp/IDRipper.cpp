@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -10,6 +10,8 @@
 #include <OpenMS/APPLICATIONS/TOPPBase.h>
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/METADATA/PeptideIdentificationList.h>
+#include <OpenMS/METADATA/ProteinIdentification.h>
 #include <OpenMS/SYSTEM/File.h>
 #include <QDir>
 
@@ -97,14 +99,14 @@ protected:
     bool numeric_filenames = getFlag_("numeric_filenames");
     bool split_ident_runs = getFlag_("split_ident_runs");
 
-    String output_directory = QFileInfo(out_dir.toQString()).absoluteFilePath().toStdString();
+    String output_directory = QFileInfo(QString::fromStdString(out_dir)).absoluteFilePath().toStdString();
 
     //-------------------------------------------------------------
     // calculations
     //-------------------------------------------------------------
 
     vector<ProteinIdentification> proteins;
-    vector<PeptideIdentification> peptides;
+    PeptideIdentificationList peptides;
     FileHandler().loadIdentifications(file_name, proteins, peptides, {FileTypes::IDXML});
 
     // ensure protein and peptide identifications are presented, otherwise we don't have to rip anything anyhow
@@ -128,24 +130,24 @@ protected:
       const IDRipper::RipFileIdentifier& rfi = it->first;
       const IDRipper::RipFileContent& rfc = it->second;
 
-      QString output = output_directory.toQString();
+      QString output = QString::fromStdString(output_directory);
 
       String out_fname;
       if (numeric_filenames)
       {
         String s_ident_run_idx = split_ident_runs ? '_' + String(rfi.ident_run_idx) : "";
         String s_file_origin_idx = '_' + String(rfi.file_origin_idx);
-        out_fname = QFileInfo(file_name.toQString()).completeBaseName().toStdString() + s_ident_run_idx + s_file_origin_idx + ".idXML";
+        out_fname = QFileInfo(QString::fromStdString(file_name)).completeBaseName().toStdString() + s_ident_run_idx + s_file_origin_idx + ".idXML";
       }
       else
       {
-        out_fname = QFileInfo(rfi.out_basename.toQString()).completeBaseName().toStdString() + ".idXML";
+        out_fname = QFileInfo(QString::fromStdString(rfi.out_basename)).completeBaseName().toStdString() + ".idXML";
       }
 
-      String out = QDir::toNativeSeparators(output.append(QString("/")).append(out_fname.toQString())).toStdString();
+      String out = QDir::toNativeSeparators(output.append(QString("/")).append(QString::fromStdString(out_fname))).toStdString();
       OPENMS_LOG_INFO << "Storing file: '" << out << "'." << std::endl;
 
-      QDir dir(output_directory.toQString());
+      QDir dir(QString::fromStdString(output_directory));
       FileHandler().storeIdentifications(out, rfc.prot_idents, rfc.pep_idents, {FileTypes::IDXML});
     }
     return EXECUTION_OK;

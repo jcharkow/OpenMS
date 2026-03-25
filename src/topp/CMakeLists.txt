@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2023, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+# Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 # SPDX-License-Identifier: BSD-3-Clause
 # --------------------------------------------------------------------------
 # $Maintainer: Stephan Aiche, Chris Bielow $
@@ -40,6 +40,7 @@ target_link_libraries(${PROJECT_NAME} OpenMS) # Link the executable with OpenMS
   else()
     add_executable(${i} ${i}.cpp)
     target_link_libraries(${i} OpenMS)
+    openms_add_executable_compiler_flags(${i})
   endif()  
   
   # we also want to install each topp tool
@@ -54,6 +55,7 @@ if(WITH_GUI)
   foreach(i ${TOPP_executables_with_GUIlib})
     add_executable(${i} ${i}.cpp)
     # we also want to install each topp tool
+    openms_add_executable_compiler_flags(${i})
     install_tool(${i})
     target_link_libraries(${i} OpenMS OpenMS_GUI)
   endforeach(i)
@@ -65,6 +67,22 @@ endif()
 target_link_libraries(FileMerger Boost::regex)
 target_link_libraries(DecoyDatabase Boost::regex)
 target_link_libraries(NucleicAcidSearchEngine Boost::regex)
+target_link_libraries(IsobaricWorkflow Eigen3::Eigen)
+target_link_libraries(MetaProSIP Eigen3::Eigen)
+
+# Qt6::Core for tools that directly use Qt headers (optional when Qt not available)
+if(TARGET Qt6::Core)
+  target_link_libraries(AssayGeneratorMetaboSirius Qt6::Core)
+  target_link_libraries(CometAdapter Qt6::Core)
+  target_link_libraries(IDRipper Qt6::Core)
+  target_link_libraries(MetaProSIP Qt6::Core)
+  target_link_libraries(MzMLSplitter Qt6::Core)
+  target_link_libraries(OpenSwathFileSplitter Qt6::Core)
+  target_link_libraries(OpenSwathWorkflow Qt6::Core)
+  target_link_libraries(QCEmbedder Qt6::Core)
+  target_link_libraries(QCExtractor Qt6::Core)
+  target_link_libraries(QCShrinker Qt6::Core)
+endif()
 
 # collection target
 add_custom_target(TOPP)

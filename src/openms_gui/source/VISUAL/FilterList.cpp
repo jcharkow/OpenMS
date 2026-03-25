@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -10,6 +10,7 @@
 #include <ui_FilterList.h>
 
 #include <OpenMS/VISUAL/DIALOGS/DataFilterDialog.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QMenu>
 
@@ -51,13 +52,18 @@ namespace OpenMS::Internal
 
     void FilterList::set(const DataFilters& filters)
     {
+      if (filters == filters_)
+      { // avoid unnecessary updates
+        return;
+      }
+
       filters_ = filters;
 
       ui_->filter->clear();
       for (Size i = 0; i < filters.size(); ++i)
       {
         QListWidgetItem* item = new QListWidgetItem(ui_->filter);
-        item->setText(filters[i].toString().toQString());
+        item->setText(toQString(filters[i].toString()));
       }
       // update check box
       ui_->check->setChecked(filters.isActive());

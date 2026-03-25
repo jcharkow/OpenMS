@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -16,8 +16,7 @@
 #include <OpenMS/SYSTEM/File.h>
             
 #include <fstream>
-
-#include <QDir>
+#include <filesystem>
 
 using namespace OpenMS;
 using namespace std;
@@ -45,7 +44,7 @@ START_SECTION((static bool canRun(String& python_executable, String& error_msg))
   if (PythonInfo::canRun(py, error_msg))
   { 
     TEST_EQUAL(File::exists(py), true)
-    TEST_EQUAL(QDir::isRelativePath(py.toQString()), false)
+    TEST_EQUAL(std::filesystem::path(std::string(py)).is_relative(), false)
   }
 
 END_SECTION

@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 // 
 // --------------------------------------------------------------------------
@@ -14,7 +14,7 @@
 
 #include <OpenMS/SYSTEM/File.h>
 
-#include <QDir>
+#include <filesystem>
 
 ///////////////////////////
 
@@ -46,8 +46,7 @@ END_SECTION
 
 START_SECTION(FIAMSScheduler)
 {
-  QDir d;
-  String tmp_dir = d.currentPath().toStdString()  + "/"; // write output to current directory
+  String tmp_dir = std::filesystem::current_path().generic_string()  + "/"; // write output to current directory
   FIAMSScheduler fia_scheduler(
       String(OPENMS_GET_TEST_DATA_PATH("FIAMS_input/params_test.csv")),
       String(OPENMS_GET_TEST_DATA_PATH("")),

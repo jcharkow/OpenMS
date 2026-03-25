@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -20,6 +20,7 @@
 #include <OpenMS/VISUAL/LayerDataPeak.h>
 
 #include <OpenMS/VISUAL/Plot2DCanvas.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QColor>
 #include <QPainter>
@@ -42,7 +43,6 @@ namespace OpenMS
     ConvexHull2D::PointArrayType ch_points = hull.getHullPoints();
     points.resize((int)ch_points.size());
     UInt index = 0;
-    QPoint pos;
     // iterate over hull points
     for (ConvexHull2D::PointArrayType::const_iterator it = ch_points.begin(); it != ch_points.end(); ++it, ++index)
     {
@@ -108,7 +108,7 @@ namespace OpenMS
         }
         if (id.getHits().size() > 1)
           sequence += "...";
-        painter->drawText(pos.x() + 10, pos.y() + 10, sequence.toQString());
+        painter->drawText(pos.x() + 10, pos.y() + 10, toQString(sequence));
       }
     }
   }
@@ -124,7 +124,7 @@ namespace OpenMS
   void Painter2DPeak::paint(QPainter* painter, Plot2DCanvas* canvas, int layer_index)
   {
     // renaming some values for readability
-    const auto& peak_map = *layer_->getPeakData();
+    const auto& peak_map = layer_->getPeakData()->getMSExperiment();
 
     // skip empty peak maps
     if (peak_map.empty())
@@ -242,7 +242,7 @@ namespace OpenMS
     QVector<QPolygon> coloredPoints((int)layer_->gradient.precalculatedSize());
 
     const double snap_factor = canvas->snap_factors_[layer_index];
-    const auto& map = *layer_->getPeakData();
+    const auto& map = layer_->getPeakData()->getMSExperiment();;
     const auto& area = canvas->visible_area_.getAreaUnit();
     const auto end_area = map.areaEndConst();
     // for IM data, use whatever is there. For RT/mz data, use MSlevel 1
@@ -344,7 +344,7 @@ namespace OpenMS
     // set painter to black (we operate directly on the pixels for all colored data)
     painter.setPen(Qt::black);
     const double snap_factor = canvas->snap_factors_[layer_index];
-    const auto& map = *layer_->getPeakData();
+    const auto& map = layer_->getPeakData()->getMSExperiment();
     const auto& area = canvas->visible_area_.getAreaUnit();
 
     // for IM data, use whatever is there. For RT/mz data, use MSlevel 1
@@ -451,7 +451,7 @@ namespace OpenMS
 
   void Painter2DPeak::paintPrecursorPeaks_(QPainter& painter, Plot2DCanvas* canvas)
   {
-    const auto& peak_map = *layer_->getPeakData();
+    const auto& peak_map = layer_->getPeakData()->getMSExperiment();
 
     QPen p;
     p.setColor(Qt::black);
@@ -510,7 +510,7 @@ namespace OpenMS
 
   void Painter2DChrom::paint(QPainter* painter, Plot2DCanvas* canvas, int /*layer_index*/)
   {
-    const PeakMap& exp = *layer_->getChromatogramData();
+    const PeakMap& exp = layer_->getChromatogramData()->getMSExperiment();
     // TODO CHROM implement layer filters
 
     // paint chromatogram rt start and end as line
@@ -574,7 +574,7 @@ namespace OpenMS
         QColor color;
         if (f.metaValueExists(5))
         {
-          color = QColor(f.getMetaValue(5).toQString());
+          color = QColor(toQString(String(f.getMetaValue(5))));
         }
         else
         {
@@ -597,13 +597,13 @@ namespace OpenMS
             Size maxHits = (layer_->label == LayerDataBase::L_ID_ALL) ? f.getPeptideIdentifications()[0].getHits().size() : 1;
             for (Size j = 0; j < maxHits; ++j)
             {
-              painter->drawText(pos.x() + 10, pos.y() + 10 + int(j) * line_spacing, f.getPeptideIdentifications()[0].getHits()[j].getSequence().toString().toQString());
+              painter->drawText(pos.x() + 10, pos.y() + 10 + int(j) * line_spacing, toQString(f.getPeptideIdentifications()[0].getHits()[j].getSequence().toString()));
             }
           }
           else if (layer_->label == LayerDataBase::L_META_LABEL)
           {
             painter->setPen(Qt::darkBlue);
-            painter->drawText(pos.x() + 10, pos.y() + 10, f.getMetaValue(3).toQString());
+            painter->drawText(pos.x() + 10, pos.y() + 10, toQString(String(f.getMetaValue(3))));
           }
         }
       }
@@ -668,7 +668,7 @@ namespace OpenMS
         QColor color;
         if (cf.metaValueExists(5))
         {
-          color = cf.getMetaValue(5).toQString();
+          color = toQString(String(cf.getMetaValue(5)));
         }
         else
         {

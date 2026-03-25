@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -11,13 +11,15 @@
 #include <OpenMS/FORMAT/XMLFile.h>
 #include <OpenMS/FORMAT/ControlledVocabulary.h>
 #include <OpenMS/SYSTEM/File.h>
+#include <OpenMS/SYSTEM/PathUtils.h>
 #include <OpenMS/KERNEL/FeatureMap.h>
 #include <OpenMS/KERNEL/ConsensusMap.h>
+#include <OpenMS/KERNEL/MSExperiment.h>
 #include <OpenMS/CONCEPT/ProgressLogger.h>
 #include <OpenMS/MATH/MathFunctions.h>
 #include <OpenMS/MATH/StatisticFunctions.h>
 
-#include <QtCore/QFileInfo>
+#include <filesystem>
 
 #include <fstream>
 #include <set>
@@ -59,17 +61,17 @@ namespace OpenMS
 
   bool QcMLFile::QualityParameter::operator<(const QualityParameter& rhs) const
   {
-    return name.toQString() < rhs.name.toQString();
+    return name < rhs.name;
   }
 
   bool QcMLFile::QualityParameter::operator>(const QualityParameter& rhs) const
   {
-    return name.toQString() > rhs.name.toQString();
+    return name > rhs.name;
   }
 
   bool QcMLFile::QualityParameter::operator==(const QualityParameter& rhs) const
   {
-    return name.toQString() == rhs.name.toQString();
+    return name == rhs.name;
   }
 
   String QcMLFile::QualityParameter::toXMLString(UInt indentation_level) const
@@ -137,17 +139,17 @@ namespace OpenMS
 
   bool QcMLFile::Attachment::operator<(const Attachment& rhs) const
   {
-    return name.toQString() < rhs.name.toQString();
+    return name < rhs.name;
   }
 
   bool QcMLFile::Attachment::operator>(const Attachment& rhs) const
   {
-    return name.toQString() > rhs.name.toQString();
+    return name > rhs.name;
   }
 
   bool QcMLFile::Attachment::operator==(const Attachment& rhs) const
   {
-    return name.toQString() == rhs.name.toQString();
+    return name == rhs.name;
   }
 
   String QcMLFile::Attachment::toCSVString(const String& separator) const
@@ -1035,7 +1037,7 @@ namespace OpenMS
   }
 
   void QcMLFile::collectQCData(vector<ProteinIdentification>& prot_ids,
-                               vector<PeptideIdentification>& pep_ids,
+                               PeptideIdentificationList& pep_ids,
                                const FeatureMap& feature_map,
                                const ConsensusMap& consensus_map,
                                const String& inputfile_raw, 
@@ -1050,7 +1052,7 @@ namespace OpenMS
       //-------------------------------------------------------------
       // MS acquisition
       //------------------------------------------------------------
-      String base_name = QFileInfo(QString::fromStdString(inputfile_raw)).baseName();
+      String base_name = to_path(inputfile_raw).stem().string();
 
       UInt min_mz = std::numeric_limits<UInt>::max();
       UInt max_mz = 0;
@@ -1261,12 +1263,12 @@ namespace OpenMS
       at.colTypes.emplace_back("MS:1000894_[sec]");
       at.colTypes.emplace_back("MS:1000285");
       Size below_10k = 0;
-      std::vector<OpenMS::Chromatogram> chroms = exp.getChromatograms();
+      const std::vector<OpenMS::Chromatogram>& chroms = exp.getChromatograms();
       if (!chroms.empty()) //real TIC from the mzML
       {
         for (Size t = 0; t < chroms.size(); ++t)
         {
-          if (chroms[t].getChromatogramType() == ChromatogramSettings::TOTAL_ION_CURRENT_CHROMATOGRAM)
+          if (chroms[t].getChromatogramType() == ChromatogramSettings::ChromatogramType::TOTAL_ION_CURRENT_CHROMATOGRAM)
           {
             for (Size i = 0; i < chroms[t].size(); ++i)
             {
@@ -1500,7 +1502,6 @@ namespace OpenMS
 
         UInt spectrum_count = 0;
         Size peptide_hit_count = 0;
-        UInt runs_count = 0;
         Size protein_hit_count = 0;
         set<String> peptides;
         set<String> proteins;
@@ -1531,7 +1532,6 @@ namespace OpenMS
 
         for (Size i = 0; i < prot_ids.size(); ++i)
         {
-          ++runs_count;
           protein_hit_count += prot_ids[i].getHits().size();
           const vector<ProteinHit>& temp_hits = prot_ids[i].getHits();
           for (Size j = 0; j < temp_hits.size(); ++j)
@@ -1687,7 +1687,7 @@ namespace OpenMS
             }
             for (const Residue& z : tmp.getSequence())
             {
-              Residue res = z;
+              const Residue& res = z;
               String temp;
               if (res.isModified() && res.getModificationName() != "Carbamidomethyl")
               {
@@ -1948,7 +1948,7 @@ namespace OpenMS
           for (ConsensusFeature::const_iterator cfit = CF.begin(); cfit != CF.end(); ++cfit)
           {
             std::vector<String> row;
-            FeatureHandle FH = *cfit;
+            const FeatureHandle& FH = *cfit;
             row.emplace_back(CF.getMetaValue("spectrum_native_id"));
             row.emplace_back(CF.getRT()); row.emplace_back(CF.getMZ());
             row.emplace_back(CF.getIntensity());

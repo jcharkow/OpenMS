@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -15,6 +15,7 @@
 #include <OpenMS/CHEMISTRY/TheoreticalSpectrumGenerator.h>
 #include <OpenMS/CHEMISTRY/NucleicAcidSpectrumGenerator.h>
 #include <OpenMS/DATASTRUCTURES/String.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 // Qt includes
 #include <QtWidgets/QMessageBox>
@@ -108,7 +109,7 @@ namespace OpenMS
 
   const String TheoreticalSpectrumGenerationDialog::getSequence() const
   {
-    return ui_->seq_input->text();
+    return fromQString(ui_->seq_input->text());
   }
 
   Param TheoreticalSpectrumGenerationDialog::getParam_() const
@@ -242,6 +243,7 @@ namespace OpenMS
     {
       if (seq_type_ == SequenceType::PEPTIDE)
       {
+        p.setValue("add_first_prefix_ion", "true"); // do not skip b1 ion
         pep_generator.setParameters(p);
         pep_generator.getSpectrum(spec_, aa_sequence, charge, charge);
       }
@@ -317,7 +319,7 @@ namespace OpenMS
   void TheoreticalSpectrumGenerationDialog::seqTypeSwitch_()
   {
     // save current sequence type setting in member
-    String tmp = ui_->seq_type->currentText();
+    String tmp = fromQString(ui_->seq_type->currentText());
     if (tmp == "Peptide")
     {
       seq_type_ = SequenceType::PEPTIDE;

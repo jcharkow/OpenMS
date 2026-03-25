@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -9,6 +9,7 @@
 #include <OpenMS/VISUAL/TableView.h>
 
 #include <OpenMS/CONCEPT/Exception.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 #include <OpenMS/DATASTRUCTURES/String.h>
 
 #include <QFile>
@@ -64,7 +65,7 @@ namespace OpenMS
       {
         continue;
       }
-      QAction* action = context_menu.addAction(ti->text(), [=]() {
+      QAction* action = context_menu.addAction(ti->text(), [=, this]() {
         // invert visibility upon clicking the item
         setColumnHidden(i, !isColumnHidden(i));
         });
@@ -86,7 +87,7 @@ namespace OpenMS
 
     if (!f.open(QIODevice::WriteOnly))
     {
-      throw Exception::FileNotWritable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, String(filename));
+      throw Exception::FileNotWritable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, fromQString(filename));
     }
     QTextStream ts(&f);
     QStringList str_list;
@@ -147,6 +148,10 @@ namespace OpenMS
           {
             str_list << ti->data(Qt::DisplayRole).toString();
           }
+          else if (ti->data(Qt::DisplayRole).isValid())
+          {
+            str_list << ti->data(Qt::DisplayRole).toString();
+          }
           else
           {
             str_list << "";
@@ -168,13 +173,7 @@ namespace OpenMS
 
   void TableView::hideColumns(const QStringList& header_names)
   {
-     /*
-       * Suppressing warning toSet() deprecated till Qt 5.14
-       */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    auto hset = header_names.toSet();
-#pragma GCC diagnostic pop
+    auto hset = toQSet(header_names);
     // add actions which show/hide columns
     for (int i = 0; i != columnCount(); ++i)
     {
@@ -191,7 +190,7 @@ namespace OpenMS
     }
     if (!hset.empty())
     {
-      throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "header_names contains a column name which is unknown: " + String(hset.values().join(", ")));
+      throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "header_names contains a column name which is unknown: " + fromQString(hset.values().join(", ")));
     }
   }
 
@@ -252,7 +251,7 @@ namespace OpenMS
   {
     // check if this function is called on checkbox items only (either no DisplayRole set or the text is '' or ' ')
     if (!item->data(Qt::DisplayRole).isValid() || 
-        (item->data(Qt::DisplayRole).type() == QVariant::Type::String
+        (item->data(Qt::DisplayRole).typeId() == QMetaType::QString
           && (item->data(Qt::DisplayRole).toString().isEmpty() || item->data(Qt::DisplayRole).toString() == " ")
         )
        )

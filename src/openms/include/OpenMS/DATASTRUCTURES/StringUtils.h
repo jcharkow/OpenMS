@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -15,11 +15,11 @@
 #include <OpenMS/DATASTRUCTURES/DataValue.h>
 #include <OpenMS/CONCEPT/PrecisionWrapper.h>
 
-#include <QtCore/QString>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/karma.hpp>
 #include <boost/type_traits.hpp>
 
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -134,6 +134,17 @@ public:
       return boost::spirit::qi::parse(begin, end, parse_double_, target);
     }
 
+    /// Reads an int from an iterator position.
+    /// The begin iterator is modified (advanced) if parsing was successful.
+    /// The @p target only contains a valid result if the functions returns true (i.e. parsing succeeded).
+    /// Whitespaces before and after the double are NOT consumed!
+    template <typename IteratorT>
+    static bool extractInt(IteratorT& begin, const IteratorT& end, int& target)
+    {
+      // qi::parse() does not consume whitespace before or after the int (qi::parse_phrase() would).
+      return boost::spirit::qi::parse(begin, end, parse_int_, target);
+    }
+
   private:
   
     /*
@@ -182,6 +193,7 @@ public:
     // (the original Boost implementation has a bug, see https://svn.boost.org/trac/boost/ticket/6955)
     static boost::spirit::qi::real_parser<double, real_policies_NANfixed_<double> > parse_double_;
     static boost::spirit::qi::real_parser<float, real_policies_NANfixed_<float> > parse_float_;
+    static boost::spirit::qi::int_parser<> parse_int_;
 
   };
 
@@ -190,12 +202,9 @@ public:
 
     [[maybe_unused]] static String number(double d, UInt n)
     {
-      return QString::number(d, 'f', n);
-    }
-
-    [[maybe_unused]] static QString toQString(const String & this_s) 
-    {
-      return QString(this_s.c_str());
+      char buf[64];
+      std::snprintf(buf, sizeof(buf), "%.*f", static_cast<int>(n), d);
+      return String(buf);
     }
 
     [[maybe_unused]] static Int32 toInt32(const String & this_s)
@@ -224,6 +233,11 @@ public:
       return StringUtilsHelper::extractDouble(begin, end, target);
     }
 
+    template <typename IteratorT>
+    static bool extractInt(IteratorT& begin, const IteratorT& end, int& target)
+    {
+      return StringUtilsHelper::extractInt(begin, end, target);
+    }
   }
 } // namespace OPENMS
 

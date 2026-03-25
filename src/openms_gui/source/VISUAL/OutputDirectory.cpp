@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -12,6 +12,7 @@
 
 
 #include <OpenMS/SYSTEM/File.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QFileDialog>
@@ -54,7 +55,7 @@ namespace OpenMS
 
   void OutputDirectory::showFileDialog()
   {
-    QString dir = File::exists(File::path(getDirectory())) ? File::path(getDirectory()).toQString() : "";
+    QString dir = File::exists(File::path(fromQString(getDirectory()))) ? toQString(File::path(fromQString(getDirectory()))) : "";
     QString selected_dir = QFileDialog::getExistingDirectory(this, tr("Select output directory"), dir);
     if (!selected_dir.isEmpty())
     {
@@ -80,7 +81,7 @@ namespace OpenMS
       file_name += QDir::separator();
     }
     file_name += "test_file";
-    return File::writable(file_name);
+    return File::writable(fromQString(file_name));
   }
 
 

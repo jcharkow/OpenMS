@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -13,7 +13,10 @@
 
 #include <OpenMS/CONCEPT/Exception.h>
 #include <OpenMS/CONCEPT/LogStream.h>
+
 #include <OpenMS/SYSTEM/File.h>
+#include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QSvgRenderer>
 #include <QtCore/QFileInfo>
@@ -76,20 +79,26 @@ namespace OpenMS
   QStringList TOPPASVertex::TOPPASFilenames::getSuffixCounts() const
   {
     // display file type(s)
-    std::map<QString, Size> suffices;
-    for (const QString& fn : filenames_)
+    std::map<String, Size> suffices;
+    try 
     {
-      QStringList l = QFileInfo(fn).completeSuffix().split('.');
-      QString suf = ((l.size() > 1 && l[l.size() - 2].size() <= 4) ? l[l.size() - 2] + "." : QString()) + l.back(); // take up to two dots as suffix (the first only if its <=4 chars, e.g. we want ".prot.xml" or ".tar.gz", but not "stupid.filename.with.longdots.mzML")
-      ++suffices[suf];
+      for (const auto& fn : filenames_)
+      {
+        auto type = FileHandler::getType(fn.toStdString());
+        ++suffices[FileTypes::typeToName(type)];
+      }
+    }
+    catch (...)
+    { // in a dry-run, the file might not exist, so we cannot determine the type
+      ++suffices[FileTypes::typeToName(FileTypes::UNKNOWN)];
     }
     QStringList text_l;
-    for (std::map<QString, Size>::const_iterator sit = suffices.begin(); sit != suffices.end(); ++sit)
+    for (const auto& [suffix, count] : suffices)
     {
       if (suffices.size() > 1)
-        text_l.push_back("." + sit->first + "(" + String(sit->second).toQString() + ")");
+        text_l.push_back(toQString(String("." + suffix + "(" + String(count) + ")")));
       else
-        text_l.push_back("." + sit->first);
+        text_l.push_back("." + toQString(suffix));
     }
     return text_l;
   }
@@ -105,9 +114,9 @@ namespace OpenMS
     }
 #else
     // on Unix (Linux/Mac), constraint applies to the file name:
-    if (File::basename(filename).size() > max_filename_length)
+    if (File::basename(fromQString(filename)).size() > max_filename_length)
     {
-      throw Exception::FileNameTooLong(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, File::basename(filename), max_filename_length);
+      throw Exception::FileNameTooLong(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, File::basename(fromQString(filename)), max_filename_length);
     }
 #endif
   }
@@ -200,8 +209,8 @@ namespace OpenMS
     // recycling status
     if (this->allow_output_recycling_)
     {
-      QSvgRenderer* svg_renderer = new QSvgRenderer(QString(":/Recycling_symbol.svg"), nullptr);
-      svg_renderer->render(painter, QRectF(-7, boundingRect().y() + 9.0, 14, 14));
+      QSvgRenderer svg_renderer(QString(":/Recycling_symbol.svg"), nullptr);
+      svg_renderer.render(painter, QRectF(-7, boundingRect().y() + 9.0, 14, 14));
     }
   }
 
@@ -221,8 +230,6 @@ namespace OpenMS
       {
         // some tool that we depend on has not finished execution yet --> do not start yet
         debugOut_("Not run (parent not finished)");
-
-        __DEBUG_END_METHOD__
         return false;
       }
     }
@@ -635,4 +642,4 @@ namespace OpenMS
     return reachable_;
   }
 
-}
+} // namespace OpenMS

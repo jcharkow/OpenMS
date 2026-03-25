@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -10,7 +10,7 @@
 #include <OpenMS/VISUAL/Plot3DCanvas.h>
 
 #include <OpenMS/SYSTEM/File.h>
-#include <OpenMS/SYSTEM/FileWatcher.h>
+#include <OpenMS/VISUAL/FileWatcher.h>
 #include <OpenMS/VISUAL/ColorSelector.h>
 #include <OpenMS/VISUAL/DIALOGS/Plot3DPrefDialog.h>
 #include <OpenMS/VISUAL/MISC/GUIHelpers.h>
@@ -18,6 +18,7 @@
 #include <OpenMS/VISUAL/MultiGradientSelector.h>
 #include <OpenMS/VISUAL/Plot3DOpenGLCanvas.h>
 #include <OpenMS/VISUAL/PlotWidget.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QResizeEvent>
 #include <QtWidgets/QComboBox>
@@ -89,8 +90,8 @@ namespace OpenMS
 
     // Abort if no data points are contained
     auto& layer = dynamic_cast<LayerDataPeak&>(getCurrentLayer());
-      
-    if (layer.getPeakData()->empty())
+    const MSExperiment& peak_data = layer.getPeakData()->getMSExperiment();
+    if (peak_data.empty())
     {
       popIncompleteLayer_("Cannot add a dataset that contains no survey scans. Aborting!");
       return false;
@@ -184,7 +185,7 @@ namespace OpenMS
     MultiGradientSelector * gradient = dlg.findChild<MultiGradientSelector *>("gradient");
     QSpinBox * width  = dlg.findChild<QSpinBox *>("width");
 
-    bg_color->setColor(QColor(String(param_.getValue("background_color").toString()).toQString()));
+    bg_color->setColor(QColor(toQString(String(param_.getValue("background_color").toString()))));
     shade->setCurrentIndex(layer.param.getValue("dot:shade_mode"));
     gradient->gradient().fromString(layer.param.getValue("dot:gradient"));
     width->setValue(UInt(layer.param.getValue("dot:line_width")));
@@ -225,7 +226,7 @@ namespace OpenMS
     {
       layer_name += " (invisible)";
     }
-    context_menu->addAction(layer_name.toQString())->setEnabled(false);
+    context_menu->addAction(toQString(layer_name))->setEnabled(false);
     context_menu->addSeparator();
     context_menu->addAction("Layer meta data");
 

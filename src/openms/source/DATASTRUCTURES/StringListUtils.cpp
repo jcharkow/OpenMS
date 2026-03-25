@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -8,25 +8,11 @@
 
 #include <OpenMS/DATASTRUCTURES/StringListUtils.h>
 #include <boost/mem_fn.hpp>
-#include <QtCore/QStringList>
 
 using namespace std;
 
 namespace OpenMS
 {
-
-  StringList StringListUtils::fromQStringList(const QStringList& rhs)
-  {
-    StringList sl;
-    sl.reserve(rhs.size());
-
-    for (QStringList::const_iterator it = rhs.begin(); it != rhs.end(); ++it)
-    {
-      sl.push_back(it->toStdString());
-    }
-
-    return sl;
-  }
 
   void StringListUtils::toUpper(StringList& sl)
   {

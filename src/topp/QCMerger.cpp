@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -12,10 +12,6 @@
 #include <OpenMS/DATASTRUCTURES/String.h>
 #include <OpenMS/FORMAT/QcMLFile.h>
 
-#include <QByteArray>
-#include <QFile>
-#include <QString>
-#include <QFileInfo>
 #include <OpenMS/MATH/MathFunctions.h>
 #include <OpenMS/MATH/StatisticFunctions.h>
 
@@ -74,7 +70,8 @@ class TOPPQCMerger :
 {
 public:
   TOPPQCMerger() :
-    TOPPBase("QCMerger", "Merges two qcml files together.", false, {{ "Walzer M, Pernas LE, Nasso S, Bittremieux W, Nahnsen S, Kelchtermans P,  Martens, L", "qcML: An Exchange Format for Quality Control Metrics from Mass Spectrometry Experiments", "Molecular & Cellular Proteomics 2014; 13(8)" , "10.1074/mcp.M113.035907"}})
+    TOPPBase("QCMerger", "Merges two qcml files together.", 
+    true, {{ "Walzer M, Pernas LE, Nasso S, Bittremieux W, Nahnsen S, Kelchtermans P,  Martens, L", "qcML: An Exchange Format for Quality Control Metrics from Mass Spectrometry Experiments", "Molecular & Cellular Proteomics 2014; 13(8)" , "10.1074/mcp.M113.035907"}})
   {
   }
 

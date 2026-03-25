@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -79,7 +79,7 @@ namespace OpenMS
 
   bool ElementDB::hasElement(const string& name) const
   {
-    return (names_.count(name) == 1)|| (symbols_.count(name) == 1);
+    return (names_.find(name) != names_.end()) || (symbols_.find(name) != symbols_.end());
   }
 
   bool ElementDB::hasElement(unsigned int atomic_number) const
@@ -656,7 +656,7 @@ namespace OpenMS
       double iso_mono_weight = iso_avg_weight;
       IsotopeDistribution iso_isotopes;
       IsotopeDistribution::ContainerType iso_container;
-      iso_container.push_back(Peak1D(atomic_mass, 1.0));
+      iso_container.emplace_back(atomic_mass, 1.0);
       iso_isotopes.set(iso_container);  
 
       auto iso_element = make_unique<const Element>(iso_name, iso_symbol, an, iso_avg_weight, iso_mono_weight, iso_isotopes);
@@ -680,7 +680,7 @@ namespace OpenMS
     
     for (map<unsigned int, double>::const_iterator it = abundance.begin(); it != abundance.end(); ++it)
     { 
-      dist.push_back(Peak1D(mass.at(it->first) , abundance.at(it->first)));
+      dist.emplace_back(mass.at(it->first) , abundance.at(it->first));
     }
 
     IsotopeDistribution iso_dist;

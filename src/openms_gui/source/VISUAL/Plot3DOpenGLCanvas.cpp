@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -13,6 +13,7 @@
 #include <OpenMS/VISUAL/LayerDataPeak.h>
 
 #include <OpenMS/MATH/MathFunctions.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QMouseEvent>
 
@@ -29,8 +30,8 @@ namespace OpenMS
   {
     canvas_3d.rubber_band_.setParent(this);
 
-    x_label_ = (String(Peak2D::shortDimensionName(Peak2D::MZ)) + " [" + String(Peak2D::shortDimensionUnit(Peak2D::MZ)) + "]").toQString();
-    y_label_ = (String(Peak2D::shortDimensionName(Peak2D::RT)) + " [" + String(Peak2D::shortDimensionUnit(Peak2D::RT)) + "]").toQString();
+    x_label_ = toQString(String(Peak2D::shortDimensionName(Peak2D::MZ)) + " [" + String(Peak2D::shortDimensionUnit(Peak2D::MZ)) + "]");
+    y_label_ = toQString(String(Peak2D::shortDimensionName(Peak2D::RT)) + " [" + String(Peak2D::shortDimensionUnit(Peak2D::RT)) + "]");
 
     //Set focus policy and mouse tracking in order to get keyboard events
     setMouseTracking(true);
@@ -166,7 +167,7 @@ namespace OpenMS
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    QColor color(String(canvas_3d_.param_.getValue("background_color").toString()).toQString());
+    QColor color(toQString(String(canvas_3d_.param_.getValue("background_color").toString())));
     qglClearColor_(color);
     calculateGridLines_();
 
@@ -472,7 +473,7 @@ namespace OpenMS
     GLuint list = glGenLists(1);
     glNewList(list, GL_COMPILE);
     glBegin(GL_QUADS);
-    QColor color(String(canvas_3d_.param_.getValue("background_color").toString()).toQString());
+    QColor color(toQString(String(canvas_3d_.param_.getValue("background_color").toString())));
     qglColor_(color);
     glVertex3d(-corner_, -corner_ - 2.0, -near_ - 2 * corner_);
     glVertex3d(-corner_, -corner_ - 2.0, -far_ + 2 * corner_);
@@ -526,8 +527,9 @@ namespace OpenMS
         }
 
         const auto area = canvas_3d_.visible_area_.getAreaUnit();
-        auto begin_it = layer.getPeakData()->areaBeginConst(area.getMinRT(), area.getMaxRT(), area.getMinMZ(), area.getMaxMZ());
-        auto end_it = layer.getPeakData()->areaEndConst();
+        const MSExperiment& peak_data = layer.getPeakData()->getMSExperiment();
+        auto begin_it = peak_data.areaBeginConst(area.getMinRT(), area.getMaxRT(), area.getMinMZ(), area.getMaxMZ());
+        auto end_it = peak_data.areaEndConst();
 
         // count peaks in area
         int count = std::distance(begin_it, end_it);
@@ -555,7 +557,8 @@ namespace OpenMS
           }
 
           PeakIndex pi = it.getPeakIndex();
-          if (layer.filters.passes((*layer.getPeakData())[pi.spectrum], pi.peak))
+          const MSExperiment& peak_data = layer.getPeakData()->getMSExperiment();
+          if (layer.filters.passes(peak_data[pi.spectrum], pi.peak))
           {
             glBegin(GL_POINTS);
             double intensity = 0;
@@ -615,8 +618,9 @@ namespace OpenMS
         glLineWidth(layer.param.getValue("dot:line_width"));
 
         const auto area = canvas_3d_.visible_area_.getAreaUnit();
-        auto begin_it = layer.getPeakData()->areaBeginConst(area.getMinRT(), area.getMaxRT(), area.getMinMZ(), area.getMaxMZ());
-        auto end_it = layer.getPeakData()->areaEndConst();
+        const MSExperiment& peak_data = layer.getPeakData()->getMSExperiment();
+        auto begin_it = peak_data.areaBeginConst(area.getMinRT(), area.getMaxRT(), area.getMinMZ(), area.getMaxMZ());
+        auto end_it = peak_data.areaEndConst();
         // count peaks in area
         int count = std::distance(begin_it, end_it);
 
@@ -643,7 +647,8 @@ namespace OpenMS
           }
 
           PeakIndex pi = it.getPeakIndex();
-          if (layer.filters.passes((*layer.getPeakData())[pi.spectrum], pi.peak))
+          const MSExperiment& peak_data = layer.getPeakData()->getMSExperiment();
+          if (layer.filters.passes(peak_data[pi.spectrum], pi.peak))
           {
             glBegin(GL_LINES);
             double intensity = 0;
@@ -1016,11 +1021,11 @@ namespace OpenMS
       }
       else if (canvas_3d_.action_mode_ == PlotCanvas::AM_TRANSLATE)
       {
-        Int x_angle = xrot_ + 8 * (e->y() - mouse_move_end_.y());
+        Int x_angle = xrot_ + 8 * (e->position().y() - mouse_move_end_.y());
         normalizeAngle(&x_angle);
         xrot_ = x_angle;
 
-        Int y_angle = yrot_ + 8 * (e->x() - mouse_move_end_.x());
+        Int y_angle = yrot_ + 8 * (e->position().x() - mouse_move_end_.x());
         normalizeAngle(&y_angle);
         yrot_ = y_angle;
 
@@ -1087,8 +1092,9 @@ namespace OpenMS
     for (Size i = 0; i < canvas_3d_.getLayerCount(); i++)
     {
       const auto& layer = dynamic_cast<const LayerDataPeak&>(canvas_3d_.getLayer(i));
-      auto rt_begin_it = layer.getPeakData()->RTBegin(area.getMinRT());
-      auto rt_end_it = layer.getPeakData()->RTEnd(area.getMaxRT());
+      const MSExperiment& peak_data = layer.getPeakData()->getMSExperiment();
+      auto rt_begin_it = peak_data.RTBegin(area.getMinRT());
+      auto rt_end_it = peak_data.RTEnd(area.getMaxRT());
 
       for (auto spec_it = rt_begin_it; spec_it != rt_end_it; ++spec_it)
       {

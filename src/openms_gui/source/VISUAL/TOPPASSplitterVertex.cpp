@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -11,6 +11,7 @@
 #include <OpenMS/VISUAL/TOPPASOutputFileListVertex.h>
 #include <OpenMS/VISUAL/TOPPASToolVertex.h>
 #include <OpenMS/VISUAL/TOPPASScene.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <iostream>
 
@@ -19,7 +20,12 @@ namespace OpenMS
 
   TOPPASSplitterVertex::TOPPASSplitterVertex(const TOPPASSplitterVertex& rhs) = default;
 
-  TOPPASSplitterVertex & TOPPASSplitterVertex::operator=(const TOPPASSplitterVertex& rhs) = default;
+  TOPPASSplitterVertex& TOPPASSplitterVertex::operator=(const TOPPASSplitterVertex& rhs) = default;
+
+  std::unique_ptr<TOPPASVertex> TOPPASSplitterVertex::clone() const
+  {
+    return std::make_unique<TOPPASSplitterVertex>(*this);
+  }
 
   String TOPPASSplitterVertex::getName() const
   {
@@ -39,7 +45,7 @@ namespace OpenMS
     if (!success)
     {
       std::cerr << "Could not retrieve input files from upstream nodes...\n";
-      // emit mergeFailed((String("Splitter #") + this->getTopoNr() + " failed. " + error_msg).toQString());
+      // emit mergeFailed(toQString((String("Splitter #") + this->getTopoNr() + " failed. " + error_msg)));
       return;
     }
 

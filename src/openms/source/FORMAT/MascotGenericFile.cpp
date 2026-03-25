@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -16,11 +16,12 @@
 #include <OpenMS/METADATA/SpectrumSettings.h>
 #include <OpenMS/METADATA/SourceFile.h>
 #include <OpenMS/METADATA/SpectrumLookup.h>
+#include <OpenMS/SYSTEM/PathUtils.h>
 
-#include <QtCore/QFileInfo>
-#include <QtCore/QRegExp>
+#include <filesystem>
 
 #include <iomanip>     // setw
+#include <regex>
 
 #define HIGH_PRECISION 5
 #define LOW_PRECISION 3
@@ -421,9 +422,9 @@ namespace OpenMS
       os << enc.first;
     }
 
-    QFileInfo fileinfo(filename.c_str());
-    QString filtered_filename = fileinfo.completeBaseName();
-    filtered_filename.remove(QRegExp("[^a-zA-Z0-9]"));
+    static const std::regex non_alnum("[^a-zA-Z0-9]");
+    auto fileinfo = to_path(filename);
+    String filtered_filename = std::regex_replace(fileinfo.stem().string(), non_alnum, "");
 
 
     String native_id_type_accession;

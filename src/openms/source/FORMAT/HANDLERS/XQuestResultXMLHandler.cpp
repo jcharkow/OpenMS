@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -42,7 +42,7 @@ namespace OpenMS::Internal
 
     // reader
     XQuestResultXMLHandler::XQuestResultXMLHandler(const String &filename,
-                                                   std::vector< PeptideIdentification > & pep_ids,
+                                                   PeptideIdentificationList & pep_ids,
                                                    std::vector< ProteinIdentification > & prot_ids
                                                   ) :
       XMLHandler(filename, "1.0"),
@@ -57,7 +57,7 @@ namespace OpenMS::Internal
       ProteinIdentification prot_id;
       prot_id.setSearchEngine("xQuest");
       prot_id.setSearchEngineVersion(VersionInfo::getVersion());
-      prot_id.setMetaValue("SpectrumIdentificationProtocol", DataValue("MS:1002494")); // cross-linking search = MS:1002494
+      prot_id.setMetaValue("SpectrumIdentificationProtocol", DataValue("MS:1002494")); // crosslinking search = MS:1002494
       this->prot_ids_->push_back(prot_id);
 
       // Fetch the enzymes database
@@ -69,7 +69,7 @@ namespace OpenMS::Internal
 
     // writer
     XQuestResultXMLHandler::XQuestResultXMLHandler(const std::vector<ProteinIdentification>& pro_id,
-                                                   const std::vector<PeptideIdentification>& pep_id,
+                                                   const PeptideIdentificationList& pep_id,
                                                    const String& filename,
                                                    const String& version
                                                  ) :
@@ -101,7 +101,7 @@ namespace OpenMS::Internal
         // for single digit days, there are two spaces and the day is in the 4th string instead of the 3rd
         // that also moves the time and year one slot further
         UInt correction = 0;
-        String day_string = xquest_datetime_string_split[2];
+        const String& day_string = xquest_datetime_string_split[2];
         if (day_string.empty())
         {
           correction = 1;
@@ -136,7 +136,7 @@ namespace OpenMS::Internal
            prot_list_it != prot_list.end(); ++prot_list_it)
       {
         PeptideEvidence pep_ev;
-        String accession = *prot_list_it;
+        const String& accession = *prot_list_it;
 
         if (this->accessions_.find(accession) == this->accessions_.end())
         {

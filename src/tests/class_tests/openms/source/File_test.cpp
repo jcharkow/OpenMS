@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -17,9 +17,9 @@
 #include <OpenMS/CONCEPT/VersionInfo.h>
 #include <OpenMS/FORMAT/TextFile.h>
 #include <OpenMS/SYSTEM/File.h>
-#include <QDir>
 
 #include <fstream>
+#include <filesystem>
 
 using namespace OpenMS;
 using namespace std;
@@ -92,6 +92,7 @@ START_SECTION((static String find(const String &filename, StringList directories
   TEST_EXCEPTION(Exception::FileNotFound, File::find(""))
 END_SECTION
 
+#ifdef ENABLE_DOCS
 START_SECTION((static String findDoc(const String& filename)))
   TEST_EXCEPTION(Exception::FileNotFound,File::findDoc("non-existing-documentation"))
   // should exist in every valid source tree (we cannot test for Doxyfile since doxygen might not be installed)
@@ -99,6 +100,7 @@ START_SECTION((static String findDoc(const String& filename)))
   // a file from the build tree
   TEST_EQUAL(File::findDoc("code_examples/cmake_install.cmake").hasSuffix("cmake_install.cmake"), true)
 END_SECTION
+#endif
 
 START_SECTION((static String absolutePath(const String &file)))
   NOT_TESTABLE
@@ -153,14 +155,14 @@ END_SECTION
 
 // make source directory and copy it to new location
 // check copy function and if file exists in target path
-START_SECTION(static bool copyDirRecursively(const QString &fromDir, const QString &toDir,File::CopyOptions option = CopyOptions::OVERWRITE))
+START_SECTION(static bool copyDirRecursively(const String &fromDir, const String &toDir, File::CopyOptions option = CopyOptions::OVERWRITE))
   // folder OpenMS/src/tests/class_tests/openms/data/XMassFile_test 
   String source_name = OPENMS_GET_TEST_DATA_PATH("XMassFile_test");
   String target_name = File::getTempDirectory() + "/" + File::getUniqueName() + "/"; 
   // test canonical path
-  TEST_EQUAL(File::copyDirRecursively(source_name.toQString(),source_name.toQString()),false)
+  TEST_EQUAL(File::copyDirRecursively(source_name,source_name),false)
   // test default
-  TEST_EQUAL(File::copyDirRecursively(source_name.toQString(),target_name.toQString()),true)
+  TEST_EQUAL(File::copyDirRecursively(source_name,target_name),true)
   TEST_EQUAL(File::exists(target_name + "/pdata/1/proc"),true);
   // overwrite file content 
   std::ofstream ow_ofs;
@@ -175,32 +177,50 @@ START_SECTION(static bool copyDirRecursively(const QString &fromDir, const QStri
   infile.close();
   TEST_EQUAL(file_size,50)
   // test option skip
-  TEST_EQUAL(File::copyDirRecursively(source_name.toQString(),target_name.toQString(), File::CopyOptions::SKIP),true)
+  TEST_EQUAL(File::copyDirRecursively(source_name,target_name, File::CopyOptions::SKIP),true)
   infile.open(target_name + "/pdata/1/proc"); 
   infile.seekg(0,infile.end);
   file_size = infile.tellg();
   infile.close();
   TEST_EQUAL(file_size,50)
   // test option overwrite
-  TEST_EQUAL(File::copyDirRecursively(source_name.toQString(),target_name.toQString(), File::CopyOptions::OVERWRITE),true)
+  TEST_EQUAL(File::copyDirRecursively(source_name,target_name, File::CopyOptions::OVERWRITE),true)
   infile.open(target_name + "/pdata/1/proc"); 
   infile.seekg(0,infile.end);
   file_size = infile.tellg();
   infile.close();
   TEST_EQUAL(file_size,3558)
   // test option cancel 
-  TEST_EQUAL(File::copyDirRecursively(source_name.toQString(),target_name.toQString(), File::CopyOptions::CANCEL),false)
+  TEST_EQUAL(File::copyDirRecursively(source_name,target_name, File::CopyOptions::CANCEL),false)
   // remove temporary directory after testing
   File::removeDirRecursively(target_name);
 END_SECTION
 
 START_SECTION(static bool removeDirRecursively(const String &dir_name))
-  QDir d;
   String dirname = File::getTempDirectory() + "/" + File::getUniqueName() + "/" + File::getUniqueName() + "/";
-  TEST_EQUAL(d.mkpath(dirname.toQString()), true);
+  TEST_TRUE(File::makeDir(dirname));
   TextFile tf;
   tf.store(dirname + "test.txt");
   TEST_EQUAL(File::removeDirRecursively(dirname), true)
+  END_SECTION
+
+START_SECTION(static bool makeDir(const String& dir_name))
+  File::TempDir tdir;
+  String dirname = tdir.getPath() + "/" + File::getUniqueName() + "/" + File::getUniqueName() + "/";
+  // absolute path
+  TEST_FALSE(File::isDirectory(dirname))
+  TEST_TRUE(File::makeDir(dirname))
+  TEST_TRUE(File::isDirectory(dirname))
+  // a relative path
+  auto current_path = std::filesystem::current_path(); // get current path
+  filesystem::current_path(std::filesystem::path(dirname.c_str())); // set current path to dirname
+  TEST_TRUE(File::makeDir("subdir/333"))
+  TEST_TRUE(File::isDirectory("./subdir/333/"))
+  // try create something which should be forbidden
+#if defined(OPENMS_WINDOWSPLATFORM)
+  TEST_FALSE(File::makeDir("c:\\te:st")) // ':' is not allowed in path on Windows; Unix pretty much allows everything
+#endif
+  std::filesystem::current_path(current_path); // reset current path (enable deletion of dirname)
 END_SECTION
 
 START_SECTION(static String getTempDirectory())
@@ -214,9 +234,8 @@ START_SECTION(static String getUserDirectory())
 
   // set user directory to a path set by environmental variable and test that
   // it is correctly set (no changes on the file system occur)
-  QDir d;
   String dirname = File::getTempDirectory() + "/" + File::getUniqueName() + "/";
-  TEST_EQUAL(d.mkpath(dirname.toQString()), true);
+  TEST_EQUAL(File::makeDir(dirname), true);
 #ifdef OPENMS_WINDOWSPLATFORM
   _putenv_s("OPENMS_HOME_PATH", dirname.c_str());  
 #else
@@ -303,29 +322,87 @@ START_SECTION(File::~TempDir())
     TEST_EQUAL(File::exists(path), 1)
   }
   TEST_EQUAL(File::exists(path), 0)
-  if (File::exists(path)) File::removeDir(path.toQString());
+  if (File::exists(path)) File::removeDir(path);
   {
     File::TempDir dir2(true);
     path = dir2.getPath();
     TEST_EQUAL(File::exists(path), 1)
   }
   TEST_EQUAL(File::exists(path), 1)
-  if (File::exists(path)) File::removeDir(path.toQString());
+  if (File::exists(path)) File::removeDir(path);
 }
 END_SECTION
 
 
-START_SECTION(File::download(std::string url, std::string filename))
+START_SECTION(static File::MatchingFileListsStatus validateMatchingFileNames(const StringList& sl1, const StringList& sl2, bool basename, bool ignore_extension))
 {
-  std::string url = R"(http://raw.githubusercontent.com/OpenMS/images/master/logos/OpenMS_transparent_background.png)";
-  std::string folder = File::getTempDirectory();
-  File::download(url, folder);
-  std::string output_file_path = folder + "/OpenMS_transparent_background.png";
-
-  TEST_EQUAL(File::exists(output_file_path), 1);
-  if (File::exists(output_file_path))
+  // Test exact match
   {
-    File::removeDir(QString(output_file_path.c_str()));
+    StringList list1 = {"file1.txt", "file2.txt"};
+    StringList list2 = {"file1.txt", "file2.txt"};
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2) ==  File::MatchingFileListsStatus::MATCH)
+  }
+
+  // Test order mismatch
+  {
+    StringList list1 = {"file1.txt", "file2.txt"};
+    StringList list2 = {"file2.txt", "file1.txt"};
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2) == File::MatchingFileListsStatus::ORDER_MISMATCH)
+  }
+
+  // Test different sets
+  {
+    StringList list1 = {"file1.txt", "file2.txt"};
+    StringList list2 = {"file1.txt", "file3.txt"};
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2) == File::MatchingFileListsStatus::SET_MISMATCH)
+  }
+
+  // Test different counts
+  {
+    StringList list1 = {"file1.txt", "file2.txt"};
+    StringList list2 = {"file1.txt"};
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2) ==  File::MatchingFileListsStatus::SET_MISMATCH)
+  }
+
+  // Test basename comparison
+  {
+    StringList list1 = {"/path/to/file1.txt", "/different/path/file2.txt"};
+    StringList list2 = {"/other/path/file1.txt", "/somewhere/file2.txt"};
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2, true, false) ==  File::MatchingFileListsStatus::MATCH)
+  }
+
+  // Test basename with order mismatch
+  {
+    StringList list1 = {"/path/to/file1.txt", "/different/path/file2.txt"};
+    StringList list2 = {"/somewhere/file2.txt", "/other/path/file1.txt"};
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2, true, false) ==  File::MatchingFileListsStatus::ORDER_MISMATCH)
+  }
+
+  // Test ignore extension
+  {
+    StringList list1 = {"file1.txt", "file2.mzML"};
+    StringList list2 = {"file1.mzML", "file2.txt"};
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2, false, true) == File::MatchingFileListsStatus::MATCH)
+  }
+
+  // Test ignore extension with different basenames
+  {
+    StringList list1 = {"file1.txt", "file2.mzML"};
+    StringList list2 = {"file1.mzML", "file3.txt"};
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2, false, true) ==  File::MatchingFileListsStatus::SET_MISMATCH)
+  }
+
+  // Test with both basename and ignore extension
+  {
+    StringList list1 = {"/path/to/file1.txt", "/different/path/file2.mzML"};
+    StringList list2 = {"/other/path/file1.mzML", "/somewhere/file2.txt"};
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2, true, true) == File::MatchingFileListsStatus::MATCH)
+  }
+
+  // Test with empty lists
+  {
+    StringList list1, list2;
+    TEST_TRUE(File::validateMatchingFileNames(list1, list2) == File::MatchingFileListsStatus::MATCH)
   }
 }
 END_SECTION

@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -19,6 +19,7 @@
 #include <OpenMS/VISUAL/ANNOTATION/Annotation1DTextItem.h>
 #include <OpenMS/VISUAL/ANNOTATION/Annotation1DDistanceItem.h>
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/KERNEL/MSExperiment.h>
 #include <OpenMS/CONCEPT/RAIICleanup.h>
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/COMPARISON/SpectrumAlignmentScore.h>
@@ -27,6 +28,7 @@
 
 #include <OpenMS/VISUAL/LayerData1DPeak.h>
 #include <OpenMS/VISUAL/LayerData1DChrom.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 // Qt
 #include <QElapsedTimer>
@@ -37,6 +39,7 @@
 #include <QtWidgets/QMessageBox>
 #include <utility>
 
+#include <boost/make_shared.hpp>
 
 using namespace std;
 
@@ -49,12 +52,13 @@ namespace OpenMS
   Plot1DCanvas::ExperimentSharedPtrType prepareChromatogram(Size index, const Plot1DCanvas::ExperimentSharedPtrType& exp_sptr, const Plot1DCanvas::ODExperimentSharedPtrType& ondisc_sptr)
   {
     // create a managed pointer fill it with a spectrum containing the chromatographic data
-    LayerDataBase::ExperimentSharedPtrType chrom_exp_sptr(new LayerDataBase::ExperimentType());
-    chrom_exp_sptr->setMetaValue("is_chromatogram", "true"); //this is a hack to store that we have chromatogram data
+    auto chrom_exp_sptr = std::make_shared<AnnotatedMSRun>();
+
+    chrom_exp_sptr->getMSExperiment().setMetaValue("is_chromatogram", "true"); //this is a hack to store that we have chromatogram data
     LayerDataBase::ExperimentType::SpectrumType spectrum;
 
     // retrieve chromatogram (either from in-memory or on-disc representation)
-    MSChromatogram current_chrom = exp_sptr->getChromatograms()[index];
+    MSChromatogram current_chrom = exp_sptr->getMSExperiment().getChromatograms()[index];
     if (current_chrom.empty())
     {
       current_chrom = ondisc_sptr->getChromatogram(index);
@@ -76,12 +80,12 @@ namespace OpenMS
     {
       spectrum.emplace_back(-1, 0);
     }
-    chrom_exp_sptr->addSpectrum(spectrum);
+    chrom_exp_sptr->getMSExperiment().addSpectrum(std::move(spectrum));
 
     // store peptide_sequence if available
     if (current_chrom.getPrecursor().metaValueExists("peptide_sequence"))
     {
-      chrom_exp_sptr->setMetaValue("peptide_sequence", current_chrom.getPrecursor().getMetaValue("peptide_sequence"));
+      chrom_exp_sptr->getMSExperiment().setMetaValue("peptide_sequence", current_chrom.getPrecursor().getMetaValue("peptide_sequence"));
     }
 
     return chrom_exp_sptr;
@@ -187,29 +191,23 @@ namespace OpenMS
     emit layerActivated(this);
   }
 
-  void Plot1DCanvas::changeVisibleAreaCommon_(const UnitRange& new_area, bool repaint, bool add_to_stack)
+  void Plot1DCanvas::changeVisibleArea1D_(const UnitRange& new_area, bool repaint, bool add_to_stack)
   {
     auto corrected = correctGravityAxisOfVisibleArea_(new_area);
-    
-    if (intensity_mode_ != IM_PERCENTAGE) // not for Percentage mode, which is always [0,100]
-    { // make sure we stay inside the overall data range of the currently displayable 1D data
-      corrected.pushInto(overall_data_range_1d_);
-    }
-    
     PlotCanvas::changeVisibleArea_(visible_area_.cloneWith(corrected), repaint, add_to_stack);
   }
 
   void Plot1DCanvas::changeVisibleArea_(const AreaXYType& new_area, bool repaint, bool add_to_stack)
   {
-    changeVisibleAreaCommon_(visible_area_.cloneWith(new_area).getAreaUnit(), repaint, add_to_stack);
+    changeVisibleArea1D_(visible_area_.cloneWith(new_area).getAreaUnit(), repaint, add_to_stack);
   }
   void Plot1DCanvas::changeVisibleArea_(const UnitRange& new_area, bool repaint, bool add_to_stack)
   {
-    changeVisibleAreaCommon_(new_area, repaint, add_to_stack);
+    changeVisibleArea1D_(new_area, repaint, add_to_stack);
   }
   void Plot1DCanvas::changeVisibleArea_(VisibleArea new_area, bool repaint, bool add_to_stack)
   {
-    changeVisibleAreaCommon_(new_area.getAreaUnit(), repaint, add_to_stack);
+    changeVisibleArea1D_(new_area.getAreaUnit(), repaint, add_to_stack);
   }
 
   void Plot1DCanvas::dataToWidget(const DPosition<2>& xy_point, QPoint& point, bool flipped)
@@ -622,7 +620,7 @@ namespace OpenMS
 
     // clear
     painter->fillRect(0, 0, this->width(), this->height(),
-                      QColor(String(param_.getValue("background_color").toString()).toQString()));
+                      QColor(toQString(String(param_.getValue("background_color").toString()))));
 
     // we are done if no layer is present
     if (getLayerCount() == 0)
@@ -721,7 +719,7 @@ namespace OpenMS
     if (!peak.isValid()) return;
     const auto sel_xy = getLayer(layer_index).peakIndexToXY(peak, unit_mapper_);
 
-    painter.setPen(QPen(QColor(String(param_.getValue("highlighted_peak_color").toString()).toQString()), 2));
+    painter.setPen(QPen(QColor(toQString(String(param_.getValue("highlighted_peak_color").toString()))), 2));
 
     recalculatePercentageFactor_(layer_index);
 
@@ -733,11 +731,12 @@ namespace OpenMS
     {
       Painter1DBase::drawCross(begin, &painter, 8);
     }
+
     // draw elongation as dashed line (while in measure mode and for all existing distance annotations)
     if (draw_elongation)
     {
       QPoint top_end = (getLayer(layer_index).flipped) ? gr_.gravitateMax(begin, canvasPixelArea()) : gr_.gravitateMin(begin, canvasPixelArea());
-      Painter1DBase::drawDashedLine(begin, top_end, &painter, String(param_.getValue("highlighted_peak_color").toString()).toQString());
+      Painter1DBase::drawDashedLine(begin, top_end, &painter, toQString(String(param_.getValue("highlighted_peak_color").toString())));
     }
   }
 
@@ -819,8 +818,8 @@ namespace OpenMS
     }              
     const auto xy_point = getCurrentLayer().peakIndexToXY(peak, unit_mapper_);
     QStringList lines;
-    lines << unit_mapper_.getDim(DIM::X).formattedValue(xy_point.getX()).toQString();
-    lines << unit_mapper_.getDim(DIM::Y).formattedValue(xy_point.getY()).toQString();
+    lines << toQString(unit_mapper_.getDim(DIM::X).formattedValue(xy_point.getX()));
+    lines << toQString(unit_mapper_.getDim(DIM::Y).formattedValue(xy_point.getY()));
     drawText_(painter, lines);
   }
 
@@ -848,11 +847,11 @@ namespace OpenMS
       QString result;
       if (ratio)
       {
-        result = dim.formattedValue(end_pos / start_pos, " ratio ").toQString();
+        result = toQString(dim.formattedValue(end_pos / start_pos, " ratio "));
       }
       else
       {
-        result = dim.formattedValue(end_pos - start_pos, " delta ").toQString();
+        result = toQString(dim.formattedValue(end_pos - start_pos, " delta "));
         if (dim.getUnit() == DIM_UNIT::MZ)
         {
           auto ppm = Math::getPPM(end_pos, start_pos);
@@ -907,11 +906,11 @@ namespace OpenMS
     ColorSelector* bg_color = dlg.findChild<ColorSelector*>("bg_color");
     ColorSelector* selected_color = dlg.findChild<ColorSelector*>("selected_color");
 
-    peak_color->setColor(QColor(String(layer.param.getValue("peak_color").toString()).toQString()));
-    icon_color->setColor(QColor(String(layer.param.getValue("icon_color").toString()).toQString()));
-    annotation_color->setColor(QColor(String(layer.param.getValue("annotation_color").toString()).toQString()));
-    bg_color->setColor(QColor(String(param_.getValue("background_color").toString()).toQString()));
-    selected_color->setColor(QColor(String(param_.getValue("highlighted_peak_color").toString()).toQString()));
+    peak_color->setColor(QColor(toQString(String(layer.param.getValue("peak_color").toString()))));
+    icon_color->setColor(QColor(toQString(String(layer.param.getValue("icon_color").toString()))));
+    annotation_color->setColor(QColor(toQString(String(layer.param.getValue("annotation_color").toString()))));
+    bg_color->setColor(QColor(toQString(String(param_.getValue("background_color").toString()))));
+    selected_color->setColor(QColor(toQString(String(param_.getValue("highlighted_peak_color").toString()))));
 
     if (dlg.exec())
     {
@@ -956,7 +955,7 @@ namespace OpenMS
       {
         layer_name += " (invisible)";
       }
-      context_menu->addAction(layer_name.toQString())->setEnabled(false);
+      context_menu->addAction(toQString(layer_name))->setEnabled(false);
 
       context_menu->addSeparator();
       
@@ -969,10 +968,10 @@ namespace OpenMS
         addUserPeakAnnotation_(near_peak);
       })->setEnabled(near_peak.isValid());
       
-      context_menu->addAction((String("Add peak annotation ") + String(getNonGravityDim().getDimNameShort())).toQString(), [&]() {
+      context_menu->addAction(toQString((String("Add peak annotation ") + String(getNonGravityDim().getDimNameShort()))), [&]() {
         const auto xy_point = getCurrentLayer().peakIndexToXY(near_peak, unit_mapper_);
-        QString label = getNonGravityDim().formattedValue(gr_.swap().gravityValue(xy_point)).toQString();
-        addPeakAnnotation(near_peak, label, String(getCurrentLayer().param.getValue("peak_color").toString()).toQString());
+        QString label = toQString(getNonGravityDim().formattedValue(gr_.swap().gravityValue(xy_point)));
+        addPeakAnnotation(near_peak, label, toQString(String(getCurrentLayer().param.getValue("peak_color").toString())));
       })->setEnabled(near_peak.isValid());
       
       context_menu->addSeparator();
@@ -1054,7 +1053,7 @@ namespace OpenMS
       auto* peak_layer = dynamic_cast<LayerData1DPeak*>(&getCurrentLayer());
       if (peak_layer)
         {
-        if (peak_layer->getPeakData()->containsScanOfLevel(1))
+        if (peak_layer->getPeakData()->getMSExperiment().containsScanOfLevel(1))
         {
           context_menu->addAction("Switch to 2D view", [&]() {
             emit showCurrentPeaksAs2D();
@@ -1075,7 +1074,7 @@ namespace OpenMS
         {
           auto l = dynamic_cast<const LayerData1DPeak*>(&getCurrentLayer());
           context_menu->addAction("Switch to DIA-MS view", [&]() {
-            emit showCurrentPeaksAsDIA(l->getCurrentSpectrum().getPrecursors()[0], *l->getPeakData().get());
+            emit showCurrentPeaksAsDIA(l->getCurrentSpectrum().getPrecursors()[0], l->getPeakData()->getMSExperiment());
           });
         }
       }
@@ -1131,7 +1130,7 @@ namespace OpenMS
     QString text = QInputDialog::getText(this, "Add peak annotation", "Enter text:", QLineEdit::Normal, "", &ok);
     if (ok && !text.isEmpty())
     {
-      addPeakAnnotation(near_peak, text, QColor(String(getCurrentLayer().param.getValue("peak_color").toString()).toQString()));
+      addPeakAnnotation(near_peak, text, QColor(toQString(String(getCurrentLayer().param.getValue("peak_color").toString()))));
     }
   }
 

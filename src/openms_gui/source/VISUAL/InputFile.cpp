@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -11,6 +11,7 @@
 #include <ui_InputFile.h>
 
 #include <OpenMS/SYSTEM/File.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QFileDialog>
@@ -72,7 +73,7 @@ namespace OpenMS
   {
     ui_->line_edit->setText(filename);
     emit updatedFile(filename);
-    setCWD(File::path(filename).toQString());
+    setCWD(toQString(File::path(fromQString(filename))));
   }
 
   QString InputFile::getFilename() const

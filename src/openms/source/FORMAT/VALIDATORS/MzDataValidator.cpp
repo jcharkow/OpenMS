@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -73,7 +73,7 @@ namespace OpenMS::Internal
         {
           if (!parsed_term.has_unit_accession)
           {
-            errors_.push_back(String("CV term must have a unit: " + parsed_term.accession + " - " + parsed_term.name));
+            errors_.emplace_back("CV term must have a unit: " + parsed_term.accession + " - " + parsed_term.name);
           }
           else
           {
@@ -101,13 +101,13 @@ namespace OpenMS::Internal
 
                 if (!found_unit)
                 {
-                  errors_.push_back(String("Unit CV term not allowed: " + parsed_term.unit_accession + " - " + parsed_term.unit_name + " of term " + parsed_term.accession + " - " + parsed_term.name));
+                  errors_.emplace_back("Unit CV term not allowed: " + parsed_term.unit_accession + " - " + parsed_term.unit_name + " of term " + parsed_term.accession + " - " + parsed_term.name);
                 }
               }
             }
             else
             {
-              errors_.push_back(String("Unit CV term not found: " + parsed_term.unit_accession + " - " + parsed_term.unit_name + " of term " + parsed_term.accession + " - " + parsed_term.name));
+              errors_.emplace_back("Unit CV term not found: " + parsed_term.unit_accession + " - " + parsed_term.unit_name + " of term " + parsed_term.accession + " - " + parsed_term.name);
             }
           }
         }
@@ -116,7 +116,7 @@ namespace OpenMS::Internal
           // check whether unit was used
           if (parsed_term.has_unit_accession || parsed_term.has_unit_name)
           {
-            warnings_.push_back(String("Unit CV term used, but not allowed: " + parsed_term.unit_accession + " - " + parsed_term.unit_name + " of term " + parsed_term.accession + " - " + parsed_term.name));
+            warnings_.emplace_back("Unit CV term used, but not allowed: " + parsed_term.unit_accession + " - " + parsed_term.unit_name + " of term " + parsed_term.accession + " - " + parsed_term.name);
           }
         }
       }

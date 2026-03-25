@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -45,7 +45,7 @@ namespace OpenMS
     ModifiedPeptideGenerator::MapToResidueType m;
     for (auto const & r : mods)
     {
-      String name = r->getFullId();
+      const String& name = r->getFullId();
       bool is_terminal = r->getTermSpecificity() == ResidueModification::N_TERM || r->getTermSpecificity() == ResidueModification::C_TERM || r->getTermSpecificity() == ResidueModification::PROTEIN_N_TERM || r->getTermSpecificity() == ResidueModification::PROTEIN_C_TERM;
       if (!is_terminal)
       {

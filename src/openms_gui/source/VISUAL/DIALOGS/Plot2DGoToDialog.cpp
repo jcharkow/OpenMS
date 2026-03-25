@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -12,6 +12,7 @@
 
 
 #include <OpenMS/DATASTRUCTURES/String.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 #include <QtWidgets/QLineEdit>
 
@@ -94,7 +95,7 @@ namespace OpenMS
 
   String Plot2DGoToDialog::getFeatureNumber() const
   {
-    return ui_->feature_number_->text();
+    return fromQString(ui_->feature_number_->text());
   }
 
   bool Plot2DGoToDialog::showRange() const

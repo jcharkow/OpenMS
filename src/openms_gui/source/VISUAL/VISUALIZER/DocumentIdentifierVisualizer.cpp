@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -9,6 +9,7 @@
 //OpenMS
 #include <OpenMS/VISUAL/VISUALIZER/DocumentIdentifierVisualizer.h>
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 //QT
 #include <QtWidgets/QLineEdit>
@@ -42,7 +43,7 @@ namespace OpenMS
 
   void DocumentIdentifierVisualizer::store()
   {
-    ptr_->setIdentifier(identifier_->text());
+    ptr_->setIdentifier(fromQString(identifier_->text()));
 
     temp_ = (*ptr_);
   }

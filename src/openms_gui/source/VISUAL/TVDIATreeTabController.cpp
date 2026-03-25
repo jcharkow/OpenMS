@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -20,6 +20,7 @@
 #include <OpenMS/VISUAL/Plot1DWidget.h>
 #include <OpenMS/VISUAL/ANNOTATION/Annotation1DVerticalLineItem.h>
 #include <OpenMS/VISUAL/MISC/GUIHelpers.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 using namespace OpenMS;
 using namespace std;
@@ -117,7 +118,7 @@ namespace OpenMS
       QColor col = GUIHelpers::ColorBrewer::Distinct().values[(best_feature == &feature) 
                           ? GUIHelpers::ColorBrewer::Distinct::LightGreen
                           : GUIHelpers::ColorBrewer::Distinct::LightGrey];
-      Annotation1DVerticalLineItem* item = new Annotation1DVerticalLineItem(center, width, 150, false, col, ann.toQString());
+      Annotation1DVerticalLineItem* item = new Annotation1DVerticalLineItem(center, width, 150, false, col, toQString(ann));
       item->setSelected(false);
       auto text_size = item->getTextRect(); // this is in px units (Qt widget coordinates)
       // translate to axis units (our native 'data'):

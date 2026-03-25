@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -15,7 +15,8 @@
 #include <OpenMS/SYSTEM/File.h>
 #include <OpenMS/KERNEL/MSExperiment.h>
 
-#include <QtCore/QDir>
+#include <OpenMS/SYSTEM/PathUtils.h>
+#include <filesystem>
 #include <cmath> // isnan
 #include <fstream>
 //#include <vector>
@@ -32,8 +33,7 @@ MQMsms::MQMsms(const String& path)
   filename_ = path + "/msms.txt";
   try
   {
-    QString msms_path = QString::fromStdString(path);
-    QDir().mkpath(msms_path);
+    std::filesystem::create_directories(to_path(path));
     file_ = std::fstream(filename_, std::fstream::out);
   }
   catch (...)
@@ -134,22 +134,10 @@ void MQMsms::exportRowFromFeature_(
   const PeptideHit* ptr_best_hit = nullptr; // the best hit referring to score
   const PeptideIdentification* ptr_best_id = nullptr;
   const ConsensusFeature& cf = cmap[c_feature_number];
-  Size pep_ids_size = 0;
+
   String type;
   if (MQExporterHelper::hasValidPepID_(f, c_feature_number, UIDs, mp_f))
   {
-    for (Size i = 1; i < f.getPeptideIdentifications().size(); ++i) // for msms-count
-    {
-      if (!f.getPeptideIdentifications()[i].getHits().empty())
-      {
-        if (f.getPeptideIdentifications()[i].getHits()[0].getSequence() == f.getPeptideIdentifications()[0].getHits()[0].getSequence())
-        {
-          ++pep_ids_size;
-        }
-        else
-          break;
-      }
-    }
     type = "MULTI-MSMS";
     ptr_best_hit = &f.getPeptideIdentifications()[0].getHits()[0];
     ptr_best_id = &f.getPeptideIdentifications()[0];
@@ -239,7 +227,7 @@ void MQMsms::exportRowFromFeature_(
   file_ << "NA" << "\t"; // Neutral loss level
   file_ << "NA" << "\t"; // ETD identification type
 
-  ptr_best_hit->getMetaValue("target_decoy") == "decoy" ? file_ << "1\t" : file_ << "\t"; // reverse
+  ptr_best_hit->isDecoy() ? file_ << "1\t" : file_ << "\t"; // reverse
 
   file_ << "NA" << "\t"; // All scores
   file_ << "NA" << "\t"; // All sequences

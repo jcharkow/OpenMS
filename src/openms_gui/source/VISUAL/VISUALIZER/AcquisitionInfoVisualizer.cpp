@@ -1,4 +1,4 @@
-// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -8,6 +8,7 @@
 
 //OpenMS
 #include <OpenMS/VISUAL/VISUALIZER/AcquisitionInfoVisualizer.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 
 // QT
 #include <QValidator>
@@ -39,7 +40,7 @@ namespace OpenMS
 
   void AcquisitionInfoVisualizer::store()
   {
-    ptr_->setMethodOfCombination(acquisitioninfo_method_->text());
+    ptr_->setMethodOfCombination(fromQString(acquisitioninfo_method_->text()));
 
     temp_ = (*ptr_);
   }
