@@ -15,7 +15,8 @@
 #include <OpenMS/SYSTEM/File.h>
 #include <OpenMS/KERNEL/MSExperiment.h>
 
-#include <QtCore/QDir>
+#include <OpenMS/SYSTEM/PathUtils.h>
+#include <filesystem>
 #include <cmath> // isnan
 #include <fstream>
 #include <vector>
@@ -32,8 +33,7 @@ MQEvidence::MQEvidence(const String& path)
   filename_ = path + "/evidence.txt";
   try
   {
-    QString evi_path = QString::fromStdString(path);
-    QDir().mkpath(evi_path);
+    std::filesystem::create_directories(to_path(path));
     file_ = std::fstream(filename_, std::fstream::out);
   }
   catch (...)
@@ -271,7 +271,7 @@ void MQEvidence::exportRowFromFeature_(
 
   file_ << f.getIntensity() << "\t"; // Intensity
 
-  ptr_best_hit->getMetaValue("target_decoy") == "decoy" ? file_ << "1\t" : file_ << "\t"; // reverse
+  ptr_best_hit->isDecoy() ? file_ << "1\t" : file_ << "\t"; // reverse
 
   String pot_containment = ptr_best_hit->getMetaValue("is_contaminant", "NA");
   if (pot_containment == "1")

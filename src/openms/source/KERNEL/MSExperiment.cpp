@@ -21,6 +21,10 @@
 #include <limits>
 #include <unordered_set>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 namespace OpenMS
 {
   /// Constructor
@@ -75,6 +79,443 @@ namespace OpenMS
   bool MSExperiment::operator!=(const MSExperiment & rhs) const
   {
     return !(operator==(rhs));
+  }
+
+  Size MSExperiment::size() const noexcept
+  {
+    return spectra_.size();
+  }
+
+  void MSExperiment::resize(Size n)
+  {
+    spectra_.resize(n);
+  }
+
+  bool MSExperiment::empty() const noexcept
+  {
+    return spectra_.empty();
+  }
+
+  void MSExperiment::reserve(Size n)
+  {
+    spectra_.reserve(n);
+  }
+
+  MSExperiment::SpectrumType& MSExperiment::operator[](Size n)
+  {
+    return spectra_[n];
+  }
+
+  const MSExperiment::SpectrumType& MSExperiment::operator[](Size n) const
+  {
+    return spectra_[n];
+  }
+
+  MSExperiment::Iterator MSExperiment::begin() noexcept
+  {
+    return spectra_.begin();
+  }
+
+  MSExperiment::ConstIterator MSExperiment::begin() const noexcept
+  {
+    return spectra_.cbegin();
+  }
+
+  MSExperiment::ConstIterator MSExperiment::cbegin() const noexcept
+  {
+    return spectra_.cbegin();
+  }
+
+  MSExperiment::Iterator MSExperiment::end()
+  {
+    return spectra_.end();
+  }
+
+  MSExperiment::ConstIterator MSExperiment::end() const noexcept
+  {
+    return spectra_.cend();
+  }
+
+  MSExperiment::ConstIterator MSExperiment::cend() const noexcept
+  {
+    return spectra_.cend();
+  }
+
+  void MSExperiment::get2DPeakDataPerSpectrum(
+    CoordinateType min_rt,
+    CoordinateType max_rt,
+    CoordinateType min_mz,
+    CoordinateType max_mz,
+    Size ms_level,
+    std::vector<float>& rt,
+    std::vector<std::vector<float>>& mz,
+    std::vector<std::vector<float>>& intensity) const
+  {
+    float t = -1.0;
+    for (auto it = areaBeginConst(min_rt, max_rt, min_mz, max_mz, ms_level); it != areaEndConst(); ++it)
+    {
+      if (it.getRT() != t)
+      {
+        t = (float)it.getRT();
+        rt.push_back(t);
+        mz.emplace_back();
+        intensity.emplace_back();
+      }
+      mz.back().push_back((float)it->getMZ());
+      intensity.back().push_back(it->getIntensity());
+    }
+  }
+
+  void MSExperiment::get2DPeakDataIMPerSpectrum(
+    CoordinateType min_rt,
+    CoordinateType max_rt,
+    CoordinateType min_mz,
+    CoordinateType max_mz,
+    Size ms_level,
+    std::vector<float>& rt,
+    std::vector<std::vector<float>>& mz,
+    std::vector<std::vector<float>>& intensity,
+    std::vector<std::vector<float>>& ion_mobility) const
+  {
+    DriftTimeUnit unit = DriftTimeUnit::NONE;
+    std::vector<float> im;
+    float t = -1.0;
+    for (auto it = areaBeginConst(min_rt, max_rt, min_mz, max_mz, ms_level); it != areaEndConst(); ++it)
+    {
+      if (it.getRT() != t)
+      {
+        t = (float)it.getRT();
+        rt.push_back(t);
+        std::tie(unit, im) = it.getSpectrum().maybeGetIMData();
+        mz.emplace_back();
+        intensity.emplace_back();
+        ion_mobility.emplace_back();
+      }
+
+      if (unit != DriftTimeUnit::NONE)
+      {
+        const Size peak_index = it.getPeakIndex().peak;
+        ion_mobility.back().push_back(im[peak_index]);
+      }
+      else
+      {
+        ion_mobility.back().push_back(-1.0);
+      }
+      mz.back().push_back((float)it->getMZ());
+      intensity.back().push_back(it->getIntensity());
+    }
+  }
+
+  void MSExperiment::get2DPeakData(
+      CoordinateType min_rt,
+      CoordinateType max_rt,
+      CoordinateType min_mz,
+      CoordinateType max_mz,
+      Size ms_level,
+      std::vector<float>& rt,
+      std::vector<float>& mz,
+      std::vector<float>& intensity) const
+    {
+      for (auto it = areaBeginConst(min_rt, max_rt, min_mz, max_mz, ms_level); it != areaEndConst(); ++it)
+      {
+        rt.push_back((float)it.getRT());
+        mz.push_back((float)it->getMZ());
+        intensity.push_back(it->getIntensity());
+      }
+    }
+
+  void MSExperiment::get2DPeakDataIM(
+      CoordinateType min_rt,
+      CoordinateType max_rt,
+      CoordinateType min_mz,
+      CoordinateType max_mz,
+      Size ms_level,
+      std::vector<float>& rt,
+      std::vector<float>& mz,
+      std::vector<float>& intensity,
+      std::vector<float>& ion_mobility) const
+    {
+      for (auto it = areaBeginConst(min_rt, max_rt, min_mz, max_mz, ms_level); it != areaEndConst(); ++it)
+      {
+        DriftTimeUnit unit = DriftTimeUnit::NONE;
+        std::vector<float> im;
+        float t = -1.0;
+        if (it.getRT() != t)
+        {
+          t = (float)it.getRT();
+          std::tie(unit, im) = it.getSpectrum().maybeGetIMData();
+        }
+        rt.push_back((float)it.getRT());
+        mz.push_back((float)it->getMZ());
+        intensity.push_back(it->getIntensity());
+        if (unit != DriftTimeUnit::NONE)
+        {
+          const Size peak_index = it.getPeakIndex().peak;
+          ion_mobility.push_back(im[peak_index]);
+        }
+        else
+        {
+          ion_mobility.push_back(-1.0);
+        }
+      }
+    }
+
+  void MSExperiment::rasterizeRTMZ(
+    float* output,
+    Size rt_bins,
+    Size mz_bins,
+    CoordinateType min_rt,
+    CoordinateType max_rt,
+    CoordinateType min_mz,
+    CoordinateType max_mz,
+    UInt ms_level,
+    RasterAggregation aggregation) const
+  {
+    // Runtime checks that work in Release builds (OPENMS_PRECONDITION is disabled in Release)
+    if (output == nullptr)
+    {
+      throw Exception::NullPointer(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION);
+    }
+    if (rt_bins == 0)
+    {
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+        "Number of RT bins must be positive", String(rt_bins));
+    }
+    if (mz_bins == 0)
+    {
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+        "Number of m/z bins must be positive", String(mz_bins));
+    }
+    if (min_rt >= max_rt)
+    {
+      throw Exception::InvalidRange(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION);
+    }
+    if (min_mz >= max_mz)
+    {
+      throw Exception::InvalidRange(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION);
+    }
+
+    const Size total_pixels = rt_bins * mz_bins;
+
+    // Zero-initialize the output buffer
+    std::fill(output, output + total_pixels, 0.0f);
+
+    // If experiment is empty, return early
+    if (spectra_.empty())
+    {
+      return;
+    }
+
+    // Precompute bin sizes for mapping coordinates to pixel indices
+    const double rt_range = max_rt - min_rt;
+    const double mz_range = max_mz - min_mz;
+    const double rt_scale = static_cast<double>(rt_bins) / rt_range;
+    const double mz_scale = static_cast<double>(mz_bins) / mz_range;
+
+    // Find spectra in RT range using binary search (leveraging sortedness)
+    auto rt_begin_it = RTBegin(min_rt);
+    auto rt_end_it = RTEnd(max_rt);
+    
+    // Create a view of spectra with matching MS level in RT range
+    std::vector<std::reference_wrapper<const MSSpectrum>> spectra_view;
+    spectra_view.reserve(std::distance(rt_begin_it, rt_end_it));
+    
+    for (auto it = rt_begin_it; it != rt_end_it; ++it)
+    {
+      if (it->getMSLevel() == ms_level)
+      {
+        spectra_view.push_back(std::cref(*it));
+      }
+    }
+
+    // Early exit if no matching spectra
+    if (spectra_view.empty())
+    {
+      return;
+    }
+
+    // Determine number of threads.
+    // Each thread needs a full-size output buffer (total_pixels * 4 bytes) and the
+    // merge phase iterates all buffers sequentially. Too many threads causes the
+    // merge cost (num_threads * total_pixels) to dominate. We approximate:
+    //   processing_time ~ num_spectra / num_threads
+    //   merge_time      ~ num_threads * total_pixels
+    // Optimal: num_threads ~ sqrt(num_spectra / total_pixels * C)
+    // In practice, cap at sqrt(num_spectra) and limit total buffer memory to ~4MB.
+    int num_threads = 1;
+    #ifdef _OPENMP
+    {
+      int max_threads = omp_get_max_threads();
+      int max_by_memory = std::max(1, static_cast<int>(4ULL * 1024 * 1024 / (total_pixels * sizeof(float))));
+      int max_by_sqrt = std::max(1, static_cast<int>(std::sqrt(static_cast<double>(spectra_view.size()))));
+      num_threads = std::min({max_threads, max_by_memory, max_by_sqrt});
+    }
+    #endif
+
+    // For single-threaded case, write directly to output (skip buffer allocation + merge)
+    if (num_threads <= 1)
+    {
+      for (Size spec_idx = 0; spec_idx < spectra_view.size(); ++spec_idx)
+      {
+        const MSSpectrum& spec = spectra_view[spec_idx].get();
+        const double rt = spec.getRT();
+        Int64 rt_bin = static_cast<Int64>((rt - min_rt) * rt_scale);
+        if (rt_bin < 0) continue;
+        if (rt_bin >= static_cast<Int64>(rt_bins)) rt_bin = static_cast<Int64>(rt_bins) - 1;
+
+        auto mz_begin_it = spec.MZBegin(min_mz);
+        auto mz_end_it = spec.MZEnd(max_mz);
+        const Size peak_start = static_cast<Size>(mz_begin_it - spec.begin());
+        const Size peak_end = static_cast<Size>(mz_end_it - spec.begin());
+        const Int64 mz_bins_minus_one = static_cast<Int64>(mz_bins) - 1;
+
+        if (aggregation == RasterAggregation::SUM)
+        {
+          for (Size peak_idx = peak_start; peak_idx < peak_end; ++peak_idx)
+          {
+            Int64 mz_bin = static_cast<Int64>((spec[peak_idx].getMZ() - min_mz) * mz_scale);
+            if (mz_bin >= 0)
+            {
+              if (mz_bin > mz_bins_minus_one) mz_bin = mz_bins_minus_one;
+              output[static_cast<Size>(mz_bin) * rt_bins + static_cast<Size>(rt_bin)] += spec[peak_idx].getIntensity();
+            }
+          }
+        }
+        else
+        {
+          for (Size peak_idx = peak_start; peak_idx < peak_end; ++peak_idx)
+          {
+            Int64 mz_bin = static_cast<Int64>((spec[peak_idx].getMZ() - min_mz) * mz_scale);
+            if (mz_bin >= 0)
+            {
+              if (mz_bin > mz_bins_minus_one) mz_bin = mz_bins_minus_one;
+              const Size pixel_idx = static_cast<Size>(mz_bin) * rt_bins + static_cast<Size>(rt_bin);
+              const float intensity = spec[peak_idx].getIntensity();
+              if (intensity > output[pixel_idx]) output[pixel_idx] = intensity;
+            }
+          }
+        }
+      }
+      return;
+    }
+
+    // Multi-threaded: allocate thread-local accumulation buffers to avoid contention
+    std::vector<std::vector<float>> thread_buffers(num_threads);
+    for (auto& buf : thread_buffers)
+    {
+      buf.resize(total_pixels, 0.0f);
+    }
+
+    // Process spectra in parallel using thread-local buffers
+    #pragma omp parallel for schedule(dynamic) num_threads(num_threads)
+    for (Int64 spec_idx = 0; spec_idx < static_cast<Int64>(spectra_view.size()); ++spec_idx)
+    {
+      int thread_id = 0;
+      #ifdef _OPENMP
+      thread_id = omp_get_thread_num();
+      #endif
+      
+      float* local_buffer = thread_buffers[thread_id].data();
+      const MSSpectrum& spec = spectra_view[spec_idx].get();
+      
+      // Compute RT bin for this spectrum
+      const double rt = spec.getRT();
+      Int64 rt_bin = static_cast<Int64>((rt - min_rt) * rt_scale);
+
+      // Clamp to valid range: values exactly at max_rt should go in last bin
+      if (rt_bin < 0)
+      {
+        continue;
+      }
+      if (rt_bin >= static_cast<Int64>(rt_bins))
+      {
+        rt_bin = static_cast<Int64>(rt_bins) - 1;
+      }
+
+      // Use binary search to find peaks in m/z range (leveraging sortedness of peaks)
+      auto mz_begin_it = spec.MZBegin(min_mz);
+      auto mz_end_it = spec.MZEnd(max_mz);
+
+      // Convert to index-based loop for consistent processing
+      const Size peak_start = static_cast<Size>(mz_begin_it - spec.begin());
+      const Size peak_end = static_cast<Size>(mz_end_it - spec.begin());
+
+      // Process peaks within m/z range
+      const Int64 mz_bins_minus_one = static_cast<Int64>(mz_bins) - 1;
+      if (aggregation == RasterAggregation::SUM)
+      {
+        // Note: No SIMD here - scatter-add can have multiple peaks mapping to same bin
+        for (Size peak_idx = peak_start; peak_idx < peak_end; ++peak_idx)
+        {
+          const double mz = spec[peak_idx].getMZ();
+          Int64 mz_bin = static_cast<Int64>((mz - min_mz) * mz_scale);
+
+          // Clamp to valid range: values exactly at max_mz should go in last bin
+          if (mz_bin >= 0)
+          {
+            if (mz_bin > mz_bins_minus_one)
+            {
+              mz_bin = mz_bins_minus_one;
+            }
+            const Size pixel_idx = static_cast<Size>(mz_bin) * rt_bins + static_cast<Size>(rt_bin);
+            local_buffer[pixel_idx] += spec[peak_idx].getIntensity();
+          }
+        }
+      }
+      else // MAX aggregation
+      {
+        for (Size peak_idx = peak_start; peak_idx < peak_end; ++peak_idx)
+        {
+          const double mz = spec[peak_idx].getMZ();
+          Int64 mz_bin = static_cast<Int64>((mz - min_mz) * mz_scale);
+
+          // Clamp to valid range: values exactly at max_mz should go in last bin
+          if (mz_bin >= 0)
+          {
+            if (mz_bin > mz_bins_minus_one)
+            {
+              mz_bin = mz_bins_minus_one;
+            }
+            const Size pixel_idx = static_cast<Size>(mz_bin) * rt_bins + static_cast<Size>(rt_bin);
+            const float intensity = spec[peak_idx].getIntensity();
+            if (intensity > local_buffer[pixel_idx])
+            {
+              local_buffer[pixel_idx] = intensity;
+            }
+          }
+        }
+      }
+    }
+
+    // Merge thread-local buffers into output
+    if (aggregation == RasterAggregation::SUM)
+    {
+      // Sum reduction: add all thread buffers (iterating per-buffer is cache-friendly)
+      for (int t = 0; t < num_threads; ++t)
+      {
+        const float* thread_buf = thread_buffers[t].data();
+        #pragma omp simd
+        for (Size i = 0; i < total_pixels; ++i)
+        {
+          output[i] += thread_buf[i];
+        }
+      }
+    }
+    else // MAX aggregation
+    {
+      // Max reduction: take maximum across all thread buffers
+      for (int t = 0; t < num_threads; ++t)
+      {
+        const float* thread_buf = thread_buffers[t].data();
+        for (Size i = 0; i < total_pixels; ++i)
+        {
+          if (thread_buf[i] > output[i])
+          {
+            output[i] = thread_buf[i];
+          }
+        }
+      }
+    }
   }
 
   void MSExperiment::reserveSpaceSpectra(Size s)
@@ -346,7 +787,7 @@ namespace OpenMS
   /**
   @brief Sorts the data points by retention time
 
-  @param sort_mz if @em true, spectra are sorted by m/z position as well
+  @param[in] sort_mz if @em true, spectra are sorted by m/z position as well
   */
   void MSExperiment::sortSpectra(bool sort_mz)
   {
@@ -365,7 +806,7 @@ namespace OpenMS
   /**
   @brief Sorts the data points of the chromatograms by m/z
 
-  @param sort_rt if @em true, chromatograms are sorted by rt position as well
+  @param[in] sort_rt if @em true, chromatograms are sorted by rt position as well
   */
   void MSExperiment::sortChromatograms(bool sort_rt)
   {
@@ -384,7 +825,7 @@ namespace OpenMS
   /**
   @brief Checks if all spectra are sorted with respect to ascending RT
 
-  @param check_mz if @em true, checks if all peaks are sorted with respect to ascending m/z
+  @param[in] check_mz if @em true, checks if all peaks are sorted with respect to ascending m/z
   */
   bool MSExperiment::isSorted(bool check_mz) const
   {
@@ -612,6 +1053,7 @@ namespace OpenMS
     {
       return -1;
     }
+    
     auto spec = spectra_.cbegin();
     spec += zero_based_index;
     auto pc_spec = getFirstProductSpectrum(spec);
@@ -816,7 +1258,7 @@ namespace OpenMS
   /**
   @brief Clears all data and meta data
 
-  @param clear_meta_data If @em true, all meta data is cleared in addition to the data.
+  @param[in] clear_meta_data If @em true, all meta data is cleared in addition to the data.
   */
   void MSExperiment::clear(bool clear_meta_data)
   {
@@ -880,7 +1322,7 @@ namespace OpenMS
 
   MSExperiment::SpectrumType* MSExperiment::createSpec_(PeakType::CoordinateType rt)
   {
-    spectra_.emplace_back(SpectrumType());
+    spectra_.emplace_back();
     SpectrumType* spectrum = &(spectra_.back());
     spectrum->setRT(rt);
     spectrum->setMSLevel(1);
@@ -890,8 +1332,8 @@ namespace OpenMS
   /*
   @brief Append a spectrum including float data arrays to current MSExperiment
 
-  @param rt RT of new spectrum
-  @param metadata_names Names of float data arrays attached to this spectrum
+  @param[in] rt RT of new spectrum
+  @param[in] metadata_names Names of float data arrays attached to this spectrum
   @return Pointer to newly created spectrum
   */
   MSExperiment::SpectrumType* MSExperiment::createSpec_(PeakType::CoordinateType rt, const StringList& metadata_names)
@@ -901,7 +1343,7 @@ namespace OpenMS
     spectrum->getFloatDataArrays().reserve(metadata_names.size());
     for (StringList::const_iterator itm = metadata_names.begin(); itm != metadata_names.end(); ++itm)
     {
-      spectrum->getFloatDataArrays().push_back(MSSpectrum::FloatDataArray());
+      spectrum->getFloatDataArrays().emplace_back();
       spectrum->getFloatDataArrays().back().setName(*itm);
     }
     return spectrum;

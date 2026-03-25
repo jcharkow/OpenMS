@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2023, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -53,7 +53,7 @@ namespace OpenMS
         total_loss_spectrum.getStringDataArrays()[0].push_back(ion_name);
         total_loss_spectrum.getIntegerDataArrays()[NuXLConstants::IA_CHARGE_INDEX].push_back(charge);      
         double mono_pos = fixed_and_variable_modified_peptide.getMonoWeight(Residue::Full, charge) - M_star_pc_loss; // precursor peak
-        total_loss_spectrum.emplace_back(mono_pos / (double)charge, 1.0);
+        total_loss_spectrum.emplace_back(mono_pos / (double)charge, 1.0f);
       }
     }
     // add special immonium ions

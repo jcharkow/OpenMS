@@ -7,6 +7,7 @@ AccurateMassSearch
 AssayGeneratorMetabo
 AssayGeneratorMetaboSirius
 BaselineFilter
+FeatureFinderLFQ
 ClusterMassTraces
 ClusterMassTracesByPrecursor
 CometAdapter
@@ -40,7 +41,6 @@ FileInfo
 FileMerger
 FLASHDeconv
 FuzzyDiff
-GenericWrapper
 GNPSExport
 HighResPrecursorMassCorrector
 IDConflictResolver
@@ -58,6 +58,7 @@ IDSplitter
 InternalCalibration
 IonMobilityBinning
 IsobaricAnalyzer
+IsobaricWorkflow
 JSONExporter
 LuciphorAdapter
 MapAlignerIdentification
@@ -70,9 +71,9 @@ MaRaClusterAdapter
 MascotAdapterOnline
 MassCalculator
 MassTraceExtractor
-MetaProSIP
 MetaboliteAdductDecharger
 MetaboliteSpectralMatcher
+MetaProSIP
 MRMMapper
 MRMPairFinder
 MSGFPlusAdapter
@@ -81,15 +82,14 @@ MSstatsConverter
 MultiplexResolver
 MzMLSplitter
 MzTabExporter
-NucleicAcidSearchEngine
 NoiseFilterGaussian
 NoiseFilterSGolay
 NovorAdapter
+NucleicAcidSearchEngine
 OpenMSDatabasesInfo
 OpenMSInfo
 OpenNuXL
 OpenPepXL
-OpenPepXLLF
 OpenSwathAnalyzer
 OpenSwathAssayGenerator
 OpenSwathChromatogramExtractor
@@ -99,7 +99,9 @@ OpenSwathFeatureXMLToTSV
 OpenSwathRTNormalizer
 PeakPickerHiRes
 PeakPickerIterative
+PeakPickerIM
 PeptideIndexer
+PeptideDataBaseSearchFI
 PercolatorAdapter
 PhosphoScoring
 ProteinInference
@@ -127,11 +129,11 @@ SpectraFilterNLargest
 SpectraFilterNormalizer
 SpectraFilterThresholdMower
 SpectraFilterWindowMower
-SpectraSTSearchAdapter
 SpectraMerger
+SpectraSTSearchAdapter
 StaticModification
-TextExporter
 TICCalculator
+TextExporter
 TriqlerConverter
 XFDR
 XMLValidator
@@ -149,6 +151,12 @@ if(NOT DISABLE_OPENSWATH)
     MRMTransitionGroupPicker
   )
 endif(NOT DISABLE_OPENSWATH)
+
+set(TOPP_executables
+  ${TOPP_executables}
+  QPXConverter
+  ParquetConverter
+)
 
 ## all targets requiring OpenMS_GUI
 set(TOPP_executables_with_GUIlib

@@ -15,7 +15,8 @@
 #include <OpenMS/SYSTEM/File.h>
 #include <OpenMS/KERNEL/MSExperiment.h>
 
-#include <QtCore/QDir>
+#include <OpenMS/SYSTEM/PathUtils.h>
+#include <filesystem>
 #include <cmath> // isnan
 #include <fstream>
 //#include <vector>
@@ -32,8 +33,7 @@ MQMsms::MQMsms(const String& path)
   filename_ = path + "/msms.txt";
   try
   {
-    QString msms_path = QString::fromStdString(path);
-    QDir().mkpath(msms_path);
+    std::filesystem::create_directories(to_path(path));
     file_ = std::fstream(filename_, std::fstream::out);
   }
   catch (...)
@@ -227,7 +227,7 @@ void MQMsms::exportRowFromFeature_(
   file_ << "NA" << "\t"; // Neutral loss level
   file_ << "NA" << "\t"; // ETD identification type
 
-  ptr_best_hit->getMetaValue("target_decoy") == "decoy" ? file_ << "1\t" : file_ << "\t"; // reverse
+  ptr_best_hit->isDecoy() ? file_ << "1\t" : file_ << "\t"; // reverse
 
   file_ << "NA" << "\t"; // All scores
   file_ << "NA" << "\t"; // All sequences

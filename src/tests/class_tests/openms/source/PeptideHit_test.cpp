@@ -12,6 +12,8 @@
 ///////////////////////////
 
 #include <string>
+#include <unordered_set>
+#include <functional>
 
 #include <OpenMS/METADATA/PeptideHit.h>
 #include <OpenMS/DATASTRUCTURES/String.h>
@@ -575,6 +577,134 @@ START_SECTION((PeptideHit& operator=(PeptideHit&& source) noexcept - with analys
   // Source should have no meta values after move
   TEST_EQUAL(source.metaValueExists("_ar_0_score_type"), false);
   TEST_EQUAL(source.getAnalysisResults().size(), 0);
+}
+END_SECTION
+
+START_SECTION((bool isDecoy() const))
+{
+  PeptideHit hit;
+  
+  // Test default behavior (no target_decoy meta value set)
+  // Should return false since default is "target"
+  TEST_EQUAL(hit.isDecoy(), false);
+  
+  // Test with explicit "target" value
+  hit.setMetaValue("target_decoy", "target");
+  TEST_EQUAL(hit.isDecoy(), false);
+  
+  // Test with "decoy" value
+  hit.setMetaValue("target_decoy", "decoy");
+  TEST_EQUAL(hit.isDecoy(), true);
+  
+  // Test with "DECOY" (case insensitive)
+  hit.setMetaValue("target_decoy", "DECOY");
+  TEST_EQUAL(hit.isDecoy(), true);
+  
+  // Test with other values
+  hit.setMetaValue("target_decoy", "target+decoy");
+  TEST_EQUAL(hit.isDecoy(), false);
+}
+END_SECTION
+
+START_SECTION((void setTargetDecoyType(TargetDecoyType type)))
+{
+  PeptideHit hit;
+  
+  // Test setting TARGET
+  hit.setTargetDecoyType(PeptideHit::TargetDecoyType::TARGET);
+  TEST_EQUAL(hit.getMetaValue("target_decoy"), "target");
+  
+  // Test setting DECOY
+  hit.setTargetDecoyType(PeptideHit::TargetDecoyType::DECOY);
+  TEST_EQUAL(hit.getMetaValue("target_decoy"), "decoy");
+  
+  // Test setting TARGET_DECOY
+  hit.setTargetDecoyType(PeptideHit::TargetDecoyType::TARGET_DECOY);
+  TEST_EQUAL(hit.getMetaValue("target_decoy"), "target+decoy");
+  
+  // Test setting UNKNOWN (should remove meta value)
+  hit.setTargetDecoyType(PeptideHit::TargetDecoyType::UNKNOWN);
+  TEST_EQUAL(hit.metaValueExists("target_decoy"), false);
+  TEST_EQUAL(hit.getTargetDecoyType(), PeptideHit::TargetDecoyType::UNKNOWN);
+}
+END_SECTION
+
+START_SECTION((TargetDecoyType getTargetDecoyType() const))
+{
+  PeptideHit hit;
+  
+  // Test default behavior (should return UNKNOWN when meta value doesn't exist)
+  TEST_EQUAL(hit.getTargetDecoyType(), PeptideHit::TargetDecoyType::UNKNOWN);
+  
+  // Test with explicit "target" value
+  hit.setMetaValue("target_decoy", "target");
+  TEST_EQUAL(hit.getTargetDecoyType(), PeptideHit::TargetDecoyType::TARGET);
+  
+  // Test with "decoy" value
+  hit.setMetaValue("target_decoy", "decoy");
+  TEST_EQUAL(hit.getTargetDecoyType(), PeptideHit::TargetDecoyType::DECOY);
+  
+  // Test with "DECOY" (case insensitive)
+  hit.setMetaValue("target_decoy", "DECOY");
+  TEST_EQUAL(hit.getTargetDecoyType(), PeptideHit::TargetDecoyType::DECOY);
+  
+  // Test with "target+decoy" value
+  hit.setMetaValue("target_decoy", "target+decoy");
+  TEST_EQUAL(hit.getTargetDecoyType(), PeptideHit::TargetDecoyType::TARGET_DECOY);
+  
+  // Test with "TARGET+DECOY" (case insensitive)
+  hit.setMetaValue("target_decoy", "TARGET+DECOY");
+  TEST_EQUAL(hit.getTargetDecoyType(), PeptideHit::TargetDecoyType::TARGET_DECOY);
+  
+  // Test with unrecognized value (should throw InvalidValue exception)
+  hit.setMetaValue("target_decoy", "unrecognized_value");
+  TEST_EXCEPTION(Exception::InvalidValue, hit.getTargetDecoyType());
+  
+  // Test after removing meta value (should return UNKNOWN)
+  hit.removeMetaValue("target_decoy");
+  TEST_EQUAL(hit.getTargetDecoyType(), PeptideHit::TargetDecoyType::UNKNOWN);
+}
+END_SECTION
+
+START_SECTION(([EXTRA] PeptideHit::SequenceChargeHash and SequenceChargeEqual))
+{
+  // Test SequenceChargeHash - hashes based on sequence and charge
+  PeptideHit hit1(1.0, 1, 2, AASequence::fromString("PEPTIDE"));
+  PeptideHit hit2(2.0, 2, 2, AASequence::fromString("PEPTIDE"));  // Same seq+charge, different score/rank
+  PeptideHit hit3(1.0, 1, 3, AASequence::fromString("PEPTIDE"));  // Different charge
+  PeptideHit hit4(1.0, 1, 2, AASequence::fromString("PEPTIDER")); // Different sequence
+
+  PeptideHit::SequenceChargeHash hasher;
+  PeptideHit::SequenceChargeEqual equal;
+
+  // Same sequence and charge should have equal hashes
+  TEST_EQUAL(hasher(hit1), hasher(hit2))
+  TEST_EQUAL(equal(hit1, hit2), true)
+
+  // Different charge should have different hashes
+  TEST_NOT_EQUAL(hasher(hit1), hasher(hit3))
+  TEST_EQUAL(equal(hit1, hit3), false)
+
+  // Different sequence should have different hashes
+  TEST_NOT_EQUAL(hasher(hit1), hasher(hit4))
+  TEST_EQUAL(equal(hit1, hit4), false)
+
+  // Test with modifications
+  PeptideHit hit5(1.0, 1, 2, AASequence::fromString("PEPTM(Oxidation)IDE"));
+  PeptideHit hit6(1.0, 1, 2, AASequence::fromString("PEPTMIDE"));  // No modification
+  TEST_NOT_EQUAL(hasher(hit5), hasher(hit6))  // Modification matters
+
+  // Test use in unordered_set with custom hasher
+  std::unordered_set<PeptideHit, PeptideHit::SequenceChargeHash, PeptideHit::SequenceChargeEqual> hit_set;
+  hit_set.insert(hit1);
+  hit_set.insert(hit2);  // Same seq+charge as hit1, should not increase size
+  hit_set.insert(hit3);  // Different charge
+  hit_set.insert(hit4);  // Different sequence
+  TEST_EQUAL(hit_set.size(), 3)
+
+  // Verify we can find elements
+  PeptideHit query(99.0, 99, 2, AASequence::fromString("PEPTIDE"));  // Different score/rank but same seq+charge
+  TEST_EQUAL(hit_set.count(query), 1)
 }
 END_SECTION
 

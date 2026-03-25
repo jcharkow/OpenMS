@@ -1,36 +1,11 @@
-# --------------------------------------------------------------------------
-#                   OpenMS -- Open-Source Mass Spectrometry
-# --------------------------------------------------------------------------
-# Copyright OpenMS Inc. -- Eberhard Karls University Tuebingen,
-# ETH Zurich, and Freie Universitaet Berlin 2002-present.
-#
-# This software is released under a three-clause BSD license:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of any author or any participating institution
-#    may be used to endorse or promote products derived from this software
-#    without specific prior written permission.
-# For a full list of authors, refer to the file AUTHORS.
-# --------------------------------------------------------------------------
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL ANY OF THE AUTHORS OR THE CONTRIBUTING
-# INSTITUTIONS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
+# Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
+# SPDX-License-Identifier: BSD-3-Clause
+# 
 # --------------------------------------------------------------------------
 # $Maintainer: Chris Bielow $
 # $Authors: Stephan Aiche, Chris Bielow $
 # --------------------------------------------------------------------------
+
 
 project("OpenMS-3rd-party-libs")
 cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
@@ -51,8 +26,6 @@ file(WRITE ${TPLICENSEFILE} "The OpenMS library links statically to the followin
 ## internal packages (not checked if they exist externally)
 ##
 add_subdirectory(evergreen/src) # evergreen Bayesian inference library (0.9)
-add_subdirectory(eol-bspline)
-add_subdirectory(IsoSpec)
 add_subdirectory(GTE)
 add_subdirectory(Quadtree)
 
@@ -91,4 +64,22 @@ if(USE_EXTERNAL_SIMDE)
     message(STATUS "External 'SIMDe' at: '${SIMDe_INCLUDE_DIR}'")
 else()
     add_subdirectory(simde)
+endif()
+
+option(USE_EXTERNAL_ISOSPEC "Use an external IsoSpec library" OFF)
+message(STATUS "Option USE_EXTERNAL_ISOSPEC: ${USE_EXTERNAL_ISOSPEC}")
+if(USE_EXTERNAL_ISOSPEC)
+    find_package(IsoSpec REQUIRED GLOBAL)  ## global propagates the target up to the parent project
+    message(STATUS "External 'IsoSpec' at: '${IsoSpec_DIR}'")
+else()
+    add_subdirectory(IsoSpec)
+endif()
+
+option(USE_EXTERNAL_EOLBSPLINE "Use an external eol-bspline library" OFF)
+message(STATUS "Option USE_EXTERNAL_EOLBSPLINE: ${USE_EXTERNAL_EOLBSPLINE}")
+if(USE_EXTERNAL_EOLBSPLINE)
+    find_package(eol-bspline REQUIRED GLOBAL)  ## global propagates the target up to the parent project
+    message(STATUS "External 'eol-bspline' at: '${eol-bspline_DIR}'")
+else()
+    add_subdirectory(eol-bspline)
 endif()

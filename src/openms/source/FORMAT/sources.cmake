@@ -68,6 +68,7 @@ ParamCTDFile.cpp
 ParamCWLFile.cpp
 ParamJSONFile.cpp
 ParamXMLFile.cpp
+PEFFFile.cpp
 PTMXMLFile.cpp
 PeakTypeEstimator.cpp
 PepNovoInfile.cpp
@@ -97,10 +98,31 @@ XQuestResultXMLFile.cpp
 XTandemInfile.cpp
 XTandemXMLFile.cpp
 ZlibCompression.cpp
+MRMFile.cpp
+TargetedDataFileLoader.cpp
 )
 
 if (WITH_HDF5)
-  list(APPEND sources_list HDF5Connector.cpp)  
+  list(APPEND sources_list HDF5Connector.cpp)
+endif()
+
+list(APPEND sources_list ZipArchiveFile.cpp)
+list(APPEND sources_list ZipRandomAccessFile.cpp)
+list(APPEND sources_list MSExperimentArrowExport.cpp)
+list(APPEND sources_list ConsensusMapArrowExport.cpp)
+list(APPEND sources_list ParquetFile.cpp)
+list(APPEND sources_list ParquetFilter.cpp)
+list(APPEND sources_list QPXFile.cpp)
+list(APPEND sources_list XICParquetFile.cpp)
+list(APPEND sources_list XIMParquetFile.cpp)
+list(APPEND sources_list ProteinGroupArrowExport.cpp)
+list(APPEND sources_list ProteinIdentificationArrowIO.cpp)
+list(APPEND sources_list FeatureMapArrowIO.cpp)
+list(APPEND sources_list ConsensusMapArrowIO.cpp)
+list(APPEND sources_list ArrowSchemaRegistry.cpp)
+
+if (WITH_OPENTIMS)
+  list(APPEND sources_list BrukerTimsFile.cpp)
 endif()
 
 ### add path to the filenames

@@ -9,6 +9,9 @@
 #include <OpenMS/KERNEL/FeatureMap.h>
 #include <OpenMS/KERNEL/Feature.h>
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/CONCEPT/LogStream.h>
+#include <OpenMS/KERNEL/MSExperiment.h>
+#include <OpenMS/METADATA/PeptideIdentificationList.h>
 #include <OpenMS/CONCEPT/Constants.h>
 #include <OpenMS/APPLICATIONS/TOPPBase.h>
 #include <OpenMS/CHEMISTRY/ModificationsDB.h>
@@ -66,6 +69,101 @@ typedef vector<IsotopePattern> IsotopePatterns;
 @page TOPP_MetaProSIP MetaProSIP
 
 @brief Performs proteinSIP on peptide features for elemental flux analysis.
+
+MetaProSIP detects and quantifies stable isotope incorporation in peptides from protein-SIP experiments.
+It takes centroided mzML data, featureXML with identifications (from IDMapper), and a protein FASTA database
+as input and produces incorporation reports as tab-separated CSV files.
+
+Relative isotope abundances (RIA) are calculated on the peptide level and then transferred to the protein
+level using the median of all peptide RIAs. Protein-level RIAs are further summarized at the group level
+(also as medians). Groups cluster proteins with similar incorporation behavior.
+
+@section MetaProSIP_csv_outputs CSV Output Formats
+
+@subsection MetaProSIP_out_csv Group-Centric Report (-out_csv)
+
+The group-centric report is organized hierarchically with three levels:
+
+<b>Group level</b> (one row per group):
+| Column | Description |
+|--------|-------------|
+| Group N | Group identifier (1-based) |
+| \# Distinct Peptides | Number of distinct peptide sequences in the group |
+| \# Unambiguous Proteins | Number of proteins identified by unique peptides only |
+| Median Global LR | Median labeling ratio across all peptides in the group |
+| median RIA 1, 2, ... | Median relative isotope abundance for each incorporation level |
+
+<b>Protein level</b> (one row per protein within a group):
+| Column | Description |
+|--------|-------------|
+| Protein Accession | Protein identifier from the FASTA database |
+| Description | Protein description from the FASTA header |
+| \# Unique Peptides | Number of peptides unique to this protein (not shared with other proteins) |
+| Median Global LR | Median labeling ratio across all peptides of this protein |
+| median RIA 1, 2, ... | Median relative isotope abundance for each incorporation level |
+
+<b>Unique peptide level</b> (one row per peptide within a protein):
+| Column | Description |
+|--------|-------------|
+| Peptide Sequence | Amino acid sequence |
+| RT | Retention time of the feature apex (minutes) |
+| Exp. m/z | Experimentally observed m/z |
+| Theo. m/z | Theoretical m/z computed from the sequence and charge |
+| Charge | Charge state |
+| Score | Identification score (e.g., search engine score or q-value) |
+| TIC fraction | Fraction of the MS1 TIC explained by the isotope pattern decomposition |
+| \#non-natural weights | Number of non-zero decomposition coefficients beyond the natural isotope pattern |
+| RIA N | Relative isotope abundance (%) for the Nth incorporation level |
+| INT N | Intensity (abundance) for the Nth incorporation level |
+| Cor. N | Correlation between observed and theoretical isotope pattern for the Nth level |
+| Peak intensities | Space-separated list of isotopic peak intensities across the mass range |
+| Global LR | Labeling ratio: fraction of total ion current in higher (non-natural) labeling states |
+
+<b>Non-unique peptides</b> are listed separately at the end (not grouped by incorporation) with additional columns:
+| Column | Description |
+|--------|-------------|
+| Accessions | Comma-separated list of all protein accessions this peptide maps to |
+| Descriptions | Comma-separated protein descriptions |
+
+The remaining columns (Peptide Sequence, Score, RT, Exp. m/z, Theo. m/z, Charge, \#non-natural weights,
+RIA/INT/Cor., Peak intensities, Global LR) are the same as for unique peptides.
+
+@subsection MetaProSIP_out_peptide_csv Peptide-Centric Report (-out_peptide_centric_csv)
+
+The peptide-centric report lists one row per peptide (PSM) with the following columns:
+
+| Column | Description |
+|--------|-------------|
+| Peptide Sequence | Amino acid sequence |
+| Feature | Feature type: "feature" (identified from feature), "id" (identified from ID), or "unidentified" |
+| Quality Report Spectrum | File path to the spectrum quality report plot (if quality report output is enabled) |
+| Quality report scores | File path to the scores quality report plot |
+| Sample Name | Name of the input mzML file |
+| Protein Accessions | Comma-separated protein accessions |
+| Description | Comma-separated protein descriptions from the FASTA header |
+| Unique | Whether the peptide maps to a single protein (true/false) |
+| \#Ambiguity members | Number of proteins this peptide maps to |
+| Score | Identification score |
+| RT | Retention time of the feature apex (minutes) |
+| Exp. m/z | Experimentally observed m/z |
+| Theo. m/z | Theoretical m/z (for unidentified features this equals the precursor m/z) |
+| Charge | Charge state |
+| TIC fraction | Fraction of MS1 TIC explained by the decomposition |
+| \#non-natural weights | Number of non-zero decomposition coefficients beyond the natural pattern |
+| Peak intensities | Space-separated list of isotopic peak intensities |
+| Group | Group/cluster index assigned by incorporation-based clustering |
+| Global Peptide LR | Global labeling ratio for this peptide |
+| RIA N | Relative isotope abundance (%) for incorporation level N (columns for up to 10 levels) |
+| LR of RIA N | Labeling ratio corresponding to RIA N |
+| INT N | Intensity for incorporation level N |
+| Cor. N | Correlation coefficient for incorporation level N |
+
+@note For unidentified features (Feature = "unidentified"), no amino acid sequence is available. The Theo. m/z
+column contains the precursor m/z value. Only identified features allow reliable calculation of elemental
+composition and thus accurate incorporation analysis.
+
+@note Protein Accessions may be empty if the FASTA database passed via @p -in_fasta does not contain the
+identified accessions.
 
 <B>The command line parameters of this tool are:</B>
 @verbinclude TOPP_MetaProSIP.cli
@@ -434,7 +532,7 @@ public:
 
     QProcess p;
     QStringList env = QProcess::systemEnvironment();
-    env << QString("R_LIBS=") + tmp_path.toQString();
+    env << QString("R_LIBS=") + QString::fromStdString(tmp_path);
     p.setEnvironment(env);
 
     QStringList qparam;
@@ -443,7 +541,7 @@ public:
     {
       qparam << "--quiet";
     }
-    qparam << "--slave" << "--file=" + QString(tmp_path.toQString() + "/" + script_filename.toQString());
+    qparam << "--slave" << "--file=" + QString::fromStdString(tmp_path + "/" + script_filename);
     p.start(executable, qparam);
     p.waitForFinished(-1);
     int status = p.exitCode();
@@ -455,11 +553,11 @@ public:
     }
     else
     {
-      QFile(QString(tmp_path.toQString() + "/" + filename.toQString())).copy(output_dir.toQString() + "/heatmap" + file_suffix.toQString() + "." + file_extension.toQString());
+      QFile(QString::fromStdString(tmp_path + "/" + filename)).copy(QString::fromStdString(output_dir + "/heatmap" + file_suffix + "." + file_extension));
       if (debug_level < 1)
       {
-        QFile(QString(tmp_path.toQString() + "/" + script_filename.toQString())).remove();
-        QFile(QString(tmp_path.toQString() + "/" + filename.toQString())).remove();
+        QFile(QString::fromStdString(tmp_path + "/" + script_filename)).remove();
+        QFile(QString::fromStdString(tmp_path + "/" + filename)).remove();
       }
     }
   }
@@ -517,11 +615,11 @@ public:
 
       QProcess p;
       QStringList env = QProcess::systemEnvironment();
-      env << QString("R_LIBS=") + tmp_path.toQString();
+      env << QString("R_LIBS=") + QString::fromStdString(tmp_path);
       p.setEnvironment(env);
 
       QStringList qparam;
-      qparam << "--vanilla" << "--quiet" << "--slave" << "--file=" + QString(tmp_path.toQString() + "/" + script_filename.toQString());
+      qparam << "--vanilla" << "--quiet" << "--slave" << "--file=" + QString::fromStdString(tmp_path + "/" + script_filename);
       p.start(executable, qparam);
       p.waitForFinished(-1);
       int status = p.exitCode();
@@ -532,11 +630,11 @@ public:
       }
       else
       {
-        QFile(QString(tmp_path.toQString() + "/" + filename.toQString())).copy(output_dir.toQString() + "/spectrum" + file_suffix.toQString() + "_rt_" + String(sip_peptides[i].feature_rt).toQString() + "." + file_extension.toQString());
+        QFile(QString::fromStdString(tmp_path + "/" + filename)).copy(QString::fromStdString(output_dir + "/spectrum" + file_suffix + "_rt_" + String(sip_peptides[i].feature_rt) + "." + file_extension));
         if (debug_level < 1)
         {
-          QFile(QString(tmp_path.toQString() + "/" + script_filename.toQString())).remove();
-          QFile(QString(tmp_path.toQString() + "/" + filename.toQString())).remove();
+          QFile(QString::fromStdString(tmp_path + "/" + script_filename)).remove();
+          QFile(QString::fromStdString(tmp_path + "/" + filename)).remove();
         }
       }
     }
@@ -660,7 +758,7 @@ public:
       current_script.addLine("<p> <img src=\"" + score_filename + R"(" alt="graphic"></p>)");
     }
     current_script.addLine("\n</body>\n</html>");
-    current_script.store(qc_output_directory.toQString() + "/index" + file_suffix.toQString() + ".html");
+    current_script.store(qc_output_directory + "/index" + file_suffix + ".html");
   }
 
   static void plotScoresAndWeights(const String& output_dir, const String& tmp_path, const String& file_suffix, const String& file_extension, const vector<SIPPeptide>& sip_peptides, double score_plot_yaxis_min, Size debug_level = 0, const QString& executable = QString("R"))
@@ -738,11 +836,11 @@ public:
 
       QProcess p;
       QStringList env = QProcess::systemEnvironment();
-      env << QString("R_LIBS=") + tmp_path.toQString();
+      env << QString("R_LIBS=") + QString::fromStdString(tmp_path);
       p.setEnvironment(env);
 
       QStringList qparam;
-      qparam << "--vanilla" << "--quiet" << "--slave" << "--file=" + QString(tmp_path.toQString() + "/" + script_filename.toQString());
+      qparam << "--vanilla" << "--quiet" << "--slave" << "--file=" + QString::fromStdString(tmp_path + "/" + script_filename);
       p.start(executable, qparam);
       p.waitForFinished(-1);
       int status = p.exitCode();
@@ -753,11 +851,11 @@ public:
       }
       else
       {
-        QFile(QString(tmp_path.toQString() + "/" + score_filename.toQString())).copy(output_dir.toQString() + "/scores" + file_suffix.toQString() + "_rt_" + String(sip_peptides[i].feature_rt).toQString() + "." + file_extension.toQString());
+        QFile(QString::fromStdString(tmp_path + "/" + score_filename)).copy(QString::fromStdString(output_dir + "/scores" + file_suffix + "_rt_" + String(sip_peptides[i].feature_rt) + "." + file_extension));
         if (debug_level < 1)
         {
-          QFile(QString(tmp_path.toQString() + "/" + script_filename.toQString())).remove();
-          QFile(QString(tmp_path.toQString() + "/" + score_filename.toQString())).remove();
+          QFile(QString::fromStdString(tmp_path + "/" + script_filename)).remove();
+          QFile(QString::fromStdString(tmp_path + "/" + score_filename)).remove();
         }
       }
     }
@@ -1952,11 +2050,11 @@ public:
       QProcess p;
       p.setProcessChannelMode(QProcess::MergedChannels);
       QStringList env = QProcess::systemEnvironment();
-      env << QString("R_LIBS=") + tmp_path.toQString();
+      env << QString("R_LIBS=") + QString::fromStdString(tmp_path);
       p.setEnvironment(env);
 
       QStringList checkRinPathQParam;
-      checkRinPathQParam << "--vanilla" << "--quiet" << "--slave" << "--file=" + script_filename.toQString();
+      checkRinPathQParam << "--vanilla" << "--quiet" << "--slave" << "--file=" + QString::fromStdString(script_filename);
       p.start(executable, checkRinPathQParam);
       p.waitForFinished(-1);
 
@@ -1996,11 +2094,11 @@ public:
     QProcess p;
     p.setProcessChannelMode(QProcess::MergedChannels);
     QStringList env = QProcess::systemEnvironment();
-    env << QString("R_LIBS=") + tmp_path.toQString();
+    env << QString("R_LIBS=") + QString::fromStdString(tmp_path);
     p.setEnvironment(env);
 
     QStringList qparam;
-    qparam << "--vanilla" << "--quiet" << "--slave" << "--file=" + script_filename.toQString();
+    qparam << "--vanilla" << "--quiet" << "--slave" << "--file=" + QString::fromStdString(script_filename);
     p.start(executable, qparam);
     p.waitForFinished(-1);
     int status = p.exitCode();
@@ -2036,10 +2134,21 @@ protected:
     registerInputFile_("in_fasta", "<file>", "", "Protein sequence database");
     setValidFormats_("in_fasta", ListUtils::create<String>("fasta"));
 
-    registerOutputFile_("out_csv", "<file>", "", "Column separated file with feature fitting result.");
+    registerOutputFile_("out_csv", "<file>", "", "Tab-separated, group-centric report of SIP incorporation results. "
+      "Organized hierarchically by groups, proteins, and peptides. "
+      "Columns for unique peptides: Peptide Sequence, RT (min), Exp. m/z, Theo. m/z, Charge, Score, TIC fraction, "
+      "#non-natural weights, then for each incorporation: RIA (relative isotope abundance, %), INT (intensity), "
+      "Cor. (correlation), followed by Peak intensities and Global LR (labeling ratio). "
+      "Non-unique peptides additionally list protein Accessions and Descriptions. "
+      "Group and protein summary rows report median Global LR and median RIA values.");
     setValidFormats_("out_csv", ListUtils::create<String>("csv"));
 
-    registerOutputFile_("out_peptide_centric_csv", "<file>", "", "Column separated file with peptide centric result.");
+    registerOutputFile_("out_peptide_centric_csv", "<file>", "", "Tab-separated, peptide-centric report of SIP incorporation results. "
+      "Columns: Peptide Sequence, Feature, Quality Report Spectrum (path), Quality report scores (path), "
+      "Sample Name, Protein Accessions, Description, Unique (bool), #Ambiguity members, Score, RT (min), "
+      "Exp. m/z, Theo. m/z, Charge, TIC fraction, #non-natural weights, Peak intensities, Group, "
+      "Global Peptide LR (labeling ratio), then for each incorporation (up to 10): RIA (%), LR of RIA, "
+      "INT (intensity), Cor. (correlation).");
     setValidFormats_("out_peptide_centric_csv", ListUtils::create<String>("csv"));
 
     registerInputFile_("in_featureXML", "<file>", "", "Feature data annotated with identifications (IDMapper)");
@@ -2320,6 +2429,7 @@ protected:
   ///< Returns highest scoring rate and score pair in the map
   void getBestRateScorePair(const MapRateToScoreType& map_rate_to_score, double& best_rate, double& best_score)
   {
+    best_rate = 0.0;
     best_score = -1;
     for (MapRateToScoreType::const_iterator mit = map_rate_to_score.begin(); mit != map_rate_to_score.end(); ++mit)
     {
@@ -2942,15 +3052,15 @@ protected:
     // Do we want to create a qc report?
     if (!qc_output_directory.empty())
     {
-      QString executable = getStringOption_("r_executable").toQString();
+      QString executable = QString::fromStdString(getStringOption_("r_executable"));
       // convert path to absolute path
-      QDir qc_dir(qc_output_directory.toQString());
-      qc_output_directory = String(qc_dir.absolutePath());
+      QDir qc_dir(QString::fromStdString(qc_output_directory));
+      qc_output_directory = qc_dir.absolutePath().toStdString();
 
       // trying to create qc_output_directory if not present
       if (!qc_dir.exists())
       {
-        qc_dir.mkpath(qc_output_directory.toQString());
+        qc_dir.mkpath(QString::fromStdString(qc_output_directory));
       }
       // check if R and dependencies are installed
       StringList package_names;
@@ -3158,7 +3268,7 @@ protected:
     vector<MapRateToScoreType> normalized_weight_maps;
     vector<MapRateToScoreType> correlation_maps;
 
-    String file_suffix = "_" + String(QFileInfo(in_mzml.toQString()).baseName()) + "_" + String::random(4);
+    String file_suffix = "_" + String(QFileInfo(QString::fromStdString(in_mzml)).baseName().toStdString()) + "_" + String::random(4);
 
     vector<SIPPeptide> sip_peptides;
 
@@ -3615,7 +3725,7 @@ protected:
     // quality report
     if (!qc_output_directory.empty())
     {
-      QString executable = getStringOption_("r_executable").toQString();
+      QString executable = QString::fromStdString(getStringOption_("r_executable"));
       // TODO plot merged is now passed as false
       MetaProSIPReporting::createQualityReport(tmp_path, qc_output_directory, file_suffix, file_extension_, sippeptide_clusters, n_heatmap_bins, score_plot_y_axis_min, report_natural_peptides, executable);
     }

@@ -1,36 +1,11 @@
-# --------------------------------------------------------------------------
-#                   OpenMS -- Open-Source Mass Spectrometry
-# --------------------------------------------------------------------------
-# Copyright OpenMS Inc. -- Eberhard Karls University Tuebingen,
-# ETH Zurich, and Freie Universitaet Berlin 2002-present.
-#
-# This software is released under a three-clause BSD license:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of any author or any participating institution
-#    may be used to endorse or promote products derived from this software
-#    without specific prior written permission.
-# For a full list of authors, refer to the file AUTHORS.
-# --------------------------------------------------------------------------
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL ANY OF THE AUTHORS OR THE CONTRIBUTING
-# INSTITUTIONS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
+# Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
+# SPDX-License-Identifier: BSD-3-Clause
+# 
 # --------------------------------------------------------------------------
 # $Maintainer: Julianus Pfeuffer$
 # $Authors: Stephan Aiche, Julianus Pfeuffer$
 # --------------------------------------------------------------------------
+
 
 # path were the CTDs will be stored
 set(KNIME_PROJECT_DIRECTORY ${PROJECT_BINARY_DIR}/knime CACHE PATH "Directory containing the generated plugin-sources for the OpenMS KNIME package")
@@ -90,8 +65,7 @@ if(DEFINED OLD_CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP)
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP ${OLD_CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP})
 endif()
 
-# Find Qt6 includes for KNIME packaging
-find_package(Qt6 COMPONENTS ${OpenMS_QT_COMPONENTS} REQUIRED)
+# Qt6::Core is already found by cmake_findExternalLibs.cmake
 get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
 exec_program(${QT_QMAKE_EXECUTABLE} ARGS "-query QT_INSTALL_LIBS" OUTPUT_VARIABLE QT_INSTALL_LIBS)
 exec_program(${QT_QMAKE_EXECUTABLE} ARGS "-query QT_INSTALL_BINS" OUTPUT_VARIABLE QT_INSTALL_BINS)
@@ -191,7 +165,7 @@ add_custom_target(
 set(CTD_executables ${TOPP_TOOLS})
 
 # remove tools that do not produce CTDs or should not be shipped (because of dependencies or specifics that can not be resolved in KNIME)
-list(REMOVE_ITEM CTD_executables OpenMSInfo Resampler ExecutePipeline INIUpdater ImageCreator GenericWrapper MascotAdapter OpenSwathMzMLFileCacher)
+list(REMOVE_ITEM CTD_executables OpenMSInfo Resampler ExecutePipeline INIUpdater ImageCreator MascotAdapter OpenSwathMzMLFileCacher)
 
 # TODO do regex with "Adapter". Safe enough?
 set(THIRDPARTY_ADAPTERS
@@ -377,7 +351,7 @@ if (APPLE) ## On APPLE use our script because the executables' install_names nee
   )
 elseif(WIN32)
   # on Win everything should be linked statically for distribution except Qt
-  foreach (KNIME_TOOLS_QT6_DEPENDENCY ${OpenMS_QT_COMPONENTS})
+  foreach (KNIME_TOOLS_QT6_DEPENDENCY Core)
     add_custom_command(
 		TARGET prepare_knime_payload_libs POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:Qt6::${KNIME_TOOLS_QT6_DEPENDENCY}> ${PAYLOAD_LIB_PATH}

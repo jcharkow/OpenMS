@@ -139,35 +139,36 @@ namespace OpenMS
               continue;
             }
 
-            if (!it->getHits()[i].metaValueExists("target_decoy"))
+            auto target_decoy_type = it->getHits()[i].getTargetDecoyType();
+            
+            if (target_decoy_type == PeptideHit::TargetDecoyType::UNKNOWN)
             {
               OPENMS_LOG_FATAL_ERROR << "Meta value 'target_decoy' does not exists, reindex the idXML file with 'PeptideIndexer' first (run-id='" << it->getIdentifier() << ", rank=" << i + 1 << " of " << it->getHits().size() << ")!" << endl;
               throw Exception::MissingInformation(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Meta value 'target_decoy' does not exist!");
             }
 
-            String target_decoy(it->getHits()[i].getMetaValue("target_decoy"));
             const String peptide_sequence = it->getHits()[i].getSequence().toUnmodifiedString();
             const double score = it->getHits()[i].getScore();
 
-            if (target_decoy == "target" || target_decoy == "target+decoy")
+            if (target_decoy_type == PeptideHit::TargetDecoyType::TARGET || target_decoy_type == PeptideHit::TargetDecoyType::TARGET_DECOY)
             {
               target_scores.push_back(score);
 
               if (annotate_peptide_fdr)
               {
-                // store best score for peptide (unmodified sequence)              
+                // store best score for peptide (unmodified sequence)
                 auto [entry_it, success] = peptide_to_best_target_score.emplace(peptide_sequence, score); // try to construct in place (performance)
 
                 if (!success && // emplace failed because key was already present -> replace if current score is better?
-                    isFirstBetterScore(score, entry_it->second, higher_score_better)) 
+                    isFirstBetterScore(score, entry_it->second, higher_score_better))
                 {
                   entry_it->second = score;
-                }                           
+                }
               }
             }
             else
             {
-              if (target_decoy == "decoy")
+              if (target_decoy_type == PeptideHit::TargetDecoyType::DECOY)
               {
                 decoy_scores.push_back(score);
 
@@ -182,13 +183,7 @@ namespace OpenMS
                   }
                 }
               }
-              else
-              {
-                if (!target_decoy.empty())
-                {
-                  throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Unknown value of meta value 'target_decoy'", target_decoy);
-                }
-              }
+              // Note: All other cases (UNKNOWN) are handled at the beginning of the loop
             }
           }
         }
@@ -214,7 +209,7 @@ namespace OpenMS
             }
             error_string += ")";
           }
-          OPENMS_LOG_ERROR << error_string << std::endl;
+          OPENMS_LOG_ERROR << error_string << '\n';
         }
 
         // check target scores
@@ -234,7 +229,7 @@ namespace OpenMS
             }
             error_string += ")";
           }
-          OPENMS_LOG_ERROR << error_string << std::endl;
+          OPENMS_LOG_ERROR << error_string << '\n';
         }
 
         if (target_scores.empty() || decoy_scores.empty())
@@ -257,14 +252,16 @@ namespace OpenMS
                 continue;
               }
 
-              if (!hits[i].metaValueExists("target_decoy"))
+              auto target_decoy_type = hits[i].getTargetDecoyType();
+              
+              if (target_decoy_type == PeptideHit::TargetDecoyType::UNKNOWN)
               {
                 OPENMS_LOG_FATAL_ERROR << "Meta value 'target_decoy' does not exists, reindex the idXML file with 'PeptideIndexer' (run-id='" << it->getIdentifier() << ", rank=" << i + 1 << " of " << hits.size() << ")!" << endl;
                 throw Exception::MissingInformation(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Meta value 'target_decoy' does not exist!");
               }
 
-              String target_decoy(hits[i].getMetaValue("target_decoy"));
-              if (target_decoy == "target" || target_decoy == "target+decoy")
+              bool is_decoy = hits[i].isDecoy();
+              if (!is_decoy)
               {
                 // if it is a target hit, there are no decoys, fdr/q-value should be zero then
                 new_hits.push_back(hits[i]);
@@ -272,13 +269,7 @@ namespace OpenMS
                 new_hits.back().setMetaValue(score_type, new_hits.back().getScore());
                 new_hits.back().setScore(0);
               }
-              else
-              {
-                if (target_decoy != "decoy")
-                {
-                  throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Unknown value of meta value 'target_decoy'", target_decoy);
-                }
-              }
+              // Note: decoy hits are skipped (not added to new_hits)
             }
             it->setHits(new_hits);
           }
@@ -336,8 +327,8 @@ namespace OpenMS
             }
             if (hit.metaValueExists("target_decoy"))
             {
-              String meta_value = (String)hit.getMetaValue("target_decoy");
-              if (meta_value == "decoy" && !add_decoy_peptides)
+              bool is_decoy = hit.isDecoy();
+              if (is_decoy && !add_decoy_peptides)
               {
                 continue;
               }
@@ -346,7 +337,7 @@ namespace OpenMS
               {
                 const String peptide_sequence = hit.getSequence().toUnmodifiedString();
                 double peptide_fdr;
-                if (meta_value == "decoy")
+                if (is_decoy)
                 {
                   peptide_fdr = peptide_to_best_decoy_score[peptide_sequence];
                 }
@@ -506,24 +497,20 @@ namespace OpenMS
     {
       for (auto pit = it->getHits().begin(); pit != it->getHits().end(); ++pit)
       {
-        if (!pit->metaValueExists("target_decoy"))
+        if (pit->getTargetDecoyType() == ProteinHit::TargetDecoyType::UNKNOWN)
         {
-          OPENMS_LOG_FATAL_ERROR << "Meta value 'target_decoy' does not exists, reindex the idXML file with 'PeptideIndexer' (run-id='" << it->getIdentifier() << ", accession=" << pit->getAccession() << ")!" << endl;
+          OPENMS_LOG_FATAL_ERROR << "Meta value 'target_decoy' does not exist, reindex the idXML file with 'PeptideIndexer' first (run-id='" 
+            << it->getIdentifier() << ")!" << endl;
           throw Exception::MissingInformation(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Meta value 'target_decoy' does not exist!");
         }
 
-        String target_decoy = pit->getMetaValue("target_decoy");
-        if (target_decoy == "decoy")
+        if (pit->isDecoy())
         {
           decoy_scores.push_back(pit->getScore());
         }
-        else if (target_decoy == "target")
-        {
-          target_scores.push_back(pit->getScore());
-        }
         else
         {
-          throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Unknown value of meta value 'target_decoy'", target_decoy);
+          target_scores.push_back(pit->getScore());
         }
       }
     }
@@ -551,7 +538,7 @@ namespace OpenMS
       for (auto hit : old_hits) // NOTE: performs copy
       {
         // Add decoy proteins only if add_decoy_proteins is set
-        if (add_decoy_proteins || hit.getMetaValue("target_decoy") != "decoy")
+        if (add_decoy_proteins || !hit.isDecoy())
         {
           hit.setMetaValue(score_type, hit.getScore());
           hit.setScore(score_to_fdr[hit.getScore()]);
@@ -1092,7 +1079,8 @@ namespace OpenMS
       unordered_set<string> decoy_accs;
       for (const auto& prot : id.getHits())
       {
-        if (!prot.metaValueExists("target_decoy") || prot.getMetaValue("target_decoy") == "decoy")
+        // checks if not a target (UNKNOWN or DECOY)
+        if (prot.getTargetDecoyType() != ProteinHit::TargetDecoyType::TARGET)
         {
           decoy_accs.insert(prot.getAccession());
         }
@@ -1233,6 +1221,8 @@ namespace OpenMS
 
   void FalseDiscoveryRate::applyBasicPeptideLevel(PeptideIdentificationList & ids)
   {
+    if (ids.empty()) return;
+
     bool q_value = !param_.getValue("no_qvalues").toBool();
     //TODO Check naming conventions. Ontology?
     const string& score_type = q_value ? Constants::UserParam::PEPTIDE_Q_VALUE : "peptide FDR";
@@ -1409,7 +1399,7 @@ namespace OpenMS
     std::sort(scores_labels.rbegin(), scores_labels.rend());
     double diff = diffEstimatedEmpirical(scores_labels, pepCutoff);
     double auc = rocN(scores_labels, fpCutoff);
-    OPENMS_LOG_INFO << "Evaluation of protein probabilities: Difference estimated vs. T-D FDR = " << diff << " and roc" << fpCutoff << " = " << auc << std::endl;
+    OPENMS_LOG_INFO << "Evaluation of protein probabilities: Difference estimated vs. T-D FDR = " << diff << " and roc" << fpCutoff << " = " << auc << '\n';
     // we want the score to get higher the lesser the difference. Subtract from one.
     // Then convex combination with the AUC.
     return (1.0 - diff) * (1.0 - diffWeight) + auc * diffWeight;
@@ -1420,7 +1410,7 @@ namespace OpenMS
     std::sort(scores_labels.rbegin(), scores_labels.rend());
     double diff = diffEstimatedEmpirical(scores_labels, pepCutoff);
     double auc = rocN(scores_labels, fpCutoff);
-    OPENMS_LOG_INFO << "Evaluation of protein probabilities: Difference estimated vs. T-D FDR = " << diff << " and roc" << fpCutoff << " = " << auc << std::endl;
+    OPENMS_LOG_INFO << "Evaluation of protein probabilities: Difference estimated vs. T-D FDR = " << diff << " and roc" << fpCutoff << " = " << auc << '\n';
     // we want the score to get higher the lesser the difference. Subtract from one.
     // Then convex combination with the AUC.
     return (1.0 - diff) * (1.0 - diffWeight) + auc * diffWeight;
@@ -1446,12 +1436,12 @@ namespace OpenMS
         r.is_prefix = true;
         r.name = "DECOY_";
         OPENMS_LOG_WARN << "Unable to determine decoy string automatically (not enough decoys were detected)! Using default " << (r.is_prefix ? "prefix" : "suffix") << " decoy string '" << r.name << "'\n"
-        << "If you think that this is incorrect, please provide a decoy_string and its position manually!" << std::endl;
+        << "If you think that this is incorrect, please provide a decoy_string and its position manually!\n";
       }
       prefix = r.is_prefix;
       decoy_string = r.name;
       // decoy string and position was extracted successfully
-      OPENMS_LOG_INFO << "Using " << (prefix ? "prefix" : "suffix") << " decoy string '" << decoy_string << "'" << std::endl;
+      OPENMS_LOG_INFO << "Using " << (prefix ? "prefix" : "suffix") << " decoy string '" << decoy_string << "'\n";
     }
 
     ScoreToTgtDecLabelPairs scores_labels;
@@ -1491,7 +1481,7 @@ namespace OpenMS
     bool conservative = param_.getValue("conservative").toBool();
     if (scores_labels.empty())
     {
-     OPENMS_LOG_WARN << "Warning: No scores extracted for FDR calculation. Skipping. Do you have target-decoy annotated Hits?" << std::endl;
+     OPENMS_LOG_WARN << "Warning: No scores extracted for FDR calculation. Skipping. Do you have target-decoy annotated Hits?\n";
       return 1.0;
     }
 
@@ -1552,7 +1542,7 @@ namespace OpenMS
   {
     if (scores_labels.empty())
     {
-     OPENMS_LOG_WARN << "Warning: No scores extracted for FDR calculation. Skipping. Do you have target-decoy annotated Hits?" << std::endl;
+     OPENMS_LOG_WARN << "Warning: No scores extracted for FDR calculation. Skipping. Do you have target-decoy annotated Hits?\n";
       return 0.0;
     }
 
@@ -1618,7 +1608,7 @@ namespace OpenMS
   {
     if (scores_labels.empty())
     {
-     OPENMS_LOG_WARN << "Warning: No scores extracted for FDR calculation. Skipping. Do you have target-decoy annotated Hits?" << std::endl;
+     OPENMS_LOG_WARN << "Warning: No scores extracted for FDR calculation. Skipping. Do you have target-decoy annotated Hits?\n";
       return;
     }
 
@@ -1684,7 +1674,7 @@ namespace OpenMS
     bool conservative = param_.getValue("conservative").toBool();
     if (scores_labels.empty())
     {
-      OPENMS_LOG_WARN << "Warning: No scores extracted for FDR calculation. Skipping. Do you have target-decoy annotated Hits?" << std::endl;
+      OPENMS_LOG_WARN << "Warning: No scores extracted for FDR calculation. Skipping. Do you have target-decoy annotated Hits?\n";
       return;
     }
 
@@ -1708,7 +1698,7 @@ namespace OpenMS
       if (std::abs(scores_labels[j].first - last_score) > 1e-12)
       {
         #ifdef FALSE_DISCOVERY_RATE_DEBUG
-        std::cerr << "Recording score: " << last_score << " with " << decoys << " decoys at index+1 = " << (j+1) << " -> fdr: " << decoys/(j+1.0) << std::endl;
+        OPENMS_LOG_DEBUG << "Recording score: " << last_score << " with " << decoys << " decoys at index+1 = " << (j+1) << " -> fdr: " << decoys/(j+1.0) << '\n';
         #endif
         //we are using the conservative formula (Decoy + 1) / (Tgts)
         if (conservative)
@@ -1752,7 +1742,7 @@ namespace OpenMS
         for (auto&& rit = scores_to_FDR.begin(); rit != scores_to_FDR.end(); ++rit)
         {
         #ifdef FALSE_DISCOVERY_RATE_DEBUG
-          std::cerr << "Comparing " << rit->second << " to " << cummin << std::endl;
+          OPENMS_LOG_DEBUG << "Comparing " << rit->second << " to " << cummin << '\n';
         #endif
           cummin = std::min(rit->second, cummin);
           rit->second = cummin;
@@ -1763,7 +1753,7 @@ namespace OpenMS
         for (auto&& rit = scores_to_FDR.rbegin(); rit != scores_to_FDR.rend(); ++rit)
         {
         #ifdef FALSE_DISCOVERY_RATE_DEBUG
-          std::cerr << "Comparing " << rit->second << " to " << cummin << std::endl;
+          OPENMS_LOG_DEBUG << "Comparing " << rit->second << " to " << cummin << '\n';
         #endif
           cummin = std::min(rit->second, cummin);
           rit->second = cummin;
@@ -1847,20 +1837,20 @@ namespace OpenMS
     // DEBUG ONLY: print counts of found decoys
     for (auto &a : decoy_count)
     {
-      OPENMS_LOG_DEBUG << a.first << "\t" << a.second.first << "\t" << a.second.second << std::endl;
+      OPENMS_LOG_DEBUG << a.first << "\t" << a.second.first << "\t" << a.second.second << '\n';
     }
 
     // less than 30% of proteins are decoys -> won't be able to determine a decoy string and its position
     // return default values
     if (static_cast<double>(all_prefix_occur + all_suffix_occur) < 0.3 * static_cast<double>(all_proteins_count))
     {
-      OPENMS_LOG_ERROR << "Unable to determine decoy string (not enough occurrences; <30%)!" << std::endl;
+      OPENMS_LOG_ERROR << "Unable to determine decoy string (not enough occurrences; <30%)!\n";
       return {false, "?", true};
     }
 
     if (all_prefix_occur == all_suffix_occur)
     {
-      OPENMS_LOG_ERROR << "Unable to determine decoy string (prefix and suffix occur equally often)!" << std::endl;
+      OPENMS_LOG_ERROR << "Unable to determine decoy string (prefix and suffix occur equally often)!\n";
       return {false, "?", true};
     }
 
@@ -1876,8 +1866,8 @@ namespace OpenMS
       {
         if (prefix_suffix_counts.first != all_prefix_occur)
         {
-          OPENMS_LOG_WARN << "More than one decoy prefix observed!" << std::endl;
-          OPENMS_LOG_WARN << "Using most frequent decoy prefix (" << (int)(freq_prefix * 100) << "%)" << std::endl;
+          OPENMS_LOG_WARN << "More than one decoy prefix observed!\n";
+          OPENMS_LOG_WARN << "Using most frequent decoy prefix (" << (int)(freq_prefix * 100) << "%)\n";
         }
 
         return { true, decoy_case_sensitive[case_insensitive_decoy_string], true};
@@ -1896,15 +1886,15 @@ namespace OpenMS
       {
         if (prefix_suffix_counts.second != all_suffix_occur)
         {
-          OPENMS_LOG_WARN << "More than one decoy suffix observed!" << std::endl;
-          OPENMS_LOG_WARN << "Using most frequent decoy suffix (" << (int)(freq_suffix * 100) << "%)" << std::endl;
+          OPENMS_LOG_WARN << "More than one decoy suffix observed!\n";
+          OPENMS_LOG_WARN << "Using most frequent decoy suffix (" << (int)(freq_suffix * 100) << "%)\n";
         }
 
         return { true, decoy_case_sensitive[case_insensitive_decoy_string], false};
       }
     }
 
-    OPENMS_LOG_ERROR << "Unable to determine decoy string and its position. Please provide a decoy string and its position as parameters." << std::endl;
+    OPENMS_LOG_ERROR << "Unable to determine decoy string and its position. Please provide a decoy string and its position as parameters.\n";
     return {false, "?", true};
   }
 

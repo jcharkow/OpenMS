@@ -9,7 +9,7 @@
 #include <OpenMS/VISUAL/TableView.h>
 
 #include <OpenMS/CONCEPT/Exception.h>
-#include <OpenMS/CONCEPT/Qt5Port.h>
+#include <OpenMS/VISUAL/MISC/Qt5Port.h>
 #include <OpenMS/DATASTRUCTURES/String.h>
 
 #include <QFile>
@@ -65,7 +65,7 @@ namespace OpenMS
       {
         continue;
       }
-      QAction* action = context_menu.addAction(ti->text(), [=]() {
+      QAction* action = context_menu.addAction(ti->text(), [=, this]() {
         // invert visibility upon clicking the item
         setColumnHidden(i, !isColumnHidden(i));
         });
@@ -87,7 +87,7 @@ namespace OpenMS
 
     if (!f.open(QIODevice::WriteOnly))
     {
-      throw Exception::FileNotWritable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, String(filename));
+      throw Exception::FileNotWritable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, fromQString(filename));
     }
     QTextStream ts(&f);
     QStringList str_list;
@@ -190,7 +190,7 @@ namespace OpenMS
     }
     if (!hset.empty())
     {
-      throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "header_names contains a column name which is unknown: " + String(hset.values().join(", ")));
+      throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "header_names contains a column name which is unknown: " + fromQString(hset.values().join(", ")));
     }
   }
 
@@ -251,7 +251,7 @@ namespace OpenMS
   {
     // check if this function is called on checkbox items only (either no DisplayRole set or the text is '' or ' ')
     if (!item->data(Qt::DisplayRole).isValid() || 
-        (item->data(Qt::DisplayRole).type() == QVariant::Type::String
+        (item->data(Qt::DisplayRole).typeId() == QMetaType::QString
           && (item->data(Qt::DisplayRole).toString().isEmpty() || item->data(Qt::DisplayRole).toString() == " ")
         )
        )

@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2023, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// Copyright (c) 2002-present, The OpenMS Team -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // --------------------------------------------------------------------------
@@ -282,7 +282,7 @@ namespace OpenMS
       auto& hits = pep.getHits();
       if (hits.empty()) continue;
       const PeptideHit& ph = hits[0]; // only consider top hit
-      if (ph.getMetaValue("target_decoy") == "decoy" || ph.getMetaValue("NuXL:isXL") == "false") continue;
+      if (ph.isDecoy() || ph.getMetaValue("NuXL:isXL") == "false") continue;
       const int best_localization = ph.getMetaValue("NuXL:best_localization_position");
 
       if (best_localization >= 0)
@@ -407,7 +407,7 @@ Output format:
       peptide_seq2XLFDR[peptide_sequence_string] = peptide_XL_level_qvalue;
 
       // loop over all target proteins the peptide maps to
-      const std::set<std::string> proteins = peptide2proteins.at(peptide_sequence_string);
+      const std::set<std::string>& proteins = peptide2proteins.at(peptide_sequence_string);
       const bool is_unique = proteins.size() == 1;
 
       for (const auto& acc : proteins)
@@ -664,7 +664,7 @@ Output format:
     std::vector<ProteinHit>& proteins = prot_id.getHits();
     for (ProteinHit& protein : proteins)
     {
-      if (protein.getMetaValue("target_decoy").toString().hasPrefix("target"))
+      if (!protein.isDecoy())
       {
         acc2protein_targets[protein.getAccession()] = &protein;
       }
@@ -813,7 +813,7 @@ Output format:
       }
 
       // determine peptides/regions not yet printed (e.g., no site localization exists for those)
-      set<string> all_peptides = protein2peptides.at(accession);
+      const set<string>& all_peptides = protein2peptides.at(accession);
 
       set<string> remaining_peptides;
       std::set_difference(all_peptides.begin(), all_peptides.end(), 

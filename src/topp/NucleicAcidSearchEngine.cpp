@@ -24,6 +24,9 @@
 // file types
 #include <OpenMS/FORMAT/FASTAFile.h>
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/CONCEPT/LogStream.h>
+#include <OpenMS/METADATA/PeptideIdentificationList.h>
+#include <OpenMS/METADATA/ProteinIdentification.h>
 #include <OpenMS/FORMAT/MzTabFile.h>
 #include <OpenMS/FORMAT/OMSFile.h>
 #include <OpenMS/FORMAT/SVOutStream.h>
@@ -31,6 +34,7 @@
 // digestion enzymes
 #include <OpenMS/CHEMISTRY/RNaseDigestion.h>
 #include <OpenMS/CHEMISTRY/RNaseDB.h>
+#include <OpenMS/SYSTEM/File.h>
 
 // ribonucleotides
 #include <OpenMS/CHEMISTRY/RibonucleotideDB.h>
@@ -53,8 +57,6 @@
 #include <OpenMS/ANALYSIS/ID/FalseDiscoveryRate.h>
 #include <OpenMS/PROCESSING/ID/IDFilter.h>
 
-
-#include <QtCore/QProcess>
 
 #include <algorithm>
 #include <iostream>
@@ -673,27 +675,29 @@ protected:
       for (Size i = 0; i < current_seq.size(); ++i)
       {
         if (previous_seq[i]->getCode() == current_seq[i]->getCode()) continue;
-        auto pos_current = ambiguous_mods_.find(current_seq[i]->getCode());
-        if (pos_current == ambiguous_mods_.end())
+        if (const auto pos_current = ambiguous_mods_.find(current_seq[i]->getCode()); pos_current == ambiguous_mods_.end())
         {
           // difference is not due to an ambiguous mod. - don't combine hits:
           remove_current = false;
           break;
         }
-        // is this ribonucleotide in the previous hit already ambiguous?
-        const String& ambig_code = pos_current->second;
-        if (previous_seq[i]->getCode() == ambig_code) continue;
-        // if not, should we replace it with an ambiguous mod.?
-        auto pos_previous = ambiguous_mods_.find(previous_seq[i]->getCode());
-        if ((pos_previous == ambiguous_mods_.end()) ||
-            (pos_previous->second != ambig_code)) // mods don't match
+        else
         {
-          remove_current = false;
-          break;
+          // is this ribonucleotide in the previous hit already ambiguous?
+          const String& ambig_code = pos_current->second;
+          if (previous_seq[i]->getCode() == ambig_code) continue;
+          // if not, should we replace it with an ambiguous mod.?
+          if (const auto pos_previous = ambiguous_mods_.find(previous_seq[i]->getCode()); 
+              (pos_previous == ambiguous_mods_.end()) ||
+              (pos_previous->second != ambig_code)) // mods don't match
+          {
+            remove_current = false;
+            break;
+          }
+          if (replacement.empty()) replacement = previous_seq;
+          replacement[i] = RibonucleotideDB::getInstance()->
+            getRibonucleotide(ambig_code);
         }
-        if (replacement.empty()) replacement = previous_seq;
-        replacement[i] = RibonucleotideDB::getInstance()->
-          getRibonucleotide(ambig_code);
       }
       if (remove_current) // current hit is redundant -> remove it
       {
@@ -779,7 +783,7 @@ protected:
     IdentificationData::ScoreTypeRef score_ref = id_data.findScoreType("hyperscore");
     FalseDiscoveryRate fdr;
     Param fdr_params = fdr.getDefaults();
-    fdr_params.setValue("use_all_hits", only_top_hits ? "true" : "false");
+    fdr_params.setValue("use_all_hits", only_top_hits ? "false" : "true");
     bool remove_decoys = getFlag_("fdr:remove_decoys");
     fdr_params.setValue("add_decoy_peptides", remove_decoys ? "false" : "true");
     fdr.setParameters(fdr_params);

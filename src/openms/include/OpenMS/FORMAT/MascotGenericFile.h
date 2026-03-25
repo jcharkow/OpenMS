@@ -60,8 +60,8 @@ public:
     /**
       @brief loads a Mascot Generic File into a PeakMap
 
-      @param filename file name which the map should be read from
-      @param exp the map which is filled with the data from the given file
+      @param[in] filename file name which the map should be read from
+      @param[out] exp the map which is filled with the data from the given file
       @throw FileNotFound is thrown if the given file could not be found
     */
     template <typename MapType>
@@ -287,6 +287,11 @@ protected:
             else if (line.hasPrefix("NAME"))
             {
               String tmp = line.substr(5);
+              spectrum.setMetaValue(Constants::UserParam::MSM_METABOLITE_NAME, tmp);
+            }
+            else if (line.hasPrefix("COMPOUND_NAME"))
+            {
+              String tmp = line.substr(14);
               spectrum.setMetaValue(Constants::UserParam::MSM_METABOLITE_NAME, tmp);
             }
             else if (line.hasPrefix("INCHI="))

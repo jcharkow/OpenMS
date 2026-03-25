@@ -86,7 +86,7 @@ namespace OpenMS
     {
       std::vector<ProteinIdentification> tmp(1);
       std::swap(tmp[0], prot_id);
-      IDFilter::updateProteinReferences(pep_ids, tmp, true); //TODO allow keeping PSMs without evidence?
+      IDFilter::removeDanglingProteinReferences(pep_ids, tmp, true); //TODO allow keeping PSMs without evidence?
       std::swap(tmp[0], prot_id);
     }
 
@@ -186,7 +186,7 @@ namespace OpenMS
       IDFilter::removeMatchingItems<std::vector<ProteinHit>>(prot_run.getHits(),
           IDFilter::HasMaxMetaValue<ProteinHit>("nr_found_peptides", static_cast<int>(min_peptides_per_protein) - 1));
 
-      IDFilter::updateProteinReferences(cmap, prot_run, true);
+      IDFilter::removeDanglingProteinReferences(cmap, prot_run, true);
     }
 
     if (group)
@@ -259,7 +259,7 @@ namespace OpenMS
 
     if (min_peptides_per_protein > 0) //potentially sth was filtered
     {
-      IDFilter::updateProteinReferences(pep_ids, prot_ids, true); //TODO allow keeping PSMs without evidence?
+      IDFilter::removeDanglingProteinReferences(pep_ids, prot_ids, true); //TODO allow keeping PSMs without evidence?
     }
 
     IDScoreSwitcherAlgorithm::switchBackScoreType(pep_ids, isr); // NOP if no switch was performed
@@ -323,15 +323,13 @@ namespace OpenMS
         lookup_charge = hit.getCharge();
       }
 
-      auto current_best_pep_it = best_pep.find(lookup_seq);
-      if (current_best_pep_it == best_pep.end())
+      if (auto current_best_pep_it = best_pep.find(lookup_seq); current_best_pep_it == best_pep.end())
       { // no entry exist for sequence? initialize seq->charge->&hit
         best_pep[lookup_seq][lookup_charge] = &hit;
       }
       else
       { // a peptide hit for the current sequence exists
-        auto current_best_pep_charge_it = current_best_pep_it->second.find(lookup_charge);
-        if (current_best_pep_charge_it == current_best_pep_it->second.end())
+        if (auto current_best_pep_charge_it = current_best_pep_it->second.find(lookup_charge); current_best_pep_charge_it == current_best_pep_it->second.end())
         { // no entry for charge? add hit
           current_best_pep_it->second[lookup_charge] = &hit;
         }

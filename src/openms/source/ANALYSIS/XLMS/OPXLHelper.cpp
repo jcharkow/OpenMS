@@ -10,6 +10,7 @@
 #include <OpenMS/CHEMISTRY/ModifiedPeptideGenerator.h>
 #include <OpenMS/CHEMISTRY/ModificationsDB.h>
 #include <OpenMS/CONCEPT/LogStream.h>
+#include <OpenMS/METADATA/ProteinIdentification.h>
 #include <OpenMS/MATH/StatisticFunctions.h>
 #include <OpenMS/CONCEPT/Constants.h>
 #include <OpenMS/DATASTRUCTURES/ListUtilsIO.h>
@@ -380,7 +381,7 @@ namespace OpenMS
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < static_cast<int>(candidates.size()); ++i)
     {
-      OPXLDataStructs::XLPrecursor candidate = candidates[i];
+      const OPXLDataStructs::XLPrecursor& candidate = candidates[i];
       vector <SignedSize> link_pos_first;
       vector <SignedSize> link_pos_second;
       const AASequence* peptide_first = &(peptide_masses[candidate.alpha_index].peptide_seq);
@@ -946,7 +947,7 @@ namespace OpenMS
       peptide_id.setHits(phs);
       peptide_id.setScoreType(Constants::UserParam::OPENPEPXL_SCORE);
 
-// This critical section is called this way, because access to all_top_csms also happens in OpenPepXLAlgorithm and OpenPepXLLFAlgorithm.
+// This critical section is called this way, because access to all_top_csms also happens in OpenPepXLAlgorithm.
 // Access to peptide_ids is also critical, but it is only accessed here during parallel processing.
 #pragma omp critical (all_top_csms_access)
       {
@@ -1281,7 +1282,7 @@ namespace OpenMS
       }
     }
 
-    for (String index : spectrum_indices)
+    for (const String& index : spectrum_indices)
     {
       for (PeptideIdentification& id : peptide_ids)
       {
