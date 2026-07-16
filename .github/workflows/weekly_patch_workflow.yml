@@ -70,7 +70,7 @@ jobs:
             COMMITS_SINCE_TAG=1
           fi
 
-          if [[ COMMITS_SINCE_TAG" -eq 0 ]]; then
+          if [[ "$COMMITS_SINCE_TAG" -eq 0 ]]; then
             echo "No new commits found on $LATEST_BRANCH since tag $LATEST_TAG."
             echo "changes_exist=false" >> $GITHUB_OUTPUT
           else
