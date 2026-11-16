@@ -168,7 +168,7 @@ namespace OpenMS
 
     static constexpr Size FEATURE_COLUMN_COUNT = 11;
     static constexpr Size FEATURE_MS1_COLUMN_COUNT = 18;
-    static constexpr Size FEATURE_MS2_COLUMN_COUNT = 38;
+    static constexpr Size FEATURE_MS2_COLUMN_COUNT = 39;
     static constexpr Size FEATURE_PRECURSOR_COLUMN_COUNT = 4;
     static constexpr Size FEATURE_TRANSITION_COLUMN_COUNT = 43;
 

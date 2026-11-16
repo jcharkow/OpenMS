@@ -63,7 +63,7 @@ namespace OpenMS
         "VAR_XCORR_COELUTION", "VAR_XCORR_COELUTION_WEIGHTED", "VAR_XCORR_SHAPE",
         "VAR_XCORR_SHAPE_WEIGHTED", "VAR_YSERIES_SCORE", "VAR_ELUTION_MODEL_FIT_SCORE",
         "VAR_IM_XCORR_SHAPE", "VAR_IM_XCORR_COELUTION", "VAR_IM_DELTA_SCORE",
-        "VAR_IM_LOG_INTENSITY"
+        "VAR_IM_LOG_INTENSITY", "QUALITY"
       };
       return columns;
     }
@@ -801,6 +801,12 @@ namespace OpenMS
 
   void OpenSwathOSWWriter::writeHeader()
   {
+    // Clear any stale WAL/SHM sidecar files left by a previous run. Opening a
+    // rollback-journal connection (the default here) against a WAL-mode database
+    // with leftover -wal/-shm files yields a spurious SQLITE_IOERR on write.
+    std::remove((output_filename_ + "-wal").c_str());
+    std::remove((output_filename_ + "-shm").c_str());
+
     // Open database
     SqliteConnector conn(output_filename_);
 
@@ -884,7 +890,8 @@ namespace OpenMS
       "VAR_IM_XCORR_SHAPE REAL NULL," \
       "VAR_IM_XCORR_COELUTION REAL NULL," \
       "VAR_IM_DELTA_SCORE REAL NULL," \
-      "VAR_IM_LOG_INTENSITY REAL NULL);" \
+      "VAR_IM_LOG_INTENSITY REAL NULL," \
+      "QUALITY REAL NULL);" \
 
       "CREATE TABLE FEATURE_PRECURSOR(" \
       "FEATURE_ID INT NOT NULL," \
@@ -1253,7 +1260,9 @@ namespace OpenMS
         oswValue(cachedMetaValue(feature_it, "var_im_xcorr_shape")),
         oswValue(cachedMetaValue(feature_it, "var_im_xcorr_coelution")),
         oswValue(cachedMetaValue(feature_it, "var_im_delta_score")),
-        oswValue(cachedMetaValue(feature_it, "im_log_intensity"))
+        oswValue(cachedMetaValue(feature_it, "im_log_intensity")),
+        oswValue(cachedMetaValueExists(feature_it, "initialPeakQuality") ?
+                 cachedMetaValue(feature_it, "initialPeakQuality") : DataValue::EMPTY)
       });
 
       bool enable_ms1 = cachedMetaValueExists(feature_it, "var_ms1_ppm_diff");
